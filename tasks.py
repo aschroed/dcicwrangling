@@ -13,7 +13,7 @@ import importlib
 docs_dir = 'docs'
 build_dir = os.path.join(docs_dir, '_build')
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
-PROJECT_NAME = 'wrangling'
+PROJECT_NAME = 'dcicwrangling'
 
 
 @contextmanager
