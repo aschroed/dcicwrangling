@@ -34,14 +34,14 @@ def test_get_excluded_w_both():
 
 
 def test_is_released_released(mocker, connection):
-    with mocker.patch('wrangling.get_linked_item_ids.get_FDN',
+    with mocker.patch('scripts.get_linked_item_ids.get_FDN',
                       return_value={'status': 'released'}):
         ans = gli.is_released('iid', connection)
         assert ans is True
 
 
 def test_is_released_not_released(mocker, connection):
-    with mocker.patch('wrangling.get_linked_item_ids.get_FDN',
+    with mocker.patch('scripts.get_linked_item_ids.get_FDN',
                       return_value={'status': 'deleted'}):
         ans = gli.is_released('iid', connection)
         assert not ans
