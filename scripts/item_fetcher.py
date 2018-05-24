@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-
+'''
+Given a list of item IDs will fetch the items or the fields of those items
+specified in the --fields parameter)
+'''
 import sys
 import argparse
-from dcicutils.ff_utils import fdn_connection
-from dcicutils.submit_utils import get_FDN
+from dcicutils.ff_utils import get_authentication_with_server, get_metadata
 from dcicwrangling.scripts import script_utils as scu
 
 
@@ -25,12 +27,12 @@ def get_args():
 def main():  # pragma: no cover
     args = get_args()
     try:
-        connection = fdn_connection(args.keyfile, keyname=args.key)
+        auth = get_authentication_with_server(args.key, args.env)
     except Exception:
-        print("Connection failed")
+        print("Authentication failed")
         sys.exit(1)
 
-    id_list = scu.get_item_ids_from_args(args.input, connection, args.search)
+    id_list = scu.get_item_ids_from_args(args.input, auth, args.search)
     if args.fields:
         fields = args.fields
 
@@ -39,13 +41,16 @@ def main():  # pragma: no cover
             header = header.replace('#id\t', '#')
         print(header)
     for iid in id_list:
-        res = get_FDN(iid, connection)
+        res = get_metadata(iid, auth)
         if args.fields:
             line = ''
             for f in fields:
                 val = res.get(f)
                 if isinstance(val, list):
-                    val = ', '.join(val)
+                    for v in val:
+                        v = str(v)
+                        vs = v + ', '
+                    val = vs
                     if val.endswith(', '):
                         val = val[:-2]
                 line = line + str(val) + '\t'

@@ -4,8 +4,12 @@ import sys
 import argparse
 import json
 from datetime import datetime
-from dcicutils.ff_utils import fdn_connection
-from dcicutils.submit_utils import get_FDN, patch_FDN, new_FDN
+from dcicutils.ff_utils import (
+    get_authentication_with_server,
+    get_metadata,
+    patch_metadata,
+    post_metadata,
+)
 from dcicwrangling.scripts.script_utils import create_ff_arg_parser
 
 
@@ -36,9 +40,9 @@ def main():  # pragma: no cover
     print(str(start))
     args = get_args()
     try:
-        connection = fdn_connection(args.keyfile, keyname=args.key)
-    except Exception as e:
-        print("Connection failed")
+        auth = get_authentication_with_server(args.key, args.env)
+    except Exception:
+        print("Authentication failed")
         sys.exit(1)
 
     phase2 = {}
@@ -62,17 +66,17 @@ def main():  # pragma: no cover
                     phase2json['slim_terms'] = term['slim_terms']
                     del term['slim_terms']
 
-                dbterm = get_FDN(tid, connection)
+                dbterm = get_metadata(tid, auth)
                 op = ''
                 if 'OntologyTerm' in dbterm['@type']:
                     if args.dbupdate:
-                        e = patch_FDN(dbterm["uuid"], connection, term)
+                        e = patch_metadata(term, dbterm["uuid"], auth)
                     else:
                         e = {'status': 'dry run'}
                     op = 'PATCH'
                 else:
                     if args.dbupdate:
-                        e = new_FDN(connection, 'OntologyTerm', term)
+                        e = post_metadata(term, 'OntologyTerm', auth)
                     else:
                         e = {'status': 'dry run'}
                     op = 'POST'
@@ -89,7 +93,7 @@ def main():  # pragma: no cover
     print("START LOADING PHASE2 at ", str(datetime.now()))
     for tid, data in phase2.items():
         if args.dbupdate:
-            e = patch_FDN(tid, connection, data)
+            e = patch_metadata(data, tid, auth)
         else:
             e = {'status': 'dry run'}
         status = e.get('status')

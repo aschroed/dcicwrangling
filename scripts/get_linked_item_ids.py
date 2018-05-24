@@ -1,7 +1,6 @@
 import sys
 import argparse
-from dcicutils.ff_utils import fdn_connection
-from dcicutils.submit_utils import get_FDN
+from dcicutils.ff_utils import get_authentication_with_server, get_metadata
 from dcicwrangling.scripts import script_utils as scu
 
 
@@ -15,8 +14,8 @@ def get_excluded(exclude_types=None, include_types=None):
     return list(set(exclude))
 
 
-def is_released(itemid, connection):
-    item = get_FDN(itemid, connection)
+def is_released(itemid, auth):
+    item = get_metadata(itemid, auth)
     if item.get('status'):
         if item['status'] == 'released':
             return True
@@ -53,11 +52,11 @@ def get_args():  # pragma: no cover
 def main():  # pragma: no cover
     args = get_args()
     try:
-        connection = fdn_connection(args.keyfile, keyname=args.key)
+        auth = get_authentication_with_server(args.key, args.env)
     except Exception:
-        print("Connection failed")
+        print("Authentication failed")
         sys.exit(1)
-    itemids = scu.get_item_ids_from_args(args.input, connection, args.search)
+    itemids = scu.get_item_ids_from_args(args.input, auth, args.search)
     excluded_types = get_excluded(args.types2exclude, args.types2include)
     no_child = ['Publication', 'Lab', 'User', 'Award']  # default no_childs
     if args.no_children:
@@ -66,7 +65,8 @@ def main():  # pragma: no cover
     all_linked_ids = []
     # main loop through the top level item ids
     for itemid in itemids:
-        linked = scu.get_linked_items(connection, itemid, {})
+        print(itemid)
+        linked = scu.get_linked_items(auth, itemid, {})
         if excluded_types is not None:
             linked = scu.filter_dict_by_value(linked, excluded_types, include=False)
         ll = [(k, linked[k]) for k in sorted(linked, key=linked.get)]
@@ -74,7 +74,7 @@ def main():  # pragma: no cover
             suff = ''
             if i == itemid:
                 suff = '\tINPUT'
-            if is_released(i, connection):
+            if is_released(i, auth):
                 suff = '\tRELEASED' + suff
                 if not args.include_released:
                     print(i, '\t', t, '\tSKIPPING', suff)
