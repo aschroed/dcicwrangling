@@ -154,7 +154,7 @@ def test_has_field_value_check_for_field_w_item(bs_embed_json):
 
 def test_get_types_that_can_have_field(mocker, profiles):
     field = 'tags'
-    with mocker.patch('dcicutils.submit_utils.get_FDN', return_value=profiles):
+    with mocker.patch('scripts.script_utils.get_metadata', return_value=profiles):
         types_w_field = scu.get_types_that_can_have_field('conn', field)
         assert 'ExperimentSetReplicate' in types_w_field
         assert 'TreatmentChemical' not in types_w_field
@@ -166,10 +166,10 @@ def test_get_item_type_from_dict(eset_json):
     assert es_ty == 'ExperimentSetReplicate'
 
 
-def test_get_item_type_from_id(mocker, connection):
+def test_get_item_type_from_id(mocker, auth):
 
-    with mocker.patch('dcicutils.submit_utils.get_FDN', return_value={'@type': ['ExperimentSetReplicate']}):
-        result = scu.get_item_type(connection, 'blah')
+    with mocker.patch('scripts.script_utils.get_metadata', return_value={'@type': ['ExperimentSetReplicate']}):
+        result = scu.get_item_type(auth, 'blah')
         assert result == 'ExperimentSetReplicate'
 
 
@@ -182,40 +182,41 @@ def items_w_uuids():
     ]
 
 
-def test_get_item_ids_from_list(connection):
+def test_get_item_ids_from_list(auth):
     ids = ['a', 'b', 'c']
-    result = scu.get_item_ids_from_args(ids, connection)
+    result = scu.get_item_ids_from_args(ids, auth)
     for a in [i in ids for i in result]:
         assert a
 
 
-def test_get_item_ids_from_search(mocker, connection, items_w_uuids):
+def test_get_item_ids_from_search(mocker, auth, items_w_uuids):
     ids = ['a', 'b', 'c']
-    with mocker.patch('dcicutils.submit_utils.get_FDN', return_value=items_w_uuids):
-        result = scu.get_item_ids_from_args('search', connection, True)
-        for a in [i in ids for i in result]:
-            assert a
+    with mocker.patch('scripts.script_utils.safe_search_with_callback', return_value=[]):
+        with mocker.patch('scripts.script_utils.get_metadata', return_value=items_w_uuids):
+            result = scu.get_item_ids_from_args('search', auth, True)
+            for a in [i in ids for i in result]:
+                assert a
 
 
-def test_get_item_uuid_w_uuid(connection):
+def test_get_item_uuid_w_uuid(auth):
     uid = '7868f960-50ac-11e4-916c-0800200c9a66'
-    result = scu.get_item_uuid(uid, connection)
+    result = scu.get_item_uuid(uid, auth)
     assert result == uid
 
 
-def test_get_item_uuid_w_atid(mocker, connection):
+def test_get_item_uuid_w_atid(mocker, auth):
     atid = '/labs/test-lab'
-    with mocker.patch('dcicutils.submit_utils.get_FDN',
+    with mocker.patch('scripts.script_utils.get_metadata',
                       return_value={'uuid': 'test_uuid'}) as mt:
-        result = scu.get_item_uuid(atid, connection)
-        assert mt.called_with(atid, connection)
+        result = scu.get_item_uuid(atid, auth)
+        assert mt.called_with(atid, auth)
         assert result == 'test_uuid'
 
 
-def test_get_item_uuid_not_found(mocker, connection):
+def test_get_item_uuid_not_found(mocker, auth):
     atid = '/labs/non-lab'
-    with mocker.patch('dcicutils.submit_utils.get_FDN',
+    with mocker.patch('scripts.script_utils.get_metadata',
                       return_value={'status': 'error'}) as mt:
-        result = scu.get_item_uuid(atid, connection)
-        assert mt.called_with(atid, connection)
+        result = scu.get_item_uuid(atid, auth)
+        assert mt.called_with(atid, auth)
         assert result is None

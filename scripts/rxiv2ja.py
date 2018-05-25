@@ -2,8 +2,7 @@
 
 import sys
 import argparse
-from dcicutils.ff_utils import fdn_connection
-from dcicutils.submit_utils import get_FDN, patch_FDN
+from dcicutils.ff_utils import get_authentication_with_server, get_metadata, patch_metadata
 from dcicwrangling.scripts import script_utils as scu
 
 
@@ -23,7 +22,7 @@ def get_args():  # pragma: no cover
     return parser.parse_args()
 
 
-def remove_skipped_vals(val, vals2skip=None, connection=None):
+def remove_skipped_vals(val, vals2skip=None, auth=None):
     if not (val and vals2skip):
         return val
     is_string = False
@@ -32,9 +31,9 @@ def remove_skipped_vals(val, vals2skip=None, connection=None):
         is_string = True
 
     val = [v for v in val if v not in vals2skip]
-    if connection:
-        vuuids = [scu.get_item_uuid(v, connection) for v in val]
-        skuids = [scu.get_item_uuid(v, connection) for v in vals2skip]
+    if auth:
+        vuuids = [scu.get_item_uuid(v, auth) for v in val]
+        skuids = [scu.get_item_uuid(v, auth) for v in vals2skip]
         for i, v in enumerate(vuuids):
             if v is not None:
                 if v in skuids:
@@ -71,7 +70,7 @@ def move_old_url_to_new_aka(biorxiv, jarticle, patch={}, skip={}):
     return patch, skip
 
 
-def patch_and_report(connection, patch_d, skipped, uuid2patch, dryrun):
+def patch_and_report(auth, patch_d, skipped, uuid2patch, dryrun):
     # report and patch
     if dryrun:
         print('DRY RUN - nothing will be patched to database')
@@ -89,7 +88,7 @@ def patch_and_report(connection, patch_d, skipped, uuid2patch, dryrun):
 
         if not dryrun:
             # do the patch
-            res = patch_FDN(uuid2patch, connection, patch_d)
+            res = patch_metadata(patch_d, uuid2patch, auth)
             if res['status'] == 'success':
                 print("SUCCESS!")
                 return True
@@ -99,14 +98,14 @@ def patch_and_report(connection, patch_d, skipped, uuid2patch, dryrun):
     return True
 
 
-def find_and_patch_item_references(connection, olduuid, newuuid, dryrun):
+def find_and_patch_item_references(auth, olduuid, newuuid, dryrun):
     search = "type=Item&references.uuid=" + olduuid
-    itemids = scu.get_item_ids_from_args([search], connection, True)
+    itemids = scu.get_item_ids_from_args([search], auth, True)
     complete = True
     if not itemids:
         print("No references to %s found." % olduuid)
     for iid in itemids:
-        ok = patch_and_report(connection, {'references': [newuuid]}, None, iid, dryrun)
+        ok = patch_and_report(auth, {'references': [newuuid]}, None, iid, dryrun)
         if not ok and complete:
             complete = False
     return complete
@@ -115,15 +114,14 @@ def find_and_patch_item_references(connection, olduuid, newuuid, dryrun):
 def main():  # pragma: no cover
     args = get_args()
     try:
-        connection = fdn_connection(args.keyfile, keyname=args.key)
+        auth = get_authentication_with_server(args.key, args.env)
     except Exception:
-        print("Connection failed")
+        print("Authentication failed")
         sys.exit(1)
-
     dryrun = not args.dbupdate
 
-    biorxiv = get_FDN(args.old, connection)
-    jarticle = get_FDN(args.new, connection)
+    biorxiv = get_metadata(args.old, auth)
+    jarticle = get_metadata(args.new, auth)
 
     if biorxiv.get('status') == 'error':
         print('Biorxiv record %s cannot be found' % args.old)
@@ -139,14 +137,14 @@ def main():  # pragma: no cover
     patch_dict, skipped = move_old_url_to_new_aka(biorxiv, jarticle, patch_dict, skipped)
 
     # do the patch
-    ok = patch_and_report(connection, patch_dict, skipped, juuid, dryrun)
+    ok = patch_and_report(auth, patch_dict, skipped, juuid, dryrun)
 
     if not ok:
         sys.exit(1)  # bail out if initial transfer doesn't work
 
     # find items with reference to old paper
     buuid = biorxiv.get('uuid')
-    complete = find_and_patch_item_references(connection, buuid, juuid, dryrun)
+    complete = find_and_patch_item_references(auth, buuid, juuid, dryrun)
     if not complete:
         print("ALL REFERENCES POINTING TO %s NOT UPDATED - CHECK AND FIX!" % buuid)
 

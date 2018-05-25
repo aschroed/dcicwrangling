@@ -8,8 +8,7 @@ import sys
 import argparse
 import json
 from datetime import datetime
-from dcicutils.ff_utils import fdn_connection
-from dcicutils.submit_utils import patch_FDN
+from dcicutils.ff_utils import get_authentication_with_server, patch_metadata
 from dcicwrangling.scripts.script_utils import create_ff_arg_parser
 
 
@@ -31,9 +30,9 @@ def main():  # pragma: no cover
     print(str(start))
     args = get_args()
     try:
-        connection = fdn_connection(args.keyfile, keyname=args.key)
-    except Exception as e:
-        print("Connection failed")
+        auth = get_authentication_with_server(args.key, args.env)
+    except Exception:
+        print("Authentication failed")
         sys.exit(1)
 
     # assumes a single line corresponds to json for single term
@@ -44,7 +43,7 @@ def main():  # pragma: no cover
             [iid, payload] = [t.strip() for t in i.split('\t')]
             payload = json.loads(payload)
             if args.dbupdate:
-                e = patch_FDN(iid, connection, payload)
+                e = patch_metadata(payload, iid, auth)
             else:
                 print("DRY RUN\n\tPATCH: ", iid, " TO\n", payload)
                 e = {'status': 'success'}

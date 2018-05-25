@@ -20,11 +20,11 @@ def get_args():  # pragma: no cover
 def main():
     args = get_args()
     try:
-        connection = ff.fdn_connection(args.keyfile, keyname=args.key)
+        auth = ff.get_authentication_with_server(args.key, args.env)
     except Exception:
-        print("Connection failed")
+        print("Authentication failed")
         sys.exit(1)
-    itemids = scu.get_item_ids_from_args([args.query], connection, True)
+    itemids = scu.get_item_ids_from_args([args.query], auth, True)
     for itemid in itemids:
         print(itemid)
 

@@ -1,7 +1,6 @@
 import sys
 import argparse
-from dcicutils.ff_utils import fdn_connection
-from dcicutils.submit_utils import patch_FDN
+from dcicutils.ff_utils import get_authentication_with_server, patch_metadata
 from dcicwrangling.scripts import script_utils as scu
 
 
@@ -26,20 +25,19 @@ def get_args():
 def main():
     args = get_args()
     try:
-        connection = fdn_connection(args.keyfile, keyname=args.key)
+        auth = get_authentication_with_server(args.key, args.env)
     except Exception:
-        print("Connection failed")
+        print("Authentication failed")
         sys.exit(1)
-
-    id_list = scu.get_item_ids_from_args(args.input, connection, args.search)
+    itemids = scu.get_item_ids_from_args(args.input, auth, args.search)
     val = args.value
     if args.isarray:
         val = val.split("'")[1::2]
-    for iid in id_list:
+    for iid in itemids:
         print("PATCHING", iid, "to", args.field, "=", val)
         if (args.dbupdate):
             # do the patch
-            res = patch_FDN(iid, connection, {args.field: val})
+            res = patch_metadata({args.field: val}, iid, auth)
             if res['status'] == 'success':
                 print("SUCCESS!")
             else:

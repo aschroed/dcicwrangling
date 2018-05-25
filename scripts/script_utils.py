@@ -1,21 +1,19 @@
-import os
 from uuid import UUID
 import copy
 import argparse
-from dcicutils import submit_utils
-from dcicutils.ff_utils import search_metadata
+from dcicutils.ff_utils import search_metadata, get_metadata
 
 
 def create_ff_arg_parser():
     ff_arg_parser = argparse.ArgumentParser(add_help=False)
+    ff_arg_parser.add_argument('--env',
+                               default='data',
+                               help="The environment to use i.e. data, webdev, mastertest.\
+                               Default is 'data')")
     ff_arg_parser.add_argument('--key',
-                               default='default',
-                               help="The keypair identifier from the keyfile.  \
-                               Default is --key=default")
-    ff_arg_parser.add_argument('--keyfile',
-                               default=os.path.expanduser("~/keypairs.json"),
-                               help="The keypair file.  Default is --keyfile=%s" %
-                               (os.path.expanduser("~/keypairs.json")))
+                               default=None,
+                               help="An access key dictionary including key, secret and server.\
+                               {'key'='ABCDEF', 'secret'='supersecret', 'server'='https://data.4dnucleome.org'}")
     ff_arg_parser.add_argument('--dbupdate',
                                default=False,
                                action='store_true',
@@ -37,7 +35,7 @@ def create_input_arg_parser():
     return input_arg_parser
 
 
-def get_item_ids_from_args(id_input, connection, is_search=False):
+def get_item_ids_from_args(id_input, auth, is_search=False):
     '''depending on the args passed return a list of item ids'''
     if is_search:
         def search_callback(hit, results):
@@ -48,7 +46,7 @@ def get_item_ids_from_args(id_input, connection, is_search=False):
                 pass
         query = 'search/?' + id_input[0]
         results = []
-        safe_search_with_callback(connection, query, results, search_callback)
+        safe_search_with_callback(auth, query, results, search_callback)
         return list(set(results))
     try:
         with open(id_input[0]) as inf:
@@ -57,7 +55,7 @@ def get_item_ids_from_args(id_input, connection, is_search=False):
         return id_input
 
 
-def safe_search_with_callback(fdn_conn, query, container, callback, limit=20, frame='embedded'):
+def safe_search_with_callback(auth, query, container, callback, limit=20, frame='embedded'):
     """
     Somewhat temporary function to avoid making search queries that cause
     memory issues. Takes a ff_utils fdn_conn, a search query (without 'limit' or
@@ -69,8 +67,8 @@ def safe_search_with_callback(fdn_conn, query, container, callback, limit=20, fr
     curr_from = 0
     while not last_total or last_total == limit:
         print('...', curr_from)
-        search_query = ''.join([query, '&from=', str(curr_from), '&limit=', str(limit)])
-        search_res = search_metadata(search_query, connection=fdn_conn, frame=frame)
+        search_query = ''.join([query, '&from=', str(curr_from), '&limit=', str(limit)]) + '&frame=' + frame
+        search_res = search_metadata(search_query, auth)
         if not search_res:  # 0 results
             break
         last_total = len(search_res)
@@ -79,11 +77,11 @@ def safe_search_with_callback(fdn_conn, query, container, callback, limit=20, fr
             callback(hit, container)
 
 
-def get_item_uuid(iid, connection):
+def get_item_uuid(iid, auth):
     """return a uuid for an item passed another id type"""
     if is_uuid(iid):
         return iid
-    res = submit_utils.get_FDN(iid, connection)
+    res = get_metadata(iid, auth)
     return res.get('uuid')
 
 
@@ -116,11 +114,11 @@ def find_uuids(val):
     return vals
 
 
-def get_item_type(connection, item):
+def get_item_type(auth, item):
     try:
         return item['@type'].pop(0)
     except (KeyError, TypeError):
-        res = submit_utils.get_FDN(item, connection)
+        res = get_metadata(item, auth)
         try:
             return res['@type'][0]
         except AttributeError:  # noqa: E722
@@ -172,10 +170,10 @@ def has_field_value(item_dict, field, value=None, val_is_item=False):
     return False
 
 
-def get_types_that_can_have_field(connection, field):
+def get_types_that_can_have_field(auth, field):
     """find items that have the passed in fieldname in their properties
         even if there is currently no value for that field"""
-    profiles = submit_utils.get_FDN('/profiles/', connection=connection, frame='raw')
+    profiles = get_metadata('/profiles/', auth, frame='raw')
     types_w_field = []
     for t, j in profiles.items():
         if j['properties'].get(field):
@@ -183,7 +181,7 @@ def get_types_that_can_have_field(connection, field):
     return types_w_field
 
 
-def get_linked_items(connection, itemid, found_items={},
+def get_linked_items(auth, itemid, found_items={},
                      no_children=['Publication', 'Lab', 'User', 'Award']):
     """Given an ID for an item all descendant linked item uuids (as given in 'frame=raw')
         are stored in a dict with each item type as the value.
@@ -192,12 +190,13 @@ def get_linked_items(connection, itemid, found_items={},
         The relationships between descendant linked items are not preserved - i.e. you don't
         know who are children, grandchildren, great grandchildren ... """
     # import pdb; pdb.set_trace()
+    print(itemid)
     if not found_items.get(itemid):
-        res = submit_utils.get_FDN(itemid, connection=connection, frame='raw')
+        res = get_metadata(itemid, auth, frame='raw')
         if 'error' not in res['status']:
             # create an entry for this item in found_items
             try:
-                obj_type = submit_utils.get_FDN(itemid, connection=connection)['@type'][0]
+                obj_type = get_metadata(itemid, auth)['@type'][0]
                 found_items[itemid] = obj_type
             except AttributeError:  # noqa: E722
                 print("Can't find a type for item %s" % itemid)
@@ -205,6 +204,8 @@ def get_linked_items(connection, itemid, found_items={},
                 fields_to_check = copy.deepcopy(res)
                 id_list = []
                 for key, val in fields_to_check.items():
+                    if key == 'attachment':
+                        continue
                     # could be more than one item in a value
                     foundids = find_uuids(val)
                     if foundids:
@@ -212,5 +213,6 @@ def get_linked_items(connection, itemid, found_items={},
                 if id_list:
                     id_list = [i for i in list(set(id_list)) if i not in found_items]
                     for uid in id_list:
-                        found_items.update(get_linked_items(connection, uid, found_items))
+                        print(uid)
+                        found_items.update(get_linked_items(auth, uid, found_items))
     return found_items

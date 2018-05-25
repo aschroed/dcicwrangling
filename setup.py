@@ -20,7 +20,7 @@ tests_require = [
 setup(
     name='dcicwrangling',
     version=open(
-        "dcicwrangling/_version.py").readlines()[-1].split()[-1].strip("\"'"),
+        "scripts/_version.py").readlines()[-1].split()[-1].strip("\"'"),
     description='4DN-DCIC Scripts for wrangling metadata and data.',
     long_description=README,
     packages=['scripts', 'notebooks'],

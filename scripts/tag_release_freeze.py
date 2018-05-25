@@ -1,8 +1,7 @@
 import sys
 import argparse
 from collections import Counter
-from dcicutils.ff_utils import fdn_connection
-from dcicutils.submit_utils import get_FDN, patch_FDN
+from dcicutils.ff_utils import get_authentication_with_server, get_metadata, patch_metadata
 from dcicwrangling.scripts import script_utils as scu
 
 
@@ -41,13 +40,13 @@ def make_tag_patch(item, tag):
     return None
 
 
-def do_patch(uid, type, patch, connection, dbupdate, cnts):
+def do_patch(uid, type, patch, auth, dbupdate, cnts):
     if not dbupdate:
         print('DRY RUN - will update %s of type %s with %s' % (uid, type, patch))
         cnts['not_patched'] += 1
         return
     # import pdb; pdb.set_trace()
-    res = patch_FDN(uid, connection, patch)
+    res = patch_metadata(patch, uid, auth)
     # res = {'status': 'testing'}
     print('UPDATING - %s of type %s with %s' % (uid, type, patch))
     rs = res['status']
@@ -60,9 +59,9 @@ def do_patch(uid, type, patch, connection, dbupdate, cnts):
     return
 
 
-def add_tag2item(connection, iid, tag, seen, cnts, itype=None, dbupdate=False):
+def add_tag2item(auth, iid, tag, seen, cnts, itype=None, dbupdate=False):
     # turns out that we do need to do a get as tags aren't embedded
-    item = get_FDN(iid, connection)
+    item = get_metadata(iid, auth)
     status = item.get('status')
     uid = item.get('uuid')
     if (not uid) or (uid in seen):
@@ -76,7 +75,7 @@ def add_tag2item(connection, iid, tag, seen, cnts, itype=None, dbupdate=False):
             attype = itype
         patch = make_tag_patch(item, tag)
         if patch:
-            do_patch(uid, attype, patch, connection, dbupdate, cnts)
+            do_patch(uid, attype, patch, auth, dbupdate, cnts)
         else:
             print('NOTHING TO PATCH - skipping %s' % uid)
             cnts['skipped'] += 1
@@ -90,26 +89,26 @@ def main():  # pragma: no cover
     args = get_args()
     dbupdate = args.dbupdate
     try:
-        connection = fdn_connection(args.keyfile, keyname=args.key)
+        auth = get_authentication_with_server(args.key, args.env)
     except Exception:
-        print("Connection failed")
+        print("Authentication failed")
         sys.exit(1)
 
     cnts = Counter()
     reltag = args.reltag
     # build the search query string
     query = 'type=DataReleaseUpdate&update_tag=' + reltag
-    relupdates = scu.get_item_ids_from_args([query], connection, True)
+    relupdates = scu.get_item_ids_from_args([query], auth, True)
     update_items = []
     for u in relupdates:
-        res = get_FDN(u, connection)
+        res = get_metadata(u, auth)
         for ui in res.get('update_items'):
             if ui.get('primary_id'):
                 update_items.append(ui['primary_id'])
     seen = []
     # update_items = ['experiment-set-replicates/4DNESOI2ALTL']
     for item in update_items:
-        res = get_FDN(item, connection)
+        res = get_metadata(item, auth)
         uid = res.get('uuid')
         type = get_attype(res)
         cnts[type] += 1
@@ -118,7 +117,7 @@ def main():  # pragma: no cover
             print("SKIPPING ", uid)
             cnts['skipped'] += 1
             continue
-        add_tag2item(connection, uid, reltag, seen, cnts, type, dbupdate)
+        add_tag2item(auth, uid, reltag, seen, cnts, type, dbupdate)
 
         if 'ExperimentSet' in type:
             # get the experiments and files
@@ -127,18 +126,18 @@ def main():  # pragma: no cover
                 cnts['Experiment'] += len(exps)
                 for exp in exps:
                     # import pdb; pdb.set_trace()
-                    add_tag2item(connection, exp, reltag, seen, cnts, 'Experiment', dbupdate)
+                    add_tag2item(auth, exp, reltag, seen, cnts, 'Experiment', dbupdate)
                     files = exp.get('files')
                     if files is not None:
                         cnts['FileFastq'] += len(files)
                         for file in files:
-                            file = add_tag2item(connection, file, reltag, seen, cnts, 'FileFastq', dbupdate)
+                            file = add_tag2item(auth, file, reltag, seen, cnts, 'FileFastq', dbupdate)
                     epfiles = exp.get('processed_files')
                     # epfiles = None  # case for first freeze (no processed files included)
                     if epfiles is not None:
                         cnts['FileProcessed'] += len(epfiles)
                         for epf in epfiles:
-                            add_tag2item(connection, epf, reltag, seen, cnts, 'FileProcessed', dbupdate)
+                            add_tag2item(auth, epf, reltag, seen, cnts, 'FileProcessed', dbupdate)
 
             # check the processed files directly associated to the eset
             # pfiles = res.get('procesed_files')
@@ -146,7 +145,7 @@ def main():  # pragma: no cover
             if pfiles is not None:
                 cnts['FileProcessed'] += len(pfiles)
                 for pf in pfiles:
-                    add_tag2item(connection, pf, reltag, seen, cnts, 'FileProcessed', dbupdate)
+                    add_tag2item(auth, pf, reltag, seen, cnts, 'FileProcessed', dbupdate)
     print(cnts)
 
 
