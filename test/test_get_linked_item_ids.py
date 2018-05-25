@@ -33,15 +33,15 @@ def test_get_excluded_w_both():
         assert ti not in types
 
 
-def test_is_released_released(mocker, connection):
-    with mocker.patch('scripts.get_linked_item_ids.get_FDN',
+def test_is_released_released(mocker, auth):
+    with mocker.patch('scripts.get_linked_item_ids.get_metadata',
                       return_value={'status': 'released'}):
-        ans = gli.is_released('iid', connection)
+        ans = gli.is_released('iid', auth)
         assert ans is True
 
 
-def test_is_released_not_released(mocker, connection):
-    with mocker.patch('scripts.get_linked_item_ids.get_FDN',
+def test_is_released_not_released(mocker, auth):
+    with mocker.patch('scripts.get_linked_item_ids.get_metadata',
                       return_value={'status': 'deleted'}):
-        ans = gli.is_released('iid', connection)
+        ans = gli.is_released('iid', auth)
         assert not ans

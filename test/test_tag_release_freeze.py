@@ -57,85 +57,85 @@ def test_make_tag_patch_w_existing_tags(mocker):
         assert 'old_tag' in result['tags']
 
 
-def test_do_patch_dry_run(capsys, connection):
+def test_do_patch_dry_run(capsys, auth):
     input = ['test_uuid', 'Item', {'tags': ['test_tag']}]
     output = 'DRY RUN - will update %s of type %s with %s\n' % tuple(input)
     cnts = Counter()
-    trf.do_patch(*input, connection, False, cnts)
+    trf.do_patch(*input, auth, False, cnts)
     out = capsys.readouterr()[0]
     assert out == output
     assert cnts['not_patched'] == 1
 
 
-def test_do_patch_success(capsys, mocker, connection):
+def test_do_patch_success(capsys, mocker, auth):
     input = ['test_uuid', 'Item', {'tags': ['test_tag']}]
     output = 'UPDATING - %s of type %s with %s\nsuccess\n' % tuple(input)
     cnts = Counter()
-    with mocker.patch('scripts.tag_release_freeze.patch_FDN', return_value={'status': 'success'}):
-        trf.do_patch(*input, connection, True, cnts)
+    with mocker.patch('scripts.tag_release_freeze.patch_metadata', return_value={'status': 'success'}):
+        trf.do_patch(*input, auth, True, cnts)
         out = capsys.readouterr()[0]
         assert out == output
         assert cnts['patched'] == 1
 
 
-def test_do_patch_failure(capsys, mocker, connection):
+def test_do_patch_failure(capsys, mocker, auth):
     input = ['test_uuid', 'Item', {'tags': ['test_tag']}]
     err = {'status': 'error'}
     output = 'UPDATING - %s of type %s with %s\n%s\n%s\n' % tuple(input + [err['status'], str(err)])
     cnts = Counter()
-    with mocker.patch('scripts.tag_release_freeze.patch_FDN', return_value=err):
-        trf.do_patch(*input, connection, True, cnts)
+    with mocker.patch('scripts.tag_release_freeze.patch_metadata', return_value=err):
+        trf.do_patch(*input, auth, True, cnts)
         out = capsys.readouterr()[0]
         assert out == output
         assert cnts['errors'] == 1
 
 
-def test_add_tag2item_no_uid(capsys, mocker, connection):
-    with mocker.patch('scripts.tag_release_freeze.get_FDN', return_value={'status': 'released'}):
-        trf.add_tag2item(connection, 'iid', 'test_tag', [], Counter())
+def test_add_tag2item_no_uid(capsys, mocker, auth):
+    with mocker.patch('scripts.tag_release_freeze.get_metadata', return_value={'status': 'released'}):
+        trf.add_tag2item(auth, 'iid', 'test_tag', [], Counter())
         out = capsys.readouterr()[0]
         assert "SEEN OR IDLESS ITEM - SKIPPING" in out
 
 
-def test_add_tag2item_in_seen(capsys, mocker, connection):
-    with mocker.patch('scripts.tag_release_freeze.get_FDN', return_value={'status': 'released', 'uuid': 'test_uuid'}):
-        trf.add_tag2item(connection, 'iid', 'test_tag', ['test_uuid'], Counter())
+def test_add_tag2item_in_seen(capsys, mocker, auth):
+    with mocker.patch('scripts.tag_release_freeze.get_metadata', return_value={'status': 'released', 'uuid': 'test_uuid'}):
+        trf.add_tag2item(auth, 'iid', 'test_tag', ['test_uuid'], Counter())
         out = capsys.readouterr()[0]
         assert "SEEN OR IDLESS ITEM - SKIPPING" in out
 
 
-def test_add_tag2item_add_the_tag(mocker, connection):
+def test_add_tag2item_add_the_tag(mocker, auth):
     seen = []
     cnts = Counter()
-    with mocker.patch('scripts.tag_release_freeze.get_FDN', return_value={'status': 'released', 'uuid': 'test_uuid'}):
+    with mocker.patch('scripts.tag_release_freeze.get_metadata', return_value={'status': 'released', 'uuid': 'test_uuid'}):
         with mocker.patch('scripts.tag_release_freeze.has_released', return_value=True):
             with mocker.patch('scripts.tag_release_freeze.get_attype', return_value=None):
                 with mocker.patch('scripts.tag_release_freeze.make_tag_patch', return_value={'tags': ['test_tag']}):
                     with mocker.patch('scripts.tag_release_freeze.do_patch'):
-                        trf.add_tag2item(connection, 'iid', 'test_tag', seen, cnts, 'Biosample', True)
+                        trf.add_tag2item(auth, 'iid', 'test_tag', seen, cnts, 'Biosample', True)
                         assert 'test_uuid' in seen
 
 
-def test_add_tag2item_no_patch(capsys, mocker, connection):
+def test_add_tag2item_no_patch(capsys, mocker, auth):
     seen = []
     cnts = Counter()
-    with mocker.patch('scripts.tag_release_freeze.get_FDN', return_value={'status': 'released', 'uuid': 'test_uuid'}):
+    with mocker.patch('scripts.tag_release_freeze.get_metadata', return_value={'status': 'released', 'uuid': 'test_uuid'}):
         with mocker.patch('scripts.tag_release_freeze.has_released', return_value=True):
             with mocker.patch('scripts.tag_release_freeze.get_attype', return_value=None):
                 with mocker.patch('scripts.tag_release_freeze.make_tag_patch', return_value=None):
-                    trf.add_tag2item(connection, 'iid', 'test_tag', seen, cnts, 'Biosample', True)
+                    trf.add_tag2item(auth, 'iid', 'test_tag', seen, cnts, 'Biosample', True)
                     out = capsys.readouterr()[0]
                     assert out == 'NOTHING TO PATCH - skipping test_uuid\n'
                     assert cnts['skipped'] == 1
                     assert 'test_uuid' in seen
 
 
-def test_add_tag2item_not_released(capsys, mocker, connection):
+def test_add_tag2item_not_released(capsys, mocker, auth):
     seen = []
     cnts = Counter()
-    with mocker.patch('scripts.tag_release_freeze.get_FDN', return_value={'status': 'deleted', 'uuid': 'test_uuid'}):
+    with mocker.patch('scripts.tag_release_freeze.get_metadata', return_value={'status': 'deleted', 'uuid': 'test_uuid'}):
         with mocker.patch('scripts.tag_release_freeze.has_released', return_value=False):
-            trf.add_tag2item(connection, 'iid', 'test_tag', seen, cnts, 'Biosample', True)
+            trf.add_tag2item(auth, 'iid', 'test_tag', seen, cnts, 'Biosample', True)
             out = capsys.readouterr()[0]
             assert out == "STATUS deleted doesn't get tagged - skipping test_uuid\n"
             assert cnts['skipped'] == 1

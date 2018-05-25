@@ -199,22 +199,22 @@ def pdict():
     }
 
 
-def test_patch_and_report_w_dryrun_no_data(capsys, connection):
-    result = rj.patch_and_report(connection, None, None, None, True)
+def test_patch_and_report_w_dryrun_no_data(capsys, auth):
+    result = rj.patch_and_report(auth, None, None, None, True)
     out = capsys.readouterr()[0]
     assert 'DRY RUN - nothing will be patched to database' in out
     assert 'NOTHING TO PATCH - ALL DONE!' in out
     assert result is True
 
 
-def test_patch_and_report_w_skipped_no_patch(capsys, connection):
+def test_patch_and_report_w_skipped_no_patch(capsys, auth):
     skip = {
         'published_by': {'old': 'external', 'new': '4DN'},
         'categories': {'old': ['basic science'], 'new': ['methods']}
     }
     s1 = 'Field: published_by\tHAS: 4DN\tNOT ADDED: external'
     s2 = "Field: categories\tHAS: ['methods']\tNOT ADDED: ['basic science']"
-    result = rj.patch_and_report(connection, None, skip, 'test_uuid', False)
+    result = rj.patch_and_report(auth, None, skip, 'test_uuid', False)
     out = capsys.readouterr()[0]
     assert 'WARNING! - SKIPPING for test_uuid' in out
     assert s1 in out
@@ -223,9 +223,9 @@ def test_patch_and_report_w_skipped_no_patch(capsys, connection):
     assert result is True
 
 
-def test_patch_and_report_w_patch(capsys, mocker, connection, pdict):
-    with mocker.patch('scripts.rxiv2ja.patch_FDN', return_value={'status': 'success'}):
-        result = rj.patch_and_report(connection, pdict, None, 'test_uuid', False)
+def test_patch_and_report_w_patch(capsys, mocker, auth, pdict):
+    with mocker.patch('scripts.rxiv2ja.patch_metadata', return_value={'status': 'success'}):
+        result = rj.patch_and_report(auth, pdict, None, 'test_uuid', False)
         out = capsys.readouterr()[0]
         assert 'PATCHING - test_uuid' in out
         for k, v in pdict.items():
@@ -235,9 +235,9 @@ def test_patch_and_report_w_patch(capsys, mocker, connection, pdict):
         assert result is True
 
 
-def test_patch_and_report_w_fail(capsys, mocker, connection, pdict):
-    with mocker.patch('scripts.rxiv2ja.patch_FDN', return_value={'status': 'error', 'description': 'woopsie'}):
-        result = rj.patch_and_report(connection, pdict, None, 'test_uuid', False)
+def test_patch_and_report_w_fail(capsys, mocker, auth, pdict):
+    with mocker.patch('scripts.rxiv2ja.patch_metadata', return_value={'status': 'error', 'description': 'woopsie'}):
+        result = rj.patch_and_report(auth, pdict, None, 'test_uuid', False)
         out = capsys.readouterr()[0]
         assert 'PATCHING - test_uuid' in out
         for k, v in pdict.items():
@@ -248,30 +248,30 @@ def test_patch_and_report_w_fail(capsys, mocker, connection, pdict):
         assert not result
 
 
-def test_find_and_patch_item_references_no_refs(capsys, mocker, connection):
+def test_find_and_patch_item_references_no_refs(capsys, mocker, auth):
     old_uuid = 'old_uuid'
     new_uuid = 'new_uuid'
     output = "No references to %s found." % old_uuid
     with mocker.patch('scripts.rxiv2ja.scu.get_item_ids_from_args', return_value=[]):
-        result = rj.find_and_patch_item_references(connection, old_uuid, new_uuid, False)
+        result = rj.find_and_patch_item_references(auth, old_uuid, new_uuid, False)
         out = capsys.readouterr()[0]
         assert output in out
         assert result is True
 
 
-def test_find_and_patch_item_references_w_refs(mocker, connection):
+def test_find_and_patch_item_references_w_refs(mocker, auth):
     old_uuid = 'old_uuid'
     new_uuid = 'new_uuid'
     with mocker.patch('scripts.rxiv2ja.scu.get_item_ids_from_args', return_value=['bs_uuid', 'ex_uuid']):
         with mocker.patch('scripts.rxiv2ja.patch_and_report', side_effect=[True, True]):
-            result = rj.find_and_patch_item_references(connection, old_uuid, new_uuid, False)
+            result = rj.find_and_patch_item_references(auth, old_uuid, new_uuid, False)
             assert result is True
 
 
-def test_find_and_patch_item_references_w_refs_one_fail(mocker, connection):
+def test_find_and_patch_item_references_w_refs_one_fail(mocker, auth):
     old_uuid = 'old_uuid'
     new_uuid = 'new_uuid'
     with mocker.patch('scripts.rxiv2ja.scu.get_item_ids_from_args', return_value=['bs_uuid', 'ex_uuid1', 'ex_uuid2']):
         with mocker.patch('scripts.rxiv2ja.patch_and_report', side_effect=[True, False, True]):
-            result = rj.find_and_patch_item_references(connection, old_uuid, new_uuid, False)
+            result = rj.find_and_patch_item_references(auth, old_uuid, new_uuid, False)
             assert not result
