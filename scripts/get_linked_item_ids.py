@@ -65,7 +65,6 @@ def main():  # pragma: no cover
     all_linked_ids = []
     # main loop through the top level item ids
     for itemid in itemids:
-        print(itemid)
         linked = scu.get_linked_items(auth, itemid, {})
         if excluded_types is not None:
             linked = scu.filter_dict_by_value(linked, excluded_types, include=False)
