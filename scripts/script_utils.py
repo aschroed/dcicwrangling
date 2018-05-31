@@ -189,8 +189,6 @@ def get_linked_items(auth, itemid, found_items={},
         in the no_children argument.
         The relationships between descendant linked items are not preserved - i.e. you don't
         know who are children, grandchildren, great grandchildren ... """
-    # import pdb; pdb.set_trace()
-    print(itemid)
     if not found_items.get(itemid):
         res = get_metadata(itemid, auth, frame='raw')
         if 'error' not in res['status']:
@@ -213,6 +211,5 @@ def get_linked_items(auth, itemid, found_items={},
                 if id_list:
                     id_list = [i for i in list(set(id_list)) if i not in found_items]
                     for uid in id_list:
-                        print(uid)
                         found_items.update(get_linked_items(auth, uid, found_items))
     return found_items
