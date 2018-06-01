@@ -189,6 +189,8 @@ def get_linked_items(auth, itemid, found_items={},
         in the no_children argument.
         The relationships between descendant linked items are not preserved - i.e. you don't
         know who are children, grandchildren, great grandchildren ... """
+    unk = 'Unknown'
+    no_children.append(unk)
     if not found_items.get(itemid):
         res = get_metadata(itemid, auth, frame='raw')
         if 'error' not in res['status']:
@@ -196,8 +198,9 @@ def get_linked_items(auth, itemid, found_items={},
             try:
                 obj_type = get_metadata(itemid, auth)['@type'][0]
                 found_items[itemid] = obj_type
-            except AttributeError:  # noqa: E722
+            except (AttributeError, KeyError):  # noqa: E722
                 print("Can't find a type for item %s" % itemid)
+                obj_type = unk
             if obj_type not in no_children:
                 fields_to_check = copy.deepcopy(res)
                 id_list = []

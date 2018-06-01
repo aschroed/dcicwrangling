@@ -22,7 +22,7 @@ def is_released(itemid, auth):
     return False
 
 
-def get_args():  # pragma: no cover
+def get_args(args):  # pragma: no cover
     parser = argparse.ArgumentParser(
         description='Add a tag to provided items (and optionally their children)',
         parents=[scu.create_input_arg_parser(), scu.create_ff_arg_parser()],
@@ -45,12 +45,12 @@ def get_args():  # pragma: no cover
                         action='store_true',
                         help='Normally released items are skipped \
                         - this flag includes them in the final list'),
-    args = parser.parse_args()
+    args = parser.parse_args(args)
     return args
 
 
 def main():  # pragma: no cover
-    args = get_args()
+    args = get_args(sys.argv[1:])
     try:
         auth = get_authentication_with_server(args.key, args.env)
     except Exception:

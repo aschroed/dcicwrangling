@@ -1,5 +1,6 @@
 import pytest
 from scripts import script_utils as scu
+import argparse
 
 
 @pytest.fixture
@@ -220,3 +221,70 @@ def test_get_item_uuid_not_found(mocker, auth):
         result = scu.get_item_uuid(atid, auth)
         assert mt.called_with(atid, auth)
         assert result is None
+
+
+def test_create_ff_arg_parser(capsys):
+    helpout = ['--env', '--key', '--dbupdate']
+    parser = scu.create_ff_arg_parser()
+    assert isinstance(parser, argparse.ArgumentParser)
+    parser.print_help()
+    out = capsys.readouterr()[0]
+    for o in helpout:
+        assert o in out
+
+
+def test_create_input_arg_parser(capsys):
+    helpout = ['input', '--search']
+    parser = scu.create_input_arg_parser()
+    assert isinstance(parser, argparse.ArgumentParser)
+    parser.print_help()
+    out = capsys.readouterr()[0]
+    for o in helpout:
+        assert o in out
+
+
+def test_get_linked_items_w_item_in_found(auth):
+    itemid = 'itemid'
+    found_items = {itemid: 1}
+    iid = scu.get_linked_items(auth, itemid, found_items)
+    assert itemid in iid
+
+
+def test_get_linked_items_w_error_status(auth, mocker):
+    with mocker.patch('scripts.script_utils.get_metadata', return_value={'status': 'error'}):
+        iids = scu.get_linked_items(auth, 'test_id')
+        assert not iids
+
+
+def test_get_linked_items_w_no_type(auth, mocker):
+    with mocker.patch('scripts.script_utils.get_metadata',
+                      side_effect=[{'status': 'released'},
+                                   {'field': 'value'}]):
+        iids = scu.get_linked_items(auth, 'test_id')
+        assert not iids
+
+
+def test_get_linked_items_w_type_in_no_children(auth, mocker):
+    with mocker.patch('scripts.script_utils.get_metadata',
+                      side_effect=[{'status': 'current'},
+                                   {'@type': ['Publication']}]):
+        iids = scu.get_linked_items(auth, 'test_id')
+        assert iids['test_id'] == 'Publication'
+
+
+def test_get_linked_items_w_linked_items(auth, mocker):
+    goodids = ['test_id', '7256801c-9c6e-4563-a97a-a295fccf5f07']
+    badids = ['6256801c-9c6e-4563-a97a-a295fccf5f07']
+    resp1 = {
+        'status': 'released',
+        '@type': ['Biosample', 'Item'],
+        'biosource': '7256801c-9c6e-4563-a97a-a295fccf5f07',
+        'attachment': '6256801c-9c6e-4563-a97a-a295fccf5f07'
+    }
+    found = {'7256801c-9c6e-4563-a97a-a295fccf5f07': 'Biosource'}
+    with mocker.patch('scripts.script_utils.get_metadata',
+                      side_effect=[resp1,
+                                   {'@type': ['Biosample']}]):
+        with mocker.patch('scripts.script_utils.find_uuids',
+                          return_value=['7256801c-9c6e-4563-a97a-a295fccf5f07']):
+            iids = scu.get_linked_items(auth, 'test_id', found)
