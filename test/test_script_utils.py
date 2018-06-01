@@ -1,6 +1,7 @@
 import pytest
 from scripts import script_utils as scu
 import argparse
+from collections import OrderedDict
 
 
 @pytest.fixture
@@ -288,3 +289,46 @@ def test_get_linked_items_w_linked_items(auth, mocker):
         with mocker.patch('scripts.script_utils.find_uuids',
                           return_value=['7256801c-9c6e-4563-a97a-a295fccf5f07']):
             iids = scu.get_linked_items(auth, 'test_id', found)
+            for i in iids:
+                assert i in goodids
+                assert i not in badids
+
+
+def test_get_linked_item_ids_w_recursive(auth, mocker):
+    goodids = ['test_id', '7256801c-9c6e-4563-a97a-a295fccf5f07', '5256801c-9c6e-4563-a97a-a295fccf5f07']
+    badids = ['6256801c-9c6e-4563-a97a-a295fccf5f07']
+    resp1 = {
+        'status': 'released',
+        '@type': ['Biosample', 'Item'],
+        'biosource': '7256801c-9c6e-4563-a97a-a295fccf5f07',
+        'attachment': '6256801c-9c6e-4563-a97a-a295fccf5f07'
+    }
+    resp1 = OrderedDict(sorted(resp1.items(), key=lambda t: t[0]))
+    resp2 = {
+        'status': 'released',
+        '@type': ['Biosource', 'Item'],
+        'biosource_vendor': '5256801c-9c6e-4563-a97a-a295fccf5f07'
+    }
+    resp2 = OrderedDict(sorted(resp2.items(), key=lambda t: t[0]))
+    resp3 = {
+        'status': 'released',
+    }
+    with mocker.patch('scripts.script_utils.get_metadata',
+                      side_effect=[resp1,
+                                   {'@type': ['Biosample']},
+                                   resp2,
+                                   {'@type': ['Biosource']},
+                                   resp3,
+                                   {'@type': ['Vendor']}]):
+        with mocker.patch('scripts.script_utils.find_uuids',
+                          side_effect=[None,
+                                       ['7256801c-9c6e-4563-a97a-a295fccf5f07'],
+                                       None,
+                                       None,
+                                       ['5256801c-9c6e-4563-a97a-a295fccf5f07'],
+                                       None,
+                                       None]):
+            iids = scu.get_linked_items(auth, 'test_id')
+            for i in iids:
+                assert i in goodids
+                assert i not in badids

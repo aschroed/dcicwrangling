@@ -48,6 +48,5 @@ def test_is_released_not_released(mocker, auth):
 
 
 def test_get_args_w_required():
-    import pdb; pdb.set_trace()
     args = gli.get_args('id')
-    assert False
+    assert args
