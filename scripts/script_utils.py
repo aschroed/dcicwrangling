@@ -39,7 +39,8 @@ def get_item_ids_from_args(id_input, auth, is_search=False):
     '''depending on the args passed return a list of item ids'''
     if is_search:
         query = 'search/?' + id_input[0]
-        return search_metadata(query, auth)
+        result = search_metadata(query, auth)
+        return [r.get('uuid') for r in result]
     try:
         with open(id_input[0]) as inf:
             return [l.strip() for l in inf]  # pragma: no cover
