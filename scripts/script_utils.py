@@ -42,7 +42,7 @@ def get_item_ids_from_args(id_input, auth, is_search=False):
         return search_metadata(query, auth)
     try:
         with open(id_input[0]) as inf:
-            return [l.strip() for l in inf]
+            return [l.strip() for l in inf]  # pragma: no cover
     except FileNotFoundError:
         return id_input
 
@@ -91,7 +91,7 @@ def get_item_type(auth, item):
         res = get_metadata(item, auth)
         try:
             return res['@type'][0]
-        except AttributeError:  # noqa: E722
+        except (AttributeError, KeyError):  # noqa: E722
             print("Can't find a type for item %s" % item)
     return None
 
@@ -120,7 +120,10 @@ def has_field_value(item_dict, field, value=None, val_is_item=False):
         return True
 
     # now checking value
-    val_in_item = item_dict.get(field)
+    try:
+        val_in_item = item_dict.get(field)
+    except AttributeError:
+        return False
 
     if isinstance(val_in_item, list):
         if value in val_in_item:
@@ -132,11 +135,10 @@ def has_field_value(item_dict, field, value=None, val_is_item=False):
     # only check dict val_is_item param is True and only
     # check @id and link_id - uuid raw format will have been
     # checked above
-    if val_in_item:
-        if isinstance(val_in_item, dict):
-            ids = [val_in_item.get('@id'), val_in_item.get('link_id')]
-            if value in ids:
-                return True
+    if val_is_item:
+        ids = [val_in_item.get('@id'), val_in_item.get('link_id')]
+        if value in ids:
+            return True
     return False
 
 
@@ -184,5 +186,5 @@ def get_linked_items(auth, itemid, found_items={},
                 if id_list:
                     id_list = [i for i in list(set(id_list)) if i not in found_items]
                     for uid in id_list:
-                        found_items.update(get_linked_items(auth, uid, found_items))
+                        found_items.update(get_linked_items(auth, uid, found_items))  # pragma: no cover
     return found_items

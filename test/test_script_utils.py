@@ -151,7 +151,29 @@ def test_has_field_value_check_for_field_and_value(eset_json):
 def test_has_field_value_check_for_field_w_item(bs_embed_json):
     f = "lab"
     v = "/labs/david-gilbert-lab/"
-    assert scu.has_field_value(bs_embed_json, f, v)
+    assert scu.has_field_value(bs_embed_json, f, v, True)
+
+
+def test_has_field_value_check_for_field_w_item_not_found(bs_embed_json):
+    f = "lab"
+    v = "/labs/nobodys-lab/"
+    assert not scu.has_field_value(bs_embed_json, f, v, True)
+
+
+def test_has_field_value_check_for_field_w_item_no_dict():
+    f = "b"
+    v = "/labs/david-gilbert-lab/"
+    assert not scu.has_field_value('blah', f, v, True)
+
+
+def test_has_field_value_value_not_found_in_list(eset_json):
+    not_found = 'unfound'
+    assert not scu.has_field_value(eset_json, 'experiments_in_set', not_found)
+
+
+def test_has_field_value_value_not_found_as_string(eset_json):
+    not_found = 'unfound'
+    assert not scu.has_field_value(eset_json, 'status', not_found)
 
 
 def test_get_types_that_can_have_field(mocker, profiles):
@@ -169,10 +191,17 @@ def test_get_item_type_from_dict(eset_json):
 
 
 def test_get_item_type_from_id(mocker, auth):
-
     with mocker.patch('scripts.script_utils.get_metadata', return_value={'@type': ['ExperimentSetReplicate']}):
         result = scu.get_item_type(auth, 'blah')
         assert result == 'ExperimentSetReplicate'
+
+
+def test_get_item_type_no_type(mocker, auth, capsys):
+    with mocker.patch('scripts.script_utils.get_metadata', return_value={'description': 'blah'}):
+        result = scu.get_item_type(auth, 'blah')
+        out = capsys.readouterr()[0]
+        assert out == "Can't find a type for item blah\n"
+        assert result is None
 
 
 @pytest.fixture
@@ -288,6 +317,27 @@ def test_get_linked_items_w_linked_items(auth, mocker):
                                    {'@type': ['Biosample']}]):
         with mocker.patch('scripts.script_utils.find_uuids',
                           return_value=['7256801c-9c6e-4563-a97a-a295fccf5f07']):
+            iids = scu.get_linked_items(auth, 'test_id', found)
+            for i in iids:
+                assert i in goodids
+                assert i not in badids
+
+
+def test_get_linked_items_w_no_linked_foundids(auth, mocker):
+    goodids = ['test_id']
+    badids = ['6256801c-9c6e-4563-a97a-a295fccf5f07']
+    resp1 = {
+        'status': 'released',
+        '@type': ['Biosample', 'Item'],
+        'biosource': '7256801c-9c6e-4563-a97a-a295fccf5f07',
+        'attachment': '6256801c-9c6e-4563-a97a-a295fccf5f07'
+    }
+    found = {}
+    with mocker.patch('scripts.script_utils.get_metadata',
+                      side_effect=[resp1,
+                                   {'@type': ['Biosample']}]):
+        with mocker.patch('scripts.script_utils.find_uuids',
+                          return_value=None):
             iids = scu.get_linked_items(auth, 'test_id', found)
             for i in iids:
                 assert i in goodids
