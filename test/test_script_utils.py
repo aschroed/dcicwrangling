@@ -193,7 +193,7 @@ def test_get_item_ids_from_list(auth):
 
 def test_get_item_ids_from_search(mocker, auth, items_w_uuids):
     ids = ['a', 'b', 'c']
-    with mocker.patch('scripts.script_utils.safe_search_with_callback', return_value=[]):
+    with mocker.patch('scripts.script_utils.search_metadata', return_value=[]):
         with mocker.patch('scripts.script_utils.get_metadata', return_value=items_w_uuids):
             result = scu.get_item_ids_from_args('search', auth, True)
             for a in [i in ids for i in result]:

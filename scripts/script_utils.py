@@ -38,43 +38,13 @@ def create_input_arg_parser():
 def get_item_ids_from_args(id_input, auth, is_search=False):
     '''depending on the args passed return a list of item ids'''
     if is_search:
-        def search_callback(hit, results):
-            try:
-                hit.get('uuid')
-                results.append(hit.get('uuid'))
-            except AttributeError:
-                pass
         query = 'search/?' + id_input[0]
-        results = []
-        safe_search_with_callback(auth, query, results, search_callback)
-        return list(set(results))
+        return search_metadata(query, auth)
     try:
         with open(id_input[0]) as inf:
             return [l.strip() for l in inf]
     except FileNotFoundError:
         return id_input
-
-
-def safe_search_with_callback(auth, query, container, callback, limit=20, frame='embedded'):
-    """
-    Somewhat temporary function to avoid making search queries that cause
-    memory issues. Takes a ff_utils fdn_conn, a search query (without 'limit' or
-    'from' parameters), a container to put search results in after running
-    them through a given callback function, which should take a search hit as
-    its first parameter and the container as its second parameter.
-    """
-    last_total = None
-    curr_from = 0
-    while not last_total or last_total == limit:
-        print('...', curr_from)
-        search_query = ''.join([query, '&from=', str(curr_from), '&limit=', str(limit)]) + '&frame=' + frame
-        search_res = search_metadata(search_query, auth)
-        if not search_res:  # 0 results
-            break
-        last_total = len(search_res)
-        curr_from += last_total
-        for hit in search_res:
-            callback(hit, container)
 
 
 def get_item_uuid(iid, auth):

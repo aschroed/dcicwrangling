@@ -47,6 +47,13 @@ def test_is_released_not_released(mocker, auth):
         assert not ans
 
 
+def test_is_released_no_status(mocker, auth):
+    with mocker.patch('scripts.get_linked_item_ids.get_metadata',
+                      return_value={'description': 'blah'}):
+        ans = gli.is_released('iid', auth)
+        assert not ans
+
+
 def test_get_args_w_required():
     args = gli.get_args('id')
     assert args
