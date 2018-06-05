@@ -22,7 +22,7 @@ def is_released(itemid, auth):
     return False
 
 
-def get_args(args):  # pragma: no cover
+def get_args(args):
     parser = argparse.ArgumentParser(
         description='Add a tag to provided items (and optionally their children)',
         parents=[scu.create_input_arg_parser(), scu.create_ff_arg_parser()],
