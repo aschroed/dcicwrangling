@@ -14,7 +14,7 @@ There will be a prompt to enter an email address when this script is run.
 import argparse
 import re
 import sys
-from numpy import mean
+from statistics import mean
 from urllib import request
 import xml.etree.ElementTree as ET
 import xlrd
@@ -480,8 +480,7 @@ def main(types=valid_types):
                         default='', action="store")
     parser.add_argument('-a', '--alias', help="Alias prefix, default is '4dn-dcic-lab'",
                         action="store", default="4dn-dcic-lab")
-    parser.add_argument('-t', '--type',
-                        help="Type of experiment in series. Accepted types: \
+    parser.add_argument('-t', '--type', help="Type of experiment in series. Accepted types: \
                         HiC, ChIP-seq, RNA-seq, TSA-seq, ATAC-seq, DamID, Repliseq. \
                         By default experiment type is parsed from SRA records, \
                         but this option is useful when parsing isn't straightforward. \
