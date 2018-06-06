@@ -68,8 +68,8 @@ def find_geo_ids(acc):
         ids = [item.text for item in geo_xml.find('IdList')]
         gse_ids = [item for item in ids if item.startswith('2')]
         if gse_ids:
-            soft = request.urlopen('https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=' +
-                                    acc + '&form=text&view=full')
+            soft = request.urlopen('https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=' + acc +
+                                   '&form=text&view=full')
             gse = soft.read().decode('utf-8').split('\r\n')
             for line in gse:
                 if line.startswith('!Series_type = '):
@@ -187,7 +187,7 @@ def get_fastq_table(geo_acc, lab_alias, outf):
             if exp.layout == 'single':  # single end reads
                 for run in exp.runs:
                     outfile.write('%s:%s_fq\t%s\tfastq\t \t \t \t%s\t%s\t%s\n' %
-                                  (lab_alias, run,exp.title, str(exp.length), exp.instrument, run))
+                                  (lab_alias, run, exp.title, str(exp.length), exp.instrument, run))
             elif exp.layout == 'paired':  # paired end reads
                 for run in exp.runs:
                     outfile.write('%s:%s_fq1\t%s\tfastq\t1\t \t \t%s\t%s\t%s\n' %
@@ -218,7 +218,7 @@ def get_bs_table(geo_acc, lab_alias, outf):
     - find biosample record(s) for each experiment
     - return alias, biosample accession, what else?
     '''
-    geo_ids = find_GEO_ids(geo_acc)
+    geo_ids = find_geo_ids(geo_acc)
     biosamples = [parse_bs_record(geo_id) for geo_id in geo_ids]
     with open(outf, 'w') as outfile:
         for biosample in biosamples:
@@ -471,9 +471,8 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
 
 
 def main(types=valid_types):
-    parser = argparse.ArgumentParser(
-            description="Add GEO metadata to a submit4dn metadata workbook.",
-            formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(description="Add GEO metadata to a submit4dn metadata workbook.", 
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('geo_accession', help="GEO accession", action="store")
     parser.add_argument('-i', '--infile', help="Input xls file",
                         action="store", required=True)
