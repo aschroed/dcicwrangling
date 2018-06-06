@@ -18,7 +18,6 @@ from numpy import mean
 from urllib import request
 import xml.etree.ElementTree as ET
 import xlrd
-import xlwt
 from xlutils.copy import copy
 from Bio import Entrez
 
@@ -471,7 +470,7 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
 
 
 def main(types=valid_types):
-    parser = argparse.ArgumentParser(description="Add GEO metadata to a submit4dn metadata workbook.", 
+    parser = argparse.ArgumentParser(description="Add GEO metadata to a submit4dn metadata workbook.",
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('geo_accession', help="GEO accession", action="store")
     parser.add_argument('-i', '--infile', help="Input xls file",
