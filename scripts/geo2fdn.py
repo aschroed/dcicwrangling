@@ -475,13 +475,18 @@ def main(types=valid_types):
     parser.add_argument('geo_accession', help="GEO accession", action="store")
     parser.add_argument('-i', '--infile', help="Input xls file",
                         action="store", required=True)
-    parser.add_argument('-o', '--outfile', help="Output xls file",
+    parser.add_argument('-o', '--outfile', help="Output xls file - default output \
+                        filename will be GEO accession with xls extension",
                         default='', action="store")
-    parser.add_argument('-a', '--alias', help="Alias prefix, example: '4dn-dcic-lab'",
+    parser.add_argument('-a', '--alias', help="Alias prefix, default is '4dn-dcic-lab'",
                         action="store", default="4dn-dcic-lab")
     parser.add_argument('-t', '--type',
                         help="Type of experiment in series. Accepted types: \
-                        HiC, ChIP-seq, RNA-seq, TSA-seq, ATAC-seq, DamID, Repliseq",
+                        HiC, ChIP-seq, RNA-seq, TSA-seq, ATAC-seq, DamID, Repliseq. \
+                        By default experiment type is parsed from SRA records, \
+                        but this option is useful when parsing isn't straightforward. \
+                        Note that only one type may be specified, so make sure GEO Series \
+                        doesn't include multiple experiment types.",
                         action="store", default=None)
     args = parser.parse_args()
     out_file = args.outfile if args.outfile else args.geo_accession + '.xls'
