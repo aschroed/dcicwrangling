@@ -69,7 +69,7 @@ def find_geo_ids(acc):
         gse_ids = [item for item in ids if item.startswith('2')]
         if gse_ids:
             soft = request.urlopen('https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=' +
-                               acc + '&form=text&view=full')
+                                    acc + '&form=text&view=full')
             gse = soft.read().decode('utf-8').split('\r\n')
             for line in gse:
                 if line.startswith('!Series_type = '):
@@ -84,9 +84,9 @@ def find_geo_ids(acc):
 def find_sra_id(geo_id):
     # finds SRA id number associated with a GEO id number
     try:
-        num = int(geo_id)
-    except:
-        raise ValueError('Input must be a string of numbers.')
+        int(geo_id)
+    except ValueError:
+        print("{} not a valid GEO id - must be a numerical string".format(geo_id))
         return
     lines = Entrez.efetch(db='gds', id=geo_id).read().split('\n')
     sra_acc = None
@@ -106,9 +106,9 @@ def parse_sra_record(sra_id, experiment_type=None):
     # takes in an SRA id, fetches the corresponding SRA record, and
     # parses it into an Experiment object
     try:
-        num = int(sra_id)
-    except:
-        raise ValueError('Input must be a string of numbers.')
+        int(sra_id)
+    except ValueError:
+        print("{} not a valid SRA id - must be a numerical string".format(sra_id))
         return
     print("Fetching SRA record...")
     handle = Entrez.efetch(db="sra", id=sra_id)
@@ -156,7 +156,7 @@ def parse_bs_record(geo_id):
     # treatments = None
     for item in bs_xml.iter("Attribute"):
         atts[item.attrib['attribute_name']] = item.text
-    for name in ['source_name','sample_name', 'gender', 'strain', 'genotype', 'cross',
+    for name in ['source_name', 'sample_name', 'gender', 'strain', 'genotype', 'cross',
                  'cell_line', 'cell line', 'tissue', 'sirna transfected', 'treatment']:
         if name in atts.keys() and atts[name].lower() != 'none':
             if atts[name] not in descr:
@@ -175,8 +175,8 @@ def get_fastq_table(geo_acc, lab_alias, outf):
     if not geo_acc.startswith('GSE') and not geo_acc.startswith('GSM'):
         raise ValueError('Input not a GEO Datasets series accession. Accession \
                          must start with GSE.')
-    geo_ids = find_GEO_ids(geo_acc)
-    sra_ids = [find_SRA_id(geo_id) for geo_id in geo_ids]
+    geo_ids = find_geo_ids(geo_acc)
+    sra_ids = [find_sra_id(geo_id) for geo_id in geo_ids]
     experiments = []
     for sra_id in sra_ids:
         # parse data from each experiment
@@ -186,22 +186,22 @@ def get_fastq_table(geo_acc, lab_alias, outf):
         for exp in experiments:
             if exp.layout == 'single':  # single end reads
                 for run in exp.runs:
-                    outfile.write('%s:%s_fq\t%s\tfastq\t \t \t \t%s\t%s\t%s\n' % (lab_alias,
-                                    run,exp.title, str(exp.length), exp.instrument, run))
+                    outfile.write('%s:%s_fq\t%s\tfastq\t \t \t \t%s\t%s\t%s\n' %
+                                  (lab_alias, run,exp.title, str(exp.length), exp.instrument, run))
             elif exp.layout == 'paired':  # paired end reads
                 for run in exp.runs:
-                    outfile.write('%s:%s_fq1\t%s\tfastq\t1\t \t \t%s\t%s\t%s\n' % (lab_alias,
-                                    run, exp.title, str(exp.length), exp.instrument, run))
-                    outfile.write('%s:%s_fq2\t%s\tfastq\t2\t \t \t%s\t%s\t%s\n' % (lab_alias,
-                                    run, exp.title, str(exp.length), exp.instrument, run))
+                    outfile.write('%s:%s_fq1\t%s\tfastq\t1\t \t \t%s\t%s\t%s\n' %
+                                  (lab_alias, run, exp.title, str(exp.length), exp.instrument, run))
+                    outfile.write('%s:%s_fq2\t%s\tfastq\t2\t \t \t%s\t%s\t%s\n' %
+                                  (lab_alias, run, exp.title, str(exp.length), exp.instrument, run))
 
 
 def get_exp_table(geo_acc, lab_alias, outf):
     if not geo_acc.startswith('GSE') and not geo_acc.startswith('GSM'):
         raise ValueError('Input not a GEO Datasets series accession. Accession \
                          must start with GSE.')
-    geo_ids = find_GEO_ids(geo_acc)
-    sra_ids = [find_SRA_id(geo_id) for geo_id in geo_ids]
+    geo_ids = find_geo_ids(geo_acc)
+    sra_ids = [find_sra_id(geo_id) for geo_id in geo_ids]
     experiments = []
     for sra_id in sra_ids:
         # parse data from each experiment
@@ -222,8 +222,8 @@ def get_bs_table(geo_acc, lab_alias, outf):
     biosamples = [parse_bs_record(geo_id) for geo_id in geo_ids]
     with open(outf, 'w') as outfile:
         for biosample in biosamples:
-            outfile.write('%s:%s\t%s\t \t \t \t \t \t \t \t \t%s\n' % (lab_alias,
-                            biosample.acc, biosample.description,  biosample.acc))
+            outfile.write('%s:%s\t%s\t \t \t \t \t \t \t \t \t%s\n' %
+                          (lab_alias, biosample.acc, biosample.description, biosample.acc))
 
 
 def create_dataset(geo_acc):
@@ -233,7 +233,7 @@ def create_dataset(geo_acc):
         print('No SRA records associated with accession. Exiting.')
         return
     gds = Dataset(geo_acc, geo_ids, [parse_sra_record(sra_id) for sra_id in sra_ids],
-                    [parse_bs_record(geo_id) for geo_id in geo_ids])
+                  [parse_bs_record(geo_id) for geo_id in geo_ids])
     return gds
 
 
@@ -338,7 +338,6 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
 
     exp_sheets = [name for name in book.sheet_names() if name.startswith('Experiment')]
     if len(exp_sheets) > 0:
-        exp_types = [experiment.exptype.lower() for experiment in gds.experiments]
 
         hic_expts = [exp for exp in gds.experiments if exp.exptype.startswith('hic') or
                      exp.exptype.startswith('dnase hic')]
@@ -386,10 +385,6 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
             #         elif entry.exptype.lower() == 'rna-seq':
             #             seq.write(row, sheet_dict_seq['*experiment_type'], 'RNA-seq')
             #         row += 1
-                # if entry.exptype == 'chip-seq':
-                #     pass
-                # if entry.exptype == 'rna-seq':
-                #     pass
         atac_expts = [exp for exp in gds.experiments if exp.exptype == 'atacseq']
         if 'ExperimentAtacseq' in book.sheet_names() and atac_expts:
             outbook = write_experiments('ExperimentAtacseq', atac_expts, alias_prefix,
@@ -488,7 +483,7 @@ def main(types=valid_types):
                         action="store", default="4dn-dcic-lab")
     parser.add_argument('-t', '--type',
                         help="Type of experiment in series. Accepted types: \
-                              HiC, ChIP-seq, RNA-seq, TSA-seq, ATAC-seq, DamID, Repliseq",
+                        HiC, ChIP-seq, RNA-seq, TSA-seq, ATAC-seq, DamID, Repliseq",
                         action="store", default=None)
     args = parser.parse_args()
     out_file = args.outfile if args.outfile else args.geo_accession + '.xls'
