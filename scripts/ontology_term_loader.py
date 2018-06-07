@@ -29,9 +29,9 @@ def get_args():  # pragma: no cover
 def get_id(term):
     id_tag = term.get('uuid')
     if not id_tag:
-        term.get('term_id')
+        id_tag = term.get('term_id')
     if not id_tag:
-        term.get('term_name')
+        id_tag = term.get('term_name')
     return id_tag
 
 

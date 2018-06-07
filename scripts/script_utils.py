@@ -38,43 +38,14 @@ def create_input_arg_parser():
 def get_item_ids_from_args(id_input, auth, is_search=False):
     '''depending on the args passed return a list of item ids'''
     if is_search:
-        def search_callback(hit, results):
-            try:
-                hit.get('uuid')
-                results.append(hit.get('uuid'))
-            except AttributeError:
-                pass
         query = 'search/?' + id_input[0]
-        results = []
-        safe_search_with_callback(auth, query, results, search_callback)
-        return list(set(results))
+        result = search_metadata(query, auth)
+        return [r.get('uuid') for r in result]
     try:
         with open(id_input[0]) as inf:
-            return [l.strip() for l in inf]
+            return [l.strip() for l in inf]  # pragma: no cover
     except FileNotFoundError:
         return id_input
-
-
-def safe_search_with_callback(auth, query, container, callback, limit=20, frame='embedded'):
-    """
-    Somewhat temporary function to avoid making search queries that cause
-    memory issues. Takes a ff_utils fdn_conn, a search query (without 'limit' or
-    'from' parameters), a container to put search results in after running
-    them through a given callback function, which should take a search hit as
-    its first parameter and the container as its second parameter.
-    """
-    last_total = None
-    curr_from = 0
-    while not last_total or last_total == limit:
-        print('...', curr_from)
-        search_query = ''.join([query, '&from=', str(curr_from), '&limit=', str(limit)]) + '&frame=' + frame
-        search_res = search_metadata(search_query, auth)
-        if not search_res:  # 0 results
-            break
-        last_total = len(search_res)
-        curr_from += last_total
-        for hit in search_res:
-            callback(hit, container)
 
 
 def get_item_uuid(iid, auth):
@@ -121,7 +92,7 @@ def get_item_type(auth, item):
         res = get_metadata(item, auth)
         try:
             return res['@type'][0]
-        except AttributeError:  # noqa: E722
+        except (AttributeError, KeyError):  # noqa: E722
             print("Can't find a type for item %s" % item)
     return None
 
@@ -150,7 +121,10 @@ def has_field_value(item_dict, field, value=None, val_is_item=False):
         return True
 
     # now checking value
-    val_in_item = item_dict.get(field)
+    try:
+        val_in_item = item_dict.get(field)
+    except AttributeError:
+        return False
 
     if isinstance(val_in_item, list):
         if value in val_in_item:
@@ -162,11 +136,10 @@ def has_field_value(item_dict, field, value=None, val_is_item=False):
     # only check dict val_is_item param is True and only
     # check @id and link_id - uuid raw format will have been
     # checked above
-    if val_in_item:
-        if isinstance(val_in_item, dict):
-            ids = [val_in_item.get('@id'), val_in_item.get('link_id')]
-            if value in ids:
-                return True
+    if val_is_item:
+        ids = [val_in_item.get('@id'), val_in_item.get('link_id')]
+        if value in ids:
+            return True
     return False
 
 
@@ -189,6 +162,8 @@ def get_linked_items(auth, itemid, found_items={},
         in the no_children argument.
         The relationships between descendant linked items are not preserved - i.e. you don't
         know who are children, grandchildren, great grandchildren ... """
+    unk = 'Unknown'
+    no_children.append(unk)
     if not found_items.get(itemid):
         res = get_metadata(itemid, auth, frame='raw')
         if 'error' not in res['status']:
@@ -196,8 +171,9 @@ def get_linked_items(auth, itemid, found_items={},
             try:
                 obj_type = get_metadata(itemid, auth)['@type'][0]
                 found_items[itemid] = obj_type
-            except AttributeError:  # noqa: E722
+            except (AttributeError, KeyError):  # noqa: E722
                 print("Can't find a type for item %s" % itemid)
+                obj_type = unk
             if obj_type not in no_children:
                 fields_to_check = copy.deepcopy(res)
                 id_list = []
@@ -211,5 +187,5 @@ def get_linked_items(auth, itemid, found_items={},
                 if id_list:
                     id_list = [i for i in list(set(id_list)) if i not in found_items]
                     for uid in id_list:
-                        found_items.update(get_linked_items(auth, uid, found_items))
+                        found_items.update(get_linked_items(auth, uid, found_items))  # pragma: no cover
     return found_items
