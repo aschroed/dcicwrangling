@@ -170,10 +170,23 @@ def parse_bs_record(geo_id):
     return bs
 
 
-def get_fastq_table(geo_acc, lab_alias, outf):
+def get_geo_table(geo_acc, outf, lab_alias='4dn-dcic-lab', email=''):
+    '''
+    Creates 3 separate tsv files containing information for fastq files,
+    experiments, and biosamples associated with a GEO accession.
+    Parameters:
+    geo_acc - GEO accession (e.g. 'GSE93431')
+    lab_alias - alias prefix; default is '4dn-dcic-lab'
+    outf - prefix for output files. Output files will be named
+           <outf>_expts.tsv, <outf>_fqs.tsv, and <outf>_bs.tsv.
+    '''
     if not geo_acc.startswith('GSE') and not geo_acc.startswith('GSM'):
         raise ValueError('Input not a GEO Datasets series accession. Accession \
                          must start with GSE.')
+    if email:
+        Entrez.email = email
+    else:
+        Entrez.email = input('Enter email address to use NCBI Entrez: ')
     geo_ids = find_geo_ids(geo_acc)
     sra_ids = [find_sra_id(geo_id) for geo_id in geo_ids]
     experiments = []
@@ -181,47 +194,28 @@ def get_fastq_table(geo_acc, lab_alias, outf):
         # parse data from each experiment
         if sra_id:
             experiments.append(parse_sra_record(sra_id))
-    with open(outf, 'w') as outfile:
+    with open(outf + '_expts.tsv', 'w') as outfile:
+        for exp in experiments:
+            outfile.write('%s:%s\t%s\t%s\t%s\t%s\t%s\n' %
+                          (lab_alias, exp.geo, exp.title, exp.exptype,
+                           exp.bs, ','.join(exp.runs), exp.geo))
+    with open(outf + '_fqs.tsv', 'w') as outfile:
         for exp in experiments:
             if exp.layout == 'single':  # single end reads
                 for run in exp.runs:
                     outfile.write('%s:%s_fq\t%s\tfastq\t \t \t \t%s\t%s\t%s\n' %
-                                  (lab_alias, run, exp.title, str(exp.length), exp.instrument, run))
+                                  (lab_alias, run, exp.title, str(exp.length), exp.instr, run))
             elif exp.layout == 'paired':  # paired end reads
                 for run in exp.runs:
-                    outfile.write('%s:%s_fq1\t%s\tfastq\t1\t \t \t%s\t%s\t%s\n' %
-                                  (lab_alias, run, exp.title, str(exp.length), exp.instrument, run))
-                    outfile.write('%s:%s_fq2\t%s\tfastq\t2\t \t \t%s\t%s\t%s\n' %
-                                  (lab_alias, run, exp.title, str(exp.length), exp.instrument, run))
-
-
-def get_exp_table(geo_acc, lab_alias, outf):
-    if not geo_acc.startswith('GSE') and not geo_acc.startswith('GSM'):
-        raise ValueError('Input not a GEO Datasets series accession. Accession \
-                         must start with GSE.')
-    geo_ids = find_geo_ids(geo_acc)
-    sra_ids = [find_sra_id(geo_id) for geo_id in geo_ids]
-    experiments = []
-    for sra_id in sra_ids:
-        # parse data from each experiment
-        if sra_id:
-            experiments.append(parse_sra_record(sra_id))
-    with open(outf, 'w') as outfile:
-        for exp in experiments:
-            outfile.write('%s:%s\t%s')
-
-
-def get_bs_table(geo_acc, lab_alias, outf):
-    '''
-    - find geo accessions for each experiment
-    - find biosample record(s) for each experiment
-    - return alias, biosample accession, what else?
-    '''
-    geo_ids = find_geo_ids(geo_acc)
+                    alias = lab_alias + ':' + run
+                    outfile.write('%s_fq1\t%s\tfastq\t1\tpaired with\t%s_fq2\t%s\t%s\t%s\n' %
+                                  (alias, exp.title, alias, str(exp.length), exp.instr, run))
+                    outfile.write('%s_fq2\t%s\tfastq\t2\tpaired with\t%s_fq1\t%s\t%s\t%s\n' %
+                                  (alias, exp.title, alias, str(exp.length), exp.instr, run))
     biosamples = [parse_bs_record(geo_id) for geo_id in geo_ids]
-    with open(outf, 'w') as outfile:
+    with open(outf + '_bs.tsv', 'w') as outfile:
         for biosample in biosamples:
-            outfile.write('%s:%s\t%s\t \t \t \t \t \t \t \t \t%s\n' %
+            outfile.write('%s:%s\t%s\t%s\n' %
                           (lab_alias, biosample.acc, biosample.description, biosample.acc))
 
 
