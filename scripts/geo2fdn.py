@@ -30,6 +30,7 @@ $ python scripts/geo2fdn.py GSE68992 -i hic_workbook.xls -o GSE68992_metadata.xl
 
 '''
 
+
 class Experiment:
 
     def __init__(self, exptype, instr, layout, geo, title, runs, length, study_title, biosample):
