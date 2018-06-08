@@ -1,16 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: latin-1 -*-
 
-'''
-Script for fetching metadata from GEO and inserting it into a Submit4dn metadata workbook.
-
-Note: Use of NCBI's Entrez querying system requires an email address.
-There will be a prompt to enter an email address when this script is run.
-
-[Future: maybe combine table functions into one?]
-
-'''
-
 import argparse
 import re
 import sys
@@ -21,6 +11,24 @@ import xlrd
 from xlutils.copy import copy
 from Bio import Entrez
 
+
+description = '''
+Script for fetching metadata from GEO and inserting it into a Submit4dn metadata workbook.
+
+Note: Use of NCBI's Entrez querying system requires an email address.
+There will be a prompt to enter an email address when this script is run.
+
+'''
+
+
+epilog = '''
+Example usage:
+
+$ python scripts/geo2fdn.py GSE93431 -i hic_rnaseq_workbook.xls -o GSE93431_metadata.xls
+
+$ python scripts/geo2fdn.py GSE68992 -i hic_workbook.xls -o GSE68992_metadata.xls -t 'dnase hic'
+
+'''
 
 class Experiment:
 
@@ -220,7 +228,7 @@ def get_geo_table(geo_acc, outf, lab_alias='4dn-dcic-lab', email=''):
                           (lab_alias, biosample.acc, biosample.description, biosample.acc))
 
 
-def create_dataset(geo_acc):
+def create_dataset(geo_acc, experiment_type=None):
     geo_ids = find_geo_ids(geo_acc)
     if not geo_ids:
         print("No experiments found in {}".format(geo_acc))
@@ -229,7 +237,7 @@ def create_dataset(geo_acc):
     if not sra_ids:
         print('No SRA records associated with accession. Exiting.')
         return
-    gds = Dataset(geo_acc, geo_ids, [parse_sra_record(sra_id) for sra_id in sra_ids],
+    gds = Dataset(geo_acc, geo_ids, [parse_sra_record(sra_id, experiment_type) for sra_id in sra_ids],
                   [parse_bs_record(geo_id) for geo_id in geo_ids])
     return gds
 
@@ -267,7 +275,7 @@ def write_experiments(sheet_name, experiments, alias_prefix, file_dict, inbook, 
 
 
 def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=valid_types):
-    gds = create_dataset(geo)
+    gds = create_dataset(geo, experiment_type)
     if not gds:
         return
     book = xlrd.open_workbook(infile)
@@ -486,21 +494,21 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
     return
 
 
-def main(types=valid_types):
-    parser = argparse.ArgumentParser(description="Add GEO metadata to a submit4dn metadata workbook.",
+def main(types=valid_types, descr=description, epilog=epilog):
+    parser = argparse.ArgumentParser(description=descr, epilog=epilog,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('geo_accession', help="GEO accession", action="store")
-    parser.add_argument('-i', '--infile', help="Input xls file",
+    parser.add_argument('-i', '--infile', help="Input xls file - blank submit4dn workbook",
                         action="store", required=True)
     parser.add_argument('-o', '--outfile', help="Output xls file - default output \
                         filename will be GEO accession with xls extension",
                         default='', action="store")
     parser.add_argument('-a', '--alias', help="Alias prefix, default is '4dn-dcic-lab'",
                         action="store", default="4dn-dcic-lab")
-    parser.add_argument('-t', '--type', help="Type of experiment in series. Accepted types: \
-                        HiC, ChIP-seq, RNA-seq, TSA-seq, ATAC-seq, DamID, Repliseq. \
-                        By default experiment type is parsed from SRA records, \
-                        but this option is useful when parsing isn't straightforward. \
+    parser.add_argument('-t', '--type', help="Optional: type of experiment in series. \
+                        By default experiment type is parsed from SRA records, but \
+                        this option is useful when parsing isn't straightforward. \
+                        Accepted types: HiC, ChIP-seq, RNA-seq, TSA-seq, ATAC-seq, DamID, Repliseq. \
                         Note that only one type may be specified, so make sure GEO Series \
                         doesn't include multiple experiment types.",
                         action="store", default=None)
@@ -511,7 +519,7 @@ def main(types=valid_types):
         parser.print_help()
         sys.exit()
     Entrez.email = input('Enter email address to use NCBI Entrez: ')
-    modify_xls(args.geo_accession, args.infile, out_file, args.alias, args.type)
+    modify_xls(args.geo_accession, args.infile, out_file, args.alias, experiment_type=args.type)
 
 
 if __name__ == '__main__':
