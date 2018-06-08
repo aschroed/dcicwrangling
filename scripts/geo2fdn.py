@@ -54,8 +54,9 @@ class Dataset:
         self.biosamples = biosamples  # list of biosample objects
 
 
-valid_types = ['hic', 'hicseq', 'dnase hic', 'rnaseq', 'tsaseq', 'chipseq', 'dna sprite',
-               'capturec', 'repliseq', 'atacseq', 'damid', 'damidseq', 'chiapet']
+valid_types = ['hic', 'hicseq', 'dnase hic', 'rnaseq', 'tsaseq', 'chipseq',
+               'dna sprite', 'dnarna sprite', 'rnadna sprite', 'capturec',
+               'repliseq', 'atacseq', 'damid', 'damidseq', 'chiapet']
 
 
 def find_geo_ids(acc):
@@ -222,7 +223,7 @@ def get_geo_table(geo_acc, outf, lab_alias='4dn-dcic-lab', email=''):
 def create_dataset(geo_acc):
     geo_ids = find_geo_ids(geo_acc)
     if not geo_ids:
-        print("No record experiments found in {}".format(geo_acc))
+        print("No experiments found in {}".format(geo_acc))
         return
     sra_ids = [item for item in [find_sra_id(geo_id) for geo_id in geo_ids] if item]
     if not sra_ids:
@@ -238,7 +239,8 @@ def write_experiments(sheet_name, experiments, alias_prefix, file_dict, inbook, 
     type_dict = {'chipseq': 'CHIP-seq', 'tsaseq': 'TSA-seq', 'rnaseq': 'RNA-seq',
                  'atacseq': 'ATAC-seq', 'capturec': 'capture Hi-C', 'damid': 'DAM-ID seq',
                  'damidseq': 'DAM-ID seq', 'chiapet': 'CHIA-pet', 'placseq': 'PLAC-seq',
-                 'dnase hic': 'DNase Hi-C', 'dna sprite': 'DNA SPRITE'}
+                 'dnase hic': 'DNase Hi-C', 'dna sprite': 'DNA SPRITE',
+                 'dnarna sprite': 'RNA-DNA SPRITE', 'rnadna sprite': 'RNA-DNA SPRITE'}
     fields = inbook.sheet_by_name(sheet_name).row_values(0)
     for item in fields:
         sheet_dict[item] = fields.index(item)
@@ -249,8 +251,10 @@ def write_experiments(sheet_name, experiments, alias_prefix, file_dict, inbook, 
         # if entry.exptype in ['chipseq', 'rnaseq', 'tsaseq']:
         sheet.write(row, sheet_dict['aliases'], alias_prefix + ':' + entry.geo)
         sheet.write(row, sheet_dict['description'], entry.title)
-        sheet.write(row, sheet_dict['*biosample'], alias_prefix + ':' + entry.bs)
-        sheet.write(row, sheet_dict['files'], ','.join(file_dict[entry.geo]))
+        if 'Biosample' in inbook.sheet_names():
+            sheet.write(row, sheet_dict['*biosample'], alias_prefix + ':' + entry.bs)
+        if 'FileFastq' in inbook.sheet_names():
+            sheet.write(row, sheet_dict['files'], ','.join(file_dict[entry.geo]))
         sheet.write(row, sheet_dict['dbxrefs'], 'GEO:' + entry.geo)
         if entry.exptype in type_dict.keys():
             sheet.write(row, sheet_dict['*experiment_type'], type_dict[entry.exptype])
@@ -278,12 +282,28 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
         row = book.sheet_by_name('Biosample').nrows
         print("Writing Biosample sheet...")
         for entry in gds.biosamples:
-            bs.write(row, sheet_dict_bs['aliases'], alias_prefix + ':' + entry.acc)
+            alias = alias_prefix + ':' + entry.acc
+            bs.write(row, sheet_dict_bs['aliases'], alias)
             bs.write(row, sheet_dict_bs['description'], entry.description)
+            if 'BiosampleCellCulture' in book.sheet_names():
+                bs.write(row, sheet_dict_bs['cell_culture_details'], alias + '-cellculture')
             # bs.write(row, sheet_dict_bs['treatments'], entry.treatments)
             bs.write(row, sheet_dict_bs['dbxrefs'], 'BioSample:' + entry.acc)
             row += 1
 
+    if 'BiosampleCellCulture' in book.sheet_names():
+        sheet_dict_bcc = {}
+        bcc_sheets = book.sheet_by_name('BiosampleCellCulture').row_values(0)
+        for item in bcc_sheets:
+            sheet_dict_bcc[item] = bcc_sheets.index(item)
+        bcc = outbook.get_sheet('BiosampleCellCulture')
+        row = book.sheet_by_name('BiosampleCellCulture').nrows
+        print("Writing BiosampleCellCulture sheet...")
+        for entry in gds.biosamples:
+            bcc.write(row, sheet_dict_bcc['aliases'], alias_prefix + ':' + entry.acc + '-cellculture')
+            row += 1
+
+    file_dict = {}
     if 'FileFastq' in book.sheet_names():
         sheet_dict_fq = {}
         fq_sheets = book.sheet_by_name('FileFastq').row_values(0)
@@ -291,7 +311,6 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
             sheet_dict_fq[item] = fq_sheets.index(item)
         fq = outbook.get_sheet('FileFastq')
         row = book.sheet_by_name('FileFastq').nrows
-        file_dict = {}
         print("Writing FileFastq sheet...")
         for entry in gds.experiments:
             file_dict[entry.geo] = []
@@ -348,8 +367,8 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
             print("\nHiC experiments found in %s but no ExperimentHiC sheet present in workbook." % geo,
                   "HiC experiments will not be written to file.")
 
-        seq_expts = [exp for exp in gds.experiments if exp.exptype in ['chipseq', 'rnaseq',
-                                                                       'tsaseq', 'dna sprite']]
+        seq_expts = [exp for exp in gds.experiments if exp.exptype in
+                     ['chipseq', 'rnaseq', 'tsaseq'] or 'sprite' in exp.exptype]
         if 'ExperimentSeq' in book.sheet_names() and seq_expts:
             outbook = write_experiments('ExperimentSeq', seq_expts, alias_prefix,
                                         file_dict, book, outbook)
