@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+
+import sys
+import argparse
+from datetime import datetime
+from dcicutils.ff_utils import get_authentication_with_server, get_metadata, patch_metadata
+from dcicwrangling.scripts import script_utils as scu
+
+
+def get_args():  # pragma: no cover
+    parser = argparse.ArgumentParser(
+        parents=[scu.create_ff_arg_parser(), scu.create_input_arg_parser()],
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument('--workflow',
+                        default="bef50397-4d72-4ed1-9c78-100e14e5c47f",
+                        help="The uuid of the workflow to use to generate the run \
+                              default is File Provenance Workflow"
+                        )
+
+    return parser.parse_args()
+
+
+def _filter_none(l):
+    nl = [li for li in l if li is not None]
+    if len(nl) != len(l):
+        print('WARNING: None values found in your list')
+    return nl
+
+
+def create_wfr_meta_only_json(auth, workflow, inputs, outputs, alias=None):
+    '''provide input file(s), output file(s), optional alias,
+       optional description builds a metadata only workflow_run json
+       currently designed for file tracing so does not do quality metrics
+       or deal with arguments other than Input file and Output processed file'''
+    infiles = _filter_none([scu.get_item_if_you_can(i) for i in inputs])
+    outfiles = _filter_none([scu.get_item_if_you_can(o) for o in outputs])
+    now = str(datetime.now())
+    if not alias:
+        alias = '4dn-dcic-lab:' + workflow.get('name') + '_run_' + now.replace(':', '-').replace(' ', '-')
+    wfr_title = workflow.get('title') + ' run on ' + now
+
+    wfr_json = {
+        'workflow': workflow.get('uuid'),
+        'aliases': [alias],
+        'award': infiles[0].get('award'),
+        'lab': infiles[0].get('lab'),
+        'status': 'in review by lab',
+        'title': wfr_title,
+        'run_status': 'complete'
+    }
+
+    args = workflow.get('arguments')
+    input_files = []
+    output_files = []
+    if args:
+        for arg in args:
+            argname = arg.get('workflow_argument_name')
+            if arg.get('argument_type') == 'Input file':
+                # build the needed inputs
+                for i, inf in enumerate(inputs):
+                    input_files.append(
+                        {
+                            'workflow_argument_name': argname,
+                            'value': inf.get('uuid'),
+                            'ordinal': i + 1
+                        }
+                    )
+            if arg.get('argument_type') == 'Output processed file':
+                for outf in outputs:
+                    output_files.append(
+                        {
+                            'workflow_argument_name': argname,
+                            'value': outf.get('uuid'),
+                            'workflow_argument_format': outf.get('file_format'),
+                            'type': 'Output processed file'
+                        }
+                    )
+
+    if input_files:
+        wfr_json['input_files'] = input_files
+    if output_files:
+        wfr_json['output_files'] = output_files
+    return wfr_json
+
+
+def main():  # pragma: no cover
+    args = get_args()
+    try:
+        auth = get_authentication_with_server(args.key, args.env)
+    except Exception:
+        print("Authentication failed")
+        sys.exit(1)
+    dryrun = not args.dbupdate
+
+    file_list = get_item_ids_from_args(args.input, auth)
+    wf_data = get_metadata(args.workflow, auth)
+    for f in file_list:
+        file_info = get_metadata(f, auth)
+        parents = file_info.get('produced_from')
+        if parents:
+            inputs = []
+            for p in parents:
+                inputs.append(get_metadata(p, auth))
+            wfr_json = create_wfr_json(auth, wf_data, inputs, [file_info])
+
+
+if __name__ == '__main__':
+        main()
