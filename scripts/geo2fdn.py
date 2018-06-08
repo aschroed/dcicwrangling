@@ -54,7 +54,7 @@ class Dataset:
         self.biosamples = biosamples  # list of biosample objects
 
 
-valid_types = ['hic', 'hicseq', 'dnase hic', 'rnaseq', 'tsaseq', 'chipseq',
+valid_types = ['hic', 'hicseq', 'dnase hic', 'rnaseq', 'tsaseq', 'chipseq', 'dna sprite',
                'capturec', 'repliseq', 'atacseq', 'damid', 'damidseq', 'chiapet']
 
 
@@ -66,10 +66,10 @@ def find_geo_ids(acc):
         geo_xml = ET.fromstring(handle.read())
         ids = [item.text for item in geo_xml.find('IdList')]
         gse_ids = [item for item in ids if item.startswith('2')]
+        soft = request.urlopen('https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=' + acc +
+                               '&form=text&view=full')
+        gse = soft.read().decode('utf-8').split('\r\n')
         if gse_ids:
-            soft = request.urlopen('https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=' + acc +
-                                   '&form=text&view=full')
-            gse = soft.read().decode('utf-8').split('\r\n')
             for line in gse:
                 if line.startswith('!Series_type = '):
                     if "other" not in line.lower() and "sequencing" not in line:
@@ -221,6 +221,9 @@ def get_geo_table(geo_acc, outf, lab_alias='4dn-dcic-lab', email=''):
 
 def create_dataset(geo_acc):
     geo_ids = find_geo_ids(geo_acc)
+    if not geo_ids:
+        print("No record experiments found in {}".format(geo_acc))
+        return
     sra_ids = [item for item in [find_sra_id(geo_id) for geo_id in geo_ids] if item]
     if not sra_ids:
         print('No SRA records associated with accession. Exiting.')
@@ -235,7 +238,7 @@ def write_experiments(sheet_name, experiments, alias_prefix, file_dict, inbook, 
     type_dict = {'chipseq': 'CHIP-seq', 'tsaseq': 'TSA-seq', 'rnaseq': 'RNA-seq',
                  'atacseq': 'ATAC-seq', 'capturec': 'capture Hi-C', 'damid': 'DAM-ID seq',
                  'damidseq': 'DAM-ID seq', 'chiapet': 'CHIA-pet', 'placseq': 'PLAC-seq',
-                 'dnase hic': 'DNase Hi-C'}
+                 'dnase hic': 'DNase Hi-C', 'dna sprite': 'DNA SPRITE'}
     fields = inbook.sheet_by_name(sheet_name).row_values(0)
     for item in fields:
         sheet_dict[item] = fields.index(item)
@@ -345,16 +348,17 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
             print("\nHiC experiments found in %s but no ExperimentHiC sheet present in workbook." % geo,
                   "HiC experiments will not be written to file.")
 
-        seq_expts = [exp for exp in gds.experiments if exp.exptype in ['chipseq', 'rnaseq', 'tsaseq']]
+        seq_expts = [exp for exp in gds.experiments if exp.exptype in ['chipseq', 'rnaseq',
+                                                                       'tsaseq', 'dna sprite']]
         if 'ExperimentSeq' in book.sheet_names() and seq_expts:
             outbook = write_experiments('ExperimentSeq', seq_expts, alias_prefix,
                                         file_dict, book, outbook)
         elif 'ExperimentSeq' in book.sheet_names() and not seq_expts:
-            print("\nNo ChIP-seq, RNA-seq, or TSA-seq experiments parsed from %s." % geo)
+            print("\nNo ChIP-seq, RNA-seq, SPRITE, or TSA-seq experiments parsed from %s." % geo)
             print("If all samples are known to be a single experiment type,",
                   "this script can be rerun using -t option.")
         elif 'ExperimentSeq' not in book.sheet_names() and seq_expts:
-            print("\nChIP-seq, RNA-seq, or TSA-seq experiments found in %s" % geo,
+            print("\nChIP-seq, RNA-seq, SPRITE, or TSA-seq experiments found in %s" % geo,
                   "but no ExperimentSeq sheet present in workbook.",
                   "These experiments will not be written to file.")
             # sheet_dict_seq = {}
