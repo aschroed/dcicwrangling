@@ -70,24 +70,25 @@ valid_types = ['hic', 'hicseq', 'dnase hic', 'rnaseq', 'tsaseq', 'chipseq',
 
 def find_geo_ids(acc):
     # finds GEO id numbers associated with a GEO series accession
-    if acc.startswith('GSM') or acc.startswith('GSE'):
-        print("Searching GEO accession...")
-        handle = Entrez.esearch(db='gds', term=acc, retmax=1000)
-        geo_xml = ET.fromstring(handle.read())
-        ids = [item.text for item in geo_xml.find('IdList')]
-        gse_ids = [item for item in ids if item.startswith('2')]
-        soft = request.urlopen('https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=' + acc +
-                               '&form=text&view=full')
-        gse = soft.read().decode('utf-8').split('\r\n')
-        if gse_ids:
-            for line in gse:
-                if line.startswith('!Series_type = '):
-                    if "other" not in line.lower() and "sequencing" not in line:
-                        print('')
-        return [geo_id for geo_id in ids if geo_id.startswith('3')]
-    else:
+    try:
+        assert acc.startswith('GSM') or acc.startswith('GSE')
+    except:
         raise ValueError('Input not a GEO Datasets accession. Accession must start with GSE or GSM.')
-        return
+
+    print("Searching GEO accession...")
+    handle = Entrez.esearch(db='gds', term=acc, retmax=1000)
+    geo_xml = ET.fromstring(handle.read())
+    ids = [item.text for item in geo_xml.find('IdList')]
+    gse_ids = [item for item in ids if item.startswith('2')]
+    soft = request.urlopen('https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=' + acc +
+                               '&form=text&view=full')
+    gse = soft.read().decode('utf-8').split('\r\n')
+    if gse_ids:
+        for line in gse:
+            if line.startswith('!Series_type = '):
+                if "other" not in line.lower() and "sequencing" not in line:
+                    print('')
+    return [geo_id for geo_id in ids if geo_id.startswith('3')]
 
 
 def find_sra_id(geo_id):
@@ -341,8 +342,8 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
                     # fq.write(row + 1, sheet_dict_fq['description'], entry.description)
                     fq.write(row + 1, sheet_dict_fq['*file_format'], 'fastq')
                     fq.write(row + 1, sheet_dict_fq['paired_end'], '2')
-                    fq.write(row + 1, sheet_dict_fq['related_files.relationship_type'], 'paired with')
-                    fq.write(row + 1, sheet_dict_fq['related_files.file'], fq1)
+                    # fq.write(row + 1, sheet_dict_fq['related_files.relationship_type'], 'paired with')
+                    # fq.write(row + 1, sheet_dict_fq['related_files.file'], fq1)
                     fq.write(row + 1, sheet_dict_fq['read_length'], entry.length)
                     fq.write(row + 1, sheet_dict_fq['instrument'], entry.instr)
                     fq.write(row + 1, sheet_dict_fq['dbxrefs'], 'SRA:' + run)
