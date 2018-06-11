@@ -3,7 +3,7 @@
 import sys
 import argparse
 from datetime import datetime
-from dcicutils.ff_utils import get_authentication_with_server, get_metadata, patch_metadata
+from dcicutils.ff_utils import get_authentication_with_server, get_metadata, post_metadata
 from dcicwrangling.scripts import script_utils as scu
 
 
@@ -28,13 +28,16 @@ def _filter_none(l):
     return nl
 
 
-def create_wfr_meta_only_json(auth, workflow, inputs, outputs, alias=None):
+def create_wfr_meta_only_json(auth, workflow, inputs, outputs, alias=None, description=None):
     '''provide input file(s), output file(s), optional alias,
        optional description builds a metadata only workflow_run json
        currently designed for file tracing so does not do quality metrics
        or deal with arguments other than Input file and Output processed file'''
-    infiles = _filter_none([scu.get_item_if_you_can(i) for i in inputs])
-    outfiles = _filter_none([scu.get_item_if_you_can(o) for o in outputs])
+    workflow = scu.get_item_if_you_can(auth, workflow)
+    if workflow.get('uuid') is None:
+        return None
+    infiles = _filter_none([scu.get_item_if_you_can(auth, i) for i in inputs])
+    outfiles = _filter_none([scu.get_item_if_you_can(auth, o) for o in outputs])
     now = str(datetime.now())
     if not alias:
         alias = '4dn-dcic-lab:' + workflow.get('name') + '_run_' + now.replace(':', '-').replace(' ', '-')
@@ -58,7 +61,7 @@ def create_wfr_meta_only_json(auth, workflow, inputs, outputs, alias=None):
             argname = arg.get('workflow_argument_name')
             if arg.get('argument_type') == 'Input file':
                 # build the needed inputs
-                for i, inf in enumerate(inputs):
+                for i, inf in enumerate(infiles):
                     input_files.append(
                         {
                             'workflow_argument_name': argname,
@@ -67,7 +70,7 @@ def create_wfr_meta_only_json(auth, workflow, inputs, outputs, alias=None):
                         }
                     )
             if arg.get('argument_type') == 'Output processed file':
-                for outf in outputs:
+                for outf in outfiles:
                     output_files.append(
                         {
                             'workflow_argument_name': argname,
@@ -93,7 +96,7 @@ def main():  # pragma: no cover
         sys.exit(1)
     dryrun = not args.dbupdate
 
-    file_list = get_item_ids_from_args(args.input, auth)
+    file_list = scu.get_item_ids_from_args(args.input, auth)
     wf_data = get_metadata(args.workflow, auth)
     for f in file_list:
         file_info = get_metadata(f, auth)
@@ -102,7 +105,13 @@ def main():  # pragma: no cover
             inputs = []
             for p in parents:
                 inputs.append(get_metadata(p, auth))
-            wfr_json = create_wfr_json(auth, wf_data, inputs, [file_info])
+            wfr_json = create_wfr_meta_only_json(auth, wf_data, inputs, [file_info])
+            if dryrun:
+                print('DRY RUN -- will post')
+                print(wfr_json)
+            else:
+                res = post_metadata(wfr_json, 'workflow_run_awsem', auth)
+                print(res)
 
 
 if __name__ == '__main__':

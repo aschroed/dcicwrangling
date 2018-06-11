@@ -1,4 +1,5 @@
 import pytest
+from copy import deepcopy as cp
 from scripts import generate_wfr_from_pf as gw
 
 
@@ -18,229 +19,155 @@ def test_filter_none_some_nones(capsys):
     assert out == "WARNING: None values found in your list\n"
 
 
-# TO BE CONTINUED
-
-def test_remove_skipped_vals_w_good_atids(mocker):
-    side_effect = ['uuid1', 'uuid2', 'uuid1', 'uuid2', 'uuid3']
-    val = ['id1', 'id2']
-    vals2skip = ['id1', 'id2', 'id3']
-    # import pdb; pdb.set_trace()
-    with mocker.patch('scripts.script_utils.get_item_uuid',
-                      side_effect=side_effect):
-        result = rj.remove_skipped_vals(val, vals2skip)
-        assert not result
-
-
-def test_remove_skipped_vals_w_item_lookup(mocker):
-    side_effect = ['uuid1', 'uuid2', 'uuid1']
-    val = ['id1', 'id2']
-    vals2skip = ['id1']
-    # import pdb; pdb.set_trace()
-    with mocker.patch('scripts.script_utils.get_item_uuid',
-                      side_effect=side_effect):
-        result = rj.remove_skipped_vals(val, vals2skip)
-        assert result[0] == val[1]
-
-
-def test_remove_skipped_vals_w_item_lookup_and_not_found(mocker):
-    side_effect = ['uuid1', None, 'uuid3', 'uuid1', None]
-    val = ['id1', 'id2', 'id3']
-    vals2skip = ['id3', 'id4']
-    # import pdb; pdb.set_trace()
-    with mocker.patch('scripts.script_utils.get_item_uuid',
-                      side_effect=side_effect):
-        result = rj.remove_skipped_vals(val, vals2skip)
-        assert result[0] == val[0]
-
-
 @pytest.fixture
-def old_pub():
+def prov_workflow():
     return {
-        'title': 'The Title',
-        'authors': ['moe', 'curly'],
-        'ID': 'doi:1234',
-        'date_published': '2018-01-01',
-        'published_by': '4DN',
-        'exp_sets_prod_in_pub': ['4DNES1234567', '4DNES7654321'],
-        'exp_sets_used_in_pub': ['4DNES1111111'],
-        'categories': ['basic biology']
+        "award": "1U01CA200059-01",
+        "lab": "4dn-dcic-lab",
+        "app_name": "file-provenance-tracker",
+        "uuid": "bef50397-4d72-4ed1-9c78-100e14e5c47f",
+        "name": "file-provenance-tracker",
+        "title": "File Provenance Tracking Workflow",
+        "description": "Takes one or more input files and traces to a single output Processed File",
+        "aliases": ["4dn-dcic-lab:file-provenance-wf"],
+        "workflow_type": "Other",
+        "category": "provenance",
+        "arguments": [
+            {
+                "argument_type": "Input file",
+                "workflow_argument_name": "inputs"
+            },
+            {
+                "argument_type": "Output processed file",
+                "workflow_argument_name": "outputs"
+            }
+        ],
+        "steps": [
+            {
+                "inputs": [
+                    {
+                        "meta": {
+                            "cardinality": "array",
+                            "global": True,
+                            "type": "data file"
+                        },
+                        "name": "inputs",
+                        "source": [
+                            {
+                                "name": "inputs"
+                            }
+                        ]
+                    }
+                ],
+                "meta": {
+                    "analysis_step_types": [
+                        "tracking"
+                    ],
+                    "description": "Provenance Tracking"
+                },
+                "name": "Provenance Tracking",
+                "outputs": [
+                    {
+                        "meta": {
+                            "cardinality": "single",
+                            "global": True,
+                            "type": "data file"
+                        },
+                        "name": "outputs",
+                        "target": [
+                            {
+                                "name": "outputs"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
     }
 
 
 @pytest.fixture
-def new_pub():
+def fp_data():
     return {
-        'title': 'The Title',
-        'authors': ['moe', 'curly'],
-        'ID': 'PMID:1',
-        'date_published': '2018-12-31',
+        "lab": "4dn-dcic-lab",
+        "award": "1U01CA200059-01",
+        "file_type": "LADs",
+        "description": "5 kb Associated domains (LADs) - replicate 2",
+        "file_size": 106884,
+        "@type": ["FileProcessed", "File", "Item"],
+        "status": "uploaded",
+        "uuid": "658ecf64-57a1-41aa-ac04-7224c7ed3207",
+        "accession": "4DNFIYQBRZMZ",
+        "file_format": "bed",
+        "filename": "file.bed.gz"
     }
 
 
 @pytest.fixture
-def fields2move():
-    return [
-        'categories',
-        'exp_sets_prod_in_pub',
-        'exp_sets_used_in_pub',
-        'published_by'
-    ]
-
-
-def test_create_patch_for_new_from_old_patch_all(old_pub, new_pub, fields2move):
-    patch, s = rj.create_patch_for_new_from_old(old_pub, new_pub, fields2move)
-    for f, v in patch.items():
-        assert old_pub[f] == patch[f]
-    assert not s
-
-
-def test_create_patch_for_new_from_old_patch_some(old_pub, new_pub, fields2move):
-    dfield = 'exp_sets_used_in_pub'
-    del old_pub[dfield]
-    patch, s = rj.create_patch_for_new_from_old(old_pub, new_pub, fields2move)
-    for f, v in patch.items():
-        assert old_pub[f] == patch[f]
-    assert dfield not in patch
-    assert not s
-
-
-def test_create_patch_for_new_from_old_patch_none(old_pub, new_pub, fields2move):
-    for f in fields2move:
-        del old_pub[f]
-    patch, s = rj.create_patch_for_new_from_old(old_pub, new_pub, fields2move)
-    assert not patch
-    assert not s
-
-
-def test_create_patch_for_new_from_old_patch_w_skipped(old_pub, new_pub, fields2move):
-    sfield = 'exp_sets_used_in_pub'
-    new_pub[sfield] = 'existing val'
-    patch, s = rj.create_patch_for_new_from_old(old_pub, new_pub, fields2move)
-    assert sfield not in patch
-    assert s[sfield]['old'] == ['4DNES1111111']
-    assert s[sfield]['new'] == 'existing val'
-
-
-def test_create_patch_for_new_from_old_patch_w_val2skip(old_pub, new_pub, fields2move):
-    v2s = ['4DNES1111111']
-    patch, s = rj.create_patch_for_new_from_old(old_pub, new_pub, fields2move, v2s)
-    assert 'exp_sets_used_in_pub' not in patch
-
-
-def test_create_patch_for_new_from_old_patch_w_val2skip_w_multival(old_pub, new_pub, fields2move):
-    v2s = ['4DNES7654321']
-    patch, s = rj.create_patch_for_new_from_old(old_pub, new_pub, fields2move, v2s)
-    assert len(patch['exp_sets_prod_in_pub']) == 1
-    assert patch['exp_sets_prod_in_pub'][0] == '4DNES1234567'
-
-
-def test_move_old_url_to_new_aka_w_existing_aka(old_pub, new_pub):
-    old_pub['url'] = 'oldurl'
-    new_pub['aka'] = 'my old name'
-    p = {'field': 'value'}
-    patch, s = rj.move_old_url_to_new_aka(old_pub, new_pub, p, {})
-    assert p == patch
-    assert s['aka']['new'] == 'oldurl'
-    assert s['aka']['old'] == 'my old name'
-
-
-def test_move_old_url_to_new_aka_w_no_url(old_pub, new_pub):
-    new_pub['aka'] = 'my old name'
-    p = {'field': 'value'}
-    patch, s = rj.move_old_url_to_new_aka(old_pub, new_pub, p, {})
-    assert p == patch
-    assert not s
-
-
-def test_move_old_url_to_new_aka_do_transfer(old_pub, new_pub):
-    old_pub['url'] = 'oldurl'
-    patch, s = rj.move_old_url_to_new_aka(old_pub, new_pub, {}, {})
-    assert 'aka' in patch
-    assert patch['aka'] == 'oldurl'
-    assert not s
+def infiles(fp_data):
+    b1 = cp(fp_data)
+    b2 = cp(fp_data)
+    b1['file_format'] = b2['file_format'] = 'bam'
+    b1['file_type'] = b2['file_type'] = 'alignment'
+    b1['filename'] = 'bamfile1.bam'
+    b2['filename'] = 'bamfile2.bam'
+    b1['description'] = 'replicate 2 LMNB1 alignment file'
+    b2['description'] = 'replicate 2 DAM-only alignment file'
+    b1['uuid'] = "658ecf64-57a1-41aa-ac04-7224c7ed3208"
+    b2['uuid'] = "658ecf64-57a1-41aa-ac04-7224c7ed3209"
+    b1["accession"] = "4DNFIYQBRZMA"
+    b2["accession"] = "4DNFIYQBRZMB"
+    return [b1, b2]
 
 
 @pytest.fixture
-def pdict():
+def outfile(fp_data):
+    return [fp_data]
+
+
+@pytest.fixture
+def wfr_out_json():
     return {
-        'exp_sets_prod_in_pub': ['4DNES1111111'],
-        'published_by': '4DN'
+        'workflow': 'bef50397-4d72-4ed1-9c78-100e14e5c47f',
+        'aliases': ['4dn-dcic-lab:file-provenance-tracker_run_2018-06-11-16-29-22.839062'],
+        'award': '1U01CA200059-01',
+        'lab': '4dn-dcic-lab',
+        'status': 'in review by lab',
+        'title': 'File Provenance Tracking Workflow run on 2018-06-11 16:29:22.839062',
+        'run_status': 'complete',
+        'input_files': [
+            {'workflow_argument_name': 'inputs', 'value': '658ecf64-57a1-41aa-ac04-7224c7ed3208', 'ordinal': 1},
+            {'workflow_argument_name': 'inputs', 'value': '658ecf64-57a1-41aa-ac04-7224c7ed3209', 'ordinal': 2}
+        ],
+        'output_files': [
+            {'workflow_argument_name': 'outputs', 'value': '658ecf64-57a1-41aa-ac04-7224c7ed3207',
+             'workflow_argument_format': 'bed', 'type': 'Output processed file'}
+        ]
     }
 
 
-def test_patch_and_report_w_dryrun_no_data(capsys, auth):
-    result = rj.patch_and_report(auth, None, None, None, True)
-    out = capsys.readouterr()[0]
-    assert 'DRY RUN - nothing will be patched to database' in out
-    assert 'NOTHING TO PATCH - ALL DONE!' in out
-    assert result is True
-
-
-def test_patch_and_report_w_skipped_no_patch(capsys, auth):
-    skip = {
-        'published_by': {'old': 'external', 'new': '4DN'},
-        'categories': {'old': ['basic science'], 'new': ['methods']}
-    }
-    s1 = 'Field: published_by\tHAS: 4DN\tNOT ADDED: external'
-    s2 = "Field: categories\tHAS: ['methods']\tNOT ADDED: ['basic science']"
-    result = rj.patch_and_report(auth, None, skip, 'test_uuid', False)
-    out = capsys.readouterr()[0]
-    assert 'WARNING! - SKIPPING for test_uuid' in out
-    assert s1 in out
-    assert s2 in out
-    assert 'NOTHING TO PATCH - ALL DONE!' in out
-    assert result is True
-
-
-def test_patch_and_report_w_patch(capsys, mocker, auth, pdict):
-    with mocker.patch('scripts.rxiv2ja.patch_metadata', return_value={'status': 'success'}):
-        result = rj.patch_and_report(auth, pdict, None, 'test_uuid', False)
-        out = capsys.readouterr()[0]
-        assert 'PATCHING - test_uuid' in out
-        for k, v in pdict.items():
-            s = '%s \t %s' % (k, v)
-            assert s in out
-        assert 'SUCCESS!' in out
-        assert result is True
-
-
-def test_patch_and_report_w_fail(capsys, mocker, auth, pdict):
-    with mocker.patch('scripts.rxiv2ja.patch_metadata', return_value={'status': 'error', 'description': 'woopsie'}):
-        result = rj.patch_and_report(auth, pdict, None, 'test_uuid', False)
-        out = capsys.readouterr()[0]
-        assert 'PATCHING - test_uuid' in out
-        for k, v in pdict.items():
-            s = '%s \t %s' % (k, v)
-            assert s in out
-        assert 'FAILED TO PATCH' in out
-        assert 'woopsie' in out
-        assert not result
-
-
-def test_find_and_patch_item_references_no_refs(capsys, mocker, auth):
-    old_uuid = 'old_uuid'
-    new_uuid = 'new_uuid'
-    output = "No references to %s found." % old_uuid
-    with mocker.patch('scripts.rxiv2ja.scu.get_item_ids_from_args', return_value=[]):
-        result = rj.find_and_patch_item_references(auth, old_uuid, new_uuid, False)
-        out = capsys.readouterr()[0]
-        assert output in out
-        assert result is True
-
-
-def test_find_and_patch_item_references_w_refs(mocker, auth):
-    old_uuid = 'old_uuid'
-    new_uuid = 'new_uuid'
-    with mocker.patch('scripts.rxiv2ja.scu.get_item_ids_from_args', return_value=['bs_uuid', 'ex_uuid']):
-        with mocker.patch('scripts.rxiv2ja.patch_and_report', side_effect=[True, True]):
-            result = rj.find_and_patch_item_references(auth, old_uuid, new_uuid, False)
-            assert result is True
-
-
-def test_find_and_patch_item_references_w_refs_one_fail(mocker, auth):
-    old_uuid = 'old_uuid'
-    new_uuid = 'new_uuid'
-    with mocker.patch('scripts.rxiv2ja.scu.get_item_ids_from_args', return_value=['bs_uuid', 'ex_uuid1', 'ex_uuid2']):
-        with mocker.patch('scripts.rxiv2ja.patch_and_report', side_effect=[True, False, True]):
-            result = rj.find_and_patch_item_references(auth, old_uuid, new_uuid, False)
-            assert not result
+def test_create_wfr_meta_only_json(auth, prov_workflow, infiles, outfile, wfr_out_json):
+    eqfields = ['workflow', 'award', 'lab', 'status', 'run_status']
+    chkstart = ['aliases', 'title']
+    wfr_json = gw.create_wfr_meta_only_json(auth, prov_workflow, infiles, outfile)
+    for f, v in wfr_json.items():
+        if f in eqfields:
+            assert v == wfr_out_json[f]
+        elif f in chkstart:
+            if f == 'aliases':
+                v = v[0]
+                wfr_out_json[f] = wfr_out_json[f][0]
+            assert v.startswith(wfr_out_json[f][:35])
+        elif f.startswith('input'):
+            assert len(v) == 2
+            for d in v:
+                assert d['workflow_argument_name'] == 'inputs'
+                assert 'ordinal' in d
+                assert d['value'] in ['658ecf64-57a1-41aa-ac04-7224c7ed3208', '658ecf64-57a1-41aa-ac04-7224c7ed3209']
+        else:
+            assert len(v) == 1
+            for d in v:
+                assert d['workflow_argument_name'] == 'outputs'
+                assert d['value'] == '658ecf64-57a1-41aa-ac04-7224c7ed3207'
+                assert d['workflow_argument_format'] == 'bed'
+                assert d['type'] == 'Output processed file'
