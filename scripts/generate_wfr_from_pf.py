@@ -39,7 +39,7 @@ def create_wfr_meta_only_json(auth, workflow, inputs, outputs, alias=None, descr
     infiles = _filter_none([scu.get_item_if_you_can(auth, i) for i in inputs])
     outfiles = _filter_none([scu.get_item_if_you_can(auth, o) for o in outputs])
     now = str(datetime.now())
-    if not alias:
+    if alias is None:
         alias = '4dn-dcic-lab:' + workflow.get('name') + '_run_' + now.replace(':', '-').replace(' ', '-')
     wfr_title = workflow.get('title') + ' run on ' + now
 
@@ -52,6 +52,9 @@ def create_wfr_meta_only_json(auth, workflow, inputs, outputs, alias=None, descr
         'title': wfr_title,
         'run_status': 'complete'
     }
+
+    if description is not None:
+        wfr_json['description'] = description
 
     args = workflow.get('arguments')
     input_files = []
@@ -114,5 +117,5 @@ def main():  # pragma: no cover
                 print(res)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
         main()

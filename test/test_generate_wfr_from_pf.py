@@ -171,3 +171,7 @@ def test_create_wfr_meta_only_json(auth, prov_workflow, infiles, outfile, wfr_ou
                 assert d['value'] == '658ecf64-57a1-41aa-ac04-7224c7ed3207'
                 assert d['workflow_argument_format'] == 'bed'
                 assert d['type'] == 'Output processed file'
+
+
+def test_create_wfr_meta_only_json_w_alias_and_desc():
+    pass
