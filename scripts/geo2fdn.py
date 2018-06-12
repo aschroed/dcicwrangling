@@ -4,6 +4,7 @@
 import argparse
 import re
 import sys
+import time
 from statistics import mean
 from urllib import request
 import xml.etree.ElementTree as ET
@@ -68,6 +69,19 @@ valid_types = ['hic', 'hicseq', 'dnase hic', 'rnaseq', 'tsaseq', 'chipseq',
                'repliseq', 'atacseq', 'damid', 'damidseq', 'chiapet']
 
 
+def handle_timeout(command):
+    try:
+        result = command
+    except HTTPError:
+        time.sleep(1)
+        try:
+            result = command
+        except HTTPError:
+            time.sleep(5)
+            result = command
+    return result
+
+
 def find_geo_ids(acc):
     # finds GEO id numbers associated with a GEO series accession
     try:
@@ -76,7 +90,7 @@ def find_geo_ids(acc):
         raise ValueError('Input not a GEO Datasets accession. Accession must start with GSE or GSM.')
 
     print("Searching GEO accession...")
-    handle = Entrez.esearch(db='gds', term=acc, retmax=1000)
+    handle = handle_timeout(Entrez.esearch(db='gds', term=acc, retmax=1000))
     geo_xml = ET.fromstring(handle.read())
     ids = [item.text for item in geo_xml.find('IdList')]
     gse_ids = [item for item in ids if item.startswith('2')]
@@ -98,7 +112,7 @@ def find_sra_id(geo_id):
     except ValueError:
         print("{} not a valid GEO id - must be a numerical string".format(geo_id))
         return
-    lines = Entrez.efetch(db='gds', id=geo_id).read().split('\n')
+    lines = handle_timeout(Entrez.efetch(db='gds', id=geo_id).read().split('\n'))
     sra_acc = None
     for line in lines:
         if line.startswith('SRA Run Selector'):
@@ -107,21 +121,23 @@ def find_sra_id(geo_id):
     if not sra_acc:
         print('No SRA record associated with ID %s.' % geo_id)
         return
-    handle = Entrez.esearch(db='sra', term=sra_acc)
+    handle = handle_timeout(Entrez.esearch(db='sra', term=sra_acc))
     sra_xml = ET.fromstring(handle.read())
+    time.sleep(1)
     return sra_xml.find('IdList').find('Id').text
 
 
 def parse_sra_record(sra_id, experiment_type=None):
     # takes in an SRA id, fetches the corresponding SRA record, and
     # parses it into an Experiment object
+    time.sleep(1)
     try:
         int(sra_id)
     except ValueError:
         print("{} not a valid SRA id - must be a numerical string".format(sra_id))
         return
     print("Fetching SRA record...")
-    handle = Entrez.efetch(db="sra", id=sra_id)
+    handle = handle_timeout(Entrez.efetch(db="sra", id=sra_id))
     record = ET.fromstring(handle.readlines()[2])
     if experiment_type:
         exp_type = experiment_type
@@ -153,11 +169,12 @@ def parse_sra_record(sra_id, experiment_type=None):
 def parse_bs_record(geo_id):
     # takes in an GEO id, fetches the related BioSample record, and
     # parses it into a Biosample object
+    time.sleep(1)
     print("Fetching Biosample record...")
-    bs_link = Entrez.elink(dbfrom='gds', db='biosample', id=geo_id)
+    bs_link = handle_timeout(Entrez.elink(dbfrom='gds', db='biosample', id=geo_id))
     bslink_xml = ET.fromstring(bs_link.read())
     bs_id = [item.find('Id').text for item in bslink_xml.iter("Link")][0]
-    bs_handle = Entrez.efetch(db='biosample', id=bs_id)
+    bs_handle = handle_timeout(Entrez.efetch(db='biosample', id=bs_id))
     bs_xml = ET.fromstring(bs_handle.read())
     atts = {}
     descr = ''
@@ -276,6 +293,27 @@ def write_experiments(sheet_name, experiments, alias_prefix, file_dict, inbook, 
     return outbook
 
 
+def experiment_type_compare(sheetname, expt_list, geo, alias_prefix, file_dict, inbook, outbook):
+    expt_dict = {'Atacseq': 'ATAC-seq', 'Damid': 'DamID', 'Chiapet': 'ChIA-PET',
+                      'Seq': 'ChIP-seq, RNA-seq, SPRITE, or TSA-seq'}
+    expt_name = sheetname[10:] if sheetname[10:] not in expt_dict.keys() else expt_dict[sheetname[10:]]
+    type_name = sheetname[10:] if sheetname != 'ExperimentSeq' else '<experiment_type>'
+    if sheetname in inbook.sheet_names() and expt_list:
+        outbook = write_experiments(sheetname, expt_list, alias_prefix, file_dict, inbook, outbook)
+        return outbook
+    elif sheetname in inbook.sheet_names() and not expt_list:
+        print("\nNo {} experiments parsed from {}.".format(expt_name, geo))
+        print("If all samples are known to be {} experiments,".format(expt_name))
+        print("this script can be rerun using -t {}".format(type_name))
+        return outbook
+    elif sheetname not in inbook.sheet_names() and expt_list:
+        print("\n{} experiments found in {} but no {} sheet".format(expt_name, geo, sheetname))
+        print("present in workbook. {} experiments will not be written to file. \
+              ".format(expt_name if sheetname != 'ExperimentSeq' else 'These'))
+        return outbook
+    return outbook
+
+
 def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=valid_types):
     gds = create_dataset(geo, experiment_type)
     if not gds:
@@ -366,30 +404,35 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
 
         hic_expts = [exp for exp in gds.experiments if exp.exptype.startswith('hic') or
                      exp.exptype.startswith('dnase hic')]
-        if 'ExperimentHiC' in book.sheet_names() and hic_expts:
-            outbook = write_experiments('ExperimentHiC', hic_expts, alias_prefix,
-                                        file_dict, book, outbook)
-        elif 'ExperimentHiC' in book.sheet_names() and not hic_expts:
-            print("\nNo HiC experiments parsed from %s." % geo)
-            print("If all samples are known to be HiC experiments,",
-                  "this script can be rerun using -t HiC")
-        elif 'ExperimentHiC' not in book.sheet_names() and hic_expts:
-            print("\nHiC experiments found in %s but no ExperimentHiC sheet present in workbook." % geo,
-                  "HiC experiments will not be written to file.")
+        # experiment_type_compare(sheetname, expt_list, geo, alias_prefix, file_dict, inbook, outbook)
+        outbook = experiment_type_compare('ExperimentHiC', hic_expts, geo, alias_prefix,
+                                          file_dict, book, outbook)
+        # if 'ExperimentHiC' in book.sheet_names() and hic_expts:
+        #     outbook = write_experiments('ExperimentHiC', hic_expts, alias_prefix,
+        #                                 file_dict, book, outbook)
+        # elif 'ExperimentHiC' in book.sheet_names() and not hic_expts:
+        #     print("\nNo HiC experiments parsed from %s." % geo)
+        #     print("If all samples are known to be HiC experiments,",
+        #           "this script can be rerun using -t HiC")
+        # elif 'ExperimentHiC' not in book.sheet_names() and hic_expts:
+        #     print("\nHiC experiments found in %s but no ExperimentHiC sheet present in workbook." % geo,
+        #           "HiC experiments will not be written to file.")
 
         seq_expts = [exp for exp in gds.experiments if exp.exptype in
                      ['chipseq', 'rnaseq', 'tsaseq'] or 'sprite' in exp.exptype]
-        if 'ExperimentSeq' in book.sheet_names() and seq_expts:
-            outbook = write_experiments('ExperimentSeq', seq_expts, alias_prefix,
-                                        file_dict, book, outbook)
-        elif 'ExperimentSeq' in book.sheet_names() and not seq_expts:
-            print("\nNo ChIP-seq, RNA-seq, SPRITE, or TSA-seq experiments parsed from %s." % geo)
-            print("If all samples are known to be a single experiment type,",
-                  "this script can be rerun using -t option.")
-        elif 'ExperimentSeq' not in book.sheet_names() and seq_expts:
-            print("\nChIP-seq, RNA-seq, SPRITE, or TSA-seq experiments found in %s" % geo,
-                  "but no ExperimentSeq sheet present in workbook.",
-                  "These experiments will not be written to file.")
+        outbook = experiment_type_compare('ExperimentSeq', seq_expts, geo, alias_prefix,
+                                          file_dict, book, outbook)
+        # if 'ExperimentSeq' in book.sheet_names() and seq_expts:
+        #     outbook = write_experiments('ExperimentSeq', seq_expts, alias_prefix,
+        #                                 file_dict, book, outbook)
+        # elif 'ExperimentSeq' in book.sheet_names() and not seq_expts:
+        #     print("\nNo ChIP-seq, RNA-seq, SPRITE, or TSA-seq experiments parsed from %s." % geo)
+        #     print("If all samples are known to be a single experiment type,",
+        #           "this script can be rerun using -t option.")
+        # elif 'ExperimentSeq' not in book.sheet_names() and seq_expts:
+        #     print("\nChIP-seq, RNA-seq, SPRITE, or TSA-seq experiments found in %s" % geo,
+        #           "but no ExperimentSeq sheet present in workbook.",
+        #           "These experiments will not be written to file.")
             # sheet_dict_seq = {}
             # seq_sheets = book.sheet_by_name('ExperimentSeq').row_values(0)
             # for item in seq_sheets:
@@ -412,72 +455,82 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
             #             seq.write(row, sheet_dict_seq['*experiment_type'], 'RNA-seq')
             #         row += 1
         atac_expts = [exp for exp in gds.experiments if exp.exptype == 'atacseq']
-        if 'ExperimentAtacseq' in book.sheet_names() and atac_expts:
-            outbook = write_experiments('ExperimentAtacseq', atac_expts, alias_prefix,
-                                        file_dict, book, outbook)
-        elif 'ExperimentAtacseq' in book.sheet_names() and not atac_expts:
-            print("\nNo ATAC-seq experiments parsed from %s." % geo)
-            print("If all samples are known to be ATAC-seq experiments,",
-                  "this script can be rerun using -t ATAC-seq")
-        elif 'ExperimentAtacseq' not in book.sheet_names() and atac_expts:
-            print("\nATAC-seq experiments found in %s" % geo,
-                  "but no ExperimentAtacseq sheet present in workbook.",
-                  "ATAC-seq experiments will not be written to file.")
+        outbook = experiment_type_compare('ExperimentAtacseq', atac_expts, geo,
+                                          alias_prefix, file_dict, book, outbook)
+        # if 'ExperimentAtacseq' in book.sheet_names() and atac_expts:
+        #     outbook = write_experiments('ExperimentAtacseq', atac_expts, alias_prefix,
+        #                                 file_dict, book, outbook)
+        # elif 'ExperimentAtacseq' in book.sheet_names() and not atac_expts:
+        #     print("\nNo ATAC-seq experiments parsed from %s." % geo)
+        #     print("If all samples are known to be ATAC-seq experiments,",
+        #           "this script can be rerun using -t ATAC-seq")
+        # elif 'ExperimentAtacseq' not in book.sheet_names() and atac_expts:
+        #     print("\nATAC-seq experiments found in %s" % geo,
+        #           "but no ExperimentAtacseq sheet present in workbook.",
+        #           "ATAC-seq experiments will not be written to file.")
         # if 'other' in exp_types:
         #     # need to add these attributes to class
         #     titles = [exp.title.lower() for exp in gds.experiments] +
         #                 [exp.study_title.lower() for exp in gds.experiments]
         rep_expts = [exp for exp in gds.experiments if exp.exptype == 'repliseq']
-        if 'ExperimentRepliseq' in book.sheet_names() and rep_expts:
-            outbook = write_experiments('ExperimentRepliseq', rep_expts, alias_prefix,
-                                        file_dict, book, outbook)
-        elif 'ExperimentRepliseq' in book.sheet_names() and not rep_expts:
-            print("\nNo Repliseq experiments parsed from %s." % geo)
-            print("If all samples are known to be Repliseq experiments,",
-                  "this script can be rerun using -t Repliseq")
-        elif 'ExperimentRepliseq' not in book.sheet_names() and rep_expts:
-            print("\nRepliseq experiments found in %s" % geo,
-                  "but no ExperimentRepliseq sheet present in workbook.",
-                  "Repliseq experiments will not be written to file.")
+        outbook = experiment_type_compare('ExperimentRepliseq', rep_expts, geo,
+                                          alias_prefix, file_dict, book, outbook)
+        # if 'ExperimentRepliseq' in book.sheet_names() and rep_expts:
+        #     outbook = write_experiments('ExperimentRepliseq', rep_expts, alias_prefix,
+        #                                 file_dict, book, outbook)
+        # elif 'ExperimentRepliseq' in book.sheet_names() and not rep_expts:
+        #     print("\nNo Repliseq experiments parsed from %s." % geo)
+        #     print("If all samples are known to be Repliseq experiments,",
+        #           "this script can be rerun using -t Repliseq")
+        # elif 'ExperimentRepliseq' not in book.sheet_names() and rep_expts:
+        #     print("\nRepliseq experiments found in %s" % geo,
+        #           "but no ExperimentRepliseq sheet present in workbook.",
+        #           "Repliseq experiments will not be written to file.")
 
         dam_expts = [exp for exp in gds.experiments if exp.exptype.startswith('damid')]
-        if 'ExperimentDamid' in book.sheet_names() and dam_expts:
-            outbook = write_experiments('ExperimentDamid', dam_expts, alias_prefix,
-                                        file_dict, book, outbook)
-        elif 'ExperimentDamid' in book.sheet_names() and not dam_expts:
-            print("\nNo DamID experiments found in %s." % geo)
-            print("If all samples are known to be DamID experiments,",
-                  "this script can be rerun using -t DamID")
-        elif 'ExperimentDamid' not in book.sheet_names() and dam_expts:
-            print("\nDamID experiments found in %s" % geo,
-                  "but no ExperimentDamid sheet present in workbook.",
-                  "DamID experiments will not be written to file.")
+        outbook = experiment_type_compare('ExperimentDamid', dam_expts, geo,
+                                          alias_prefix, file_dict, book, outbook)
+        # if 'ExperimentDamid' in book.sheet_names() and dam_expts:
+        #     outbook = write_experiments('ExperimentDamid', dam_expts, alias_prefix,
+        #                                 file_dict, book, outbook)
+        # elif 'ExperimentDamid' in book.sheet_names() and not dam_expts:
+        #     print("\nNo DamID experiments found in %s." % geo)
+        #     print("If all samples are known to be DamID experiments,",
+        #           "this script can be rerun using -t DamID")
+        # elif 'ExperimentDamid' not in book.sheet_names() and dam_expts:
+        #     print("\nDamID experiments found in %s" % geo,
+        #           "but no ExperimentDamid sheet present in workbook.",
+        #           "DamID experiments will not be written to file.")
 
         cap_expts = [exp for exp in gds.experiments if exp.exptype == 'capturec']
-        if 'ExperimentCaptureC' in book.sheet_names() and cap_expts:
-            outbook = write_experiments('ExperimentCaptureC', cap_expts, alias_prefix,
-                                        file_dict, book, outbook)
-        elif 'ExperimentCaptureC' in book.sheet_names() and not cap_expts:
-            print("\nNo Capture-C experiments parsed from %s." % geo)
-            print("If all samples are known to be Capture-C experiments,",
-                  "this script can be rerun using -t CaptureC")
-        elif 'ExperimentCaptureC' not in book.sheet_names() and cap_expts:
-            print("\nCapture-C experiments found in %s" % geo,
-                  "but no ExperimentCaptureC sheet present in workbook."
-                  "Capture-C experiments will not be written to file.")
+        outbook = experiment_type_compare('ExperimentCaptureC', cap_expts, geo,
+                                          alias_prefix, file_dict, book, outbook)
+        # if 'ExperimentCaptureC' in book.sheet_names() and cap_expts:
+        #     outbook = write_experiments('ExperimentCaptureC', cap_expts, alias_prefix,
+        #                                 file_dict, book, outbook)
+        # elif 'ExperimentCaptureC' in book.sheet_names() and not cap_expts:
+        #     print("\nNo Capture-C experiments parsed from %s." % geo)
+        #     print("If all samples are known to be Capture-C experiments,",
+        #           "this script can be rerun using -t CaptureC")
+        # elif 'ExperimentCaptureC' not in book.sheet_names() and cap_expts:
+        #     print("\nCapture-C experiments found in %s" % geo,
+        #           "but no ExperimentCaptureC sheet present in workbook."
+        #           "Capture-C experiments will not be written to file.")
 
         chia_expts = [exp for exp in gds.experiments if exp.exptype in ['chiapet', 'placseq']]
-        if 'ExperimentChiapet' in book.sheet_names() and chia_expts:
-            outbook = write_experiments('ExperimentChiapet', chia_expts, alias_prefix,
-                                        file_dict, book, outbook)
-        elif 'ExperimentChiapet' in book.sheet_names() and not chia_expts:
-            print("\nNo ChIA-Pet experiments parsed from %s." % geo)
-            print("If all samples are known to be ChIA-Pet experiments,",
-                  "this script can be rerun using -t Chia-Pet")
-        elif 'ExperimentChiapet' not in book.sheet_names() and chia_expts:
-            print("\nChIA-Pet experiments found in %s" % geo,
-                  "but no ExperimentChiapet sheet present in workbook.",
-                  "ChIA-Pet experiments will not be written to file.")
+        outbook = experiment_type_compare('ExperimentChiapet', chia_expts, geo,
+                                          alias_prefix, file_dict, book, outbook)
+        # if 'ExperimentChiapet' in book.sheet_names() and chia_expts:
+        #     outbook = write_experiments('ExperimentChiapet', chia_expts, alias_prefix,
+        #                                 file_dict, book, outbook)
+        # elif 'ExperimentChiapet' in book.sheet_names() and not chia_expts:
+        #     print("\nNo ChIA-Pet experiments parsed from %s." % geo)
+        #     print("If all samples are known to be ChIA-Pet experiments,",
+        #           "this script can be rerun using -t Chia-Pet")
+        # elif 'ExperimentChiapet' not in book.sheet_names() and chia_expts:
+        #     print("\nChIA-Pet experiments found in %s" % geo,
+        #           "but no ExperimentChiapet sheet present in workbook.",
+        #           "ChIA-Pet experiments will not be written to file.")
 
         other = [exp for exp in gds.experiments if exp.exptype not in types]
         if other:
