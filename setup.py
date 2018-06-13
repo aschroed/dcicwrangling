@@ -10,7 +10,7 @@ requires = [
     'boto3',
     'dcicutils',
     'biopython',
-    'submit4dn',
+    'xlrd',
     'xlutils'
 ]
 
