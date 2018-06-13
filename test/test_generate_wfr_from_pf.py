@@ -250,3 +250,120 @@ def test_create_wfr_meta_only_json_no_workflow_args(mocker, auth, prov_workflow,
             wfr_json = gw.create_wfr_meta_only_json(auth, prov_workflow, infiles, outfile)
             assert 'input_files' not in wfr_json
             assert 'output_files' not in wfr_json
+
+
+def test_wfr_get_args_required_default():
+    defaults = {
+        'dbupdate': False,
+        'env': 'data',
+        'key': None,
+        'search': False,
+        'workflow': 'bef50397-4d72-4ed1-9c78-100e14e5c47f'
+    }
+    args = gw.get_args('i')
+    for k, v in defaults.items():
+        assert getattr(args, k) == v
+    assert args.input == ['i']
+
+
+class MockedNamespace(object):
+    def __init__(self, dic):
+        for k, v in dic.items():
+            setattr(self, k, v)
+
+
+@pytest.fixture
+def mocked_args_no_args():
+    return MockedNamespace({})
+
+
+@pytest.fixture
+def mocked_args_dbupd_is_false():
+    return MockedNamespace(
+        {
+            'key': None,
+            'env': 'prod',
+            'dbupdate': False,
+            'input': 'i',
+            'workflow': 'w'
+        }
+    )
+
+
+@pytest.fixture
+def mocked_args_dbupd():
+    return MockedNamespace(
+        {
+            'key': None,
+            'env': 'prod',
+            'dbupdate': True,
+            'input': 'i',
+            'workflow': 'w'
+        }
+    )
+
+
+def test_wfr_main_no_auth(mocker, capsys, mocked_args_no_args):
+    with pytest.raises(SystemExit):
+        with mocker.patch('scripts.generate_wfr_from_pf.get_args',
+                          return_value=mocked_args_no_args):
+            gw.main()
+            out = capsys.readouterr()[0]
+            assert out == "Authentication failed"
+
+
+def test_wfr_main_no_parents(mocker, capsys, mocked_args_dbupd_is_false, auth, prov_workflow,
+                             fp_data, infiles, wfr_out_json):
+    with mocker.patch('scripts.generate_wfr_from_pf.get_args',
+                      return_value=mocked_args_dbupd_is_false):
+        with mocker.patch('scripts.generate_wfr_from_pf.get_authentication_with_server',
+                          return_value=auth):
+            with mocker.patch('scripts.generate_wfr_from_pf.scu.get_item_ids_from_args',
+                              return_value=[fp_data['uuid']]):
+                with mocker.patch('scripts.generate_wfr_from_pf.get_metadata',
+                                  side_effect=[prov_workflow, fp_data]):
+                    gw.main()
+                    out = capsys.readouterr()[0]
+                    assert not out
+
+
+def test_wfr_main_dryrun(mocker, capsys, mocked_args_dbupd_is_false, auth, prov_workflow,
+                         fp_data, infiles, wfr_out_json):
+    fp_data['produced_from'] = [
+        "658ecf64-57a1-41aa-ac04-7224c7ed3208",
+        "658ecf64-57a1-41aa-ac04-7224c7ed3209"]
+    with mocker.patch('scripts.generate_wfr_from_pf.get_args',
+                      return_value=mocked_args_dbupd_is_false):
+        with mocker.patch('scripts.generate_wfr_from_pf.get_authentication_with_server',
+                          return_value=auth):
+            with mocker.patch('scripts.generate_wfr_from_pf.scu.get_item_ids_from_args',
+                              return_value=[fp_data['uuid']]):
+                with mocker.patch('scripts.generate_wfr_from_pf.get_metadata',
+                                  side_effect=[prov_workflow, fp_data, infiles[0], infiles[1]]):
+                    with mocker.patch('scripts.generate_wfr_from_pf.create_wfr_meta_only_json',
+                                      return_value=wfr_out_json):
+                        gw.main()
+                        out = capsys.readouterr()[0]
+                        assert out.startswith('DRY RUN -- will post')
+
+
+def test_wfr_main_dbupdate(mocker, capsys, mocked_args_dbupd, auth, prov_workflow,
+                           fp_data, infiles, wfr_out_json):
+    fp_data['produced_from'] = [
+        "658ecf64-57a1-41aa-ac04-7224c7ed3208",
+        "658ecf64-57a1-41aa-ac04-7224c7ed3209"]
+    with mocker.patch('scripts.generate_wfr_from_pf.get_args',
+                      return_value=mocked_args_dbupd):
+        with mocker.patch('scripts.generate_wfr_from_pf.get_authentication_with_server',
+                          return_value=auth):
+            with mocker.patch('scripts.generate_wfr_from_pf.scu.get_item_ids_from_args',
+                              return_value=[fp_data['uuid']]):
+                with mocker.patch('scripts.generate_wfr_from_pf.get_metadata',
+                                  side_effect=[prov_workflow, fp_data, infiles[0], infiles[1]]):
+                    with mocker.patch('scripts.generate_wfr_from_pf.create_wfr_meta_only_json',
+                                      return_value=wfr_out_json):
+                        with mocker.patch('scripts.generate_wfr_from_pf.post_metadata',
+                                          return_value='SUCCESS'):
+                            gw.main()
+                            out = capsys.readouterr()[0]
+                            assert out.startswith('SUCCESS')

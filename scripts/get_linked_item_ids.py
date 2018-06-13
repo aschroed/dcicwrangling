@@ -44,7 +44,7 @@ def get_args(args):
                         default=False,
                         action='store_true',
                         help='Normally released items are skipped \
-                        - this flag includes them in the final list'),
+                        - this flag includes them in the final list')
     args = parser.parse_args(args)
     return args
 

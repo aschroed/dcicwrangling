@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import sys
 import argparse
 from datetime import datetime
@@ -7,7 +5,7 @@ from dcicutils.ff_utils import get_authentication_with_server, get_metadata, pos
 from dcicwrangling.scripts import script_utils as scu
 
 
-def get_args():  # pragma: no cover
+def get_args(args):
     parser = argparse.ArgumentParser(
         parents=[scu.create_ff_arg_parser(), scu.create_input_arg_parser()],
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -18,7 +16,8 @@ def get_args():  # pragma: no cover
                               default is File Provenance Workflow"
                         )
 
-    return parser.parse_args()
+    args = parser.parse_args(args)
+    return args
 
 
 def _filter_none(l):
@@ -108,8 +107,8 @@ def create_wfr_meta_only_json(auth, workflow, inputs, outputs, alias=None, descr
     return wfr_json
 
 
-def main():  # pragma: no cover
-    args = get_args()
+def main():
+    args = get_args(sys.argv[1:])
     try:
         auth = get_authentication_with_server(args.key, args.env)
     except Exception:

@@ -54,7 +54,7 @@ def test_is_released_no_status(mocker, auth):
         assert not ans
 
 
-def test_get_args_required_default():
+def test_gl_get_args_required_default():
     defaults = {
         'dbupdate': False,
         'env': 'data',
@@ -65,7 +65,6 @@ def test_get_args_required_default():
         'types2exclude': None,
         'types2include': None
     }
-    # import pdb; pdb.set_trace()
     args = gli.get_args('i')
     for k, v in defaults.items():
         assert getattr(args, k) == v
