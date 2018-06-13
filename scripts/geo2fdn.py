@@ -123,14 +123,12 @@ def find_sra_id(geo_id):
         return
     handle = handle_timeout(Entrez.esearch(db='sra', term=sra_acc))
     sra_xml = ET.fromstring(handle.read())
-    time.sleep(1)
     return sra_xml.find('IdList').find('Id').text
 
 
 def parse_sra_record(sra_id, experiment_type=None):
     # takes in an SRA id, fetches the corresponding SRA record, and
     # parses it into an Experiment object
-    time.sleep(1)
     try:
         int(sra_id)
     except ValueError:
@@ -169,7 +167,6 @@ def parse_sra_record(sra_id, experiment_type=None):
 def parse_bs_record(geo_id):
     # takes in an GEO id, fetches the related BioSample record, and
     # parses it into a Biosample object
-    time.sleep(1)
     print("Fetching Biosample record...")
     bs_link = handle_timeout(Entrez.elink(dbfrom='gds', db='biosample', id=geo_id))
     bslink_xml = ET.fromstring(bs_link.read())
@@ -248,6 +245,11 @@ def get_geo_table(geo_acc, outf, lab_alias='4dn-dcic-lab', email=''):
 
 
 def create_dataset(geo_acc, experiment_type=None):
+    '''
+    Takes in a GEO accession, looks up SRA and BioSample records associated
+    with it, and parses them into a Dataset object with associated
+    Biosample and Experiment objects
+    '''
     geo_ids = find_geo_ids(geo_acc)
     if not geo_ids:
         print("No experiments found in {}".format(geo_acc))
@@ -262,6 +264,13 @@ def create_dataset(geo_acc, experiment_type=None):
 
 
 def write_experiments(sheet_name, experiments, alias_prefix, file_dict, inbook, outbook):
+    '''
+    Writes relevant Experiment object attributes to an Experiment sheet.
+    Possible sheet types: ExperimentSeq, ExperimentHiC, ExperimentRepliseq,
+                          ExperimentAtacseq, ExperimentDamid, ExperimentChiapet
+    Writes alias, description, biosample, files, dbxrefs, and experiment_type
+    fields, as appropriate.
+    '''
     sheet_dict = {}
     type_dict = {'chipseq': 'CHIP-seq', 'tsaseq': 'TSA-seq', 'rnaseq': 'RNA-seq',
                  'atacseq': 'ATAC-seq', 'capturec': 'capture Hi-C', 'damid': 'DAM-ID seq',
@@ -294,6 +303,11 @@ def write_experiments(sheet_name, experiments, alias_prefix, file_dict, inbook, 
 
 
 def experiment_type_compare(sheetname, expt_list, geo, alias_prefix, file_dict, inbook, outbook):
+    '''
+    For a given experiment type, looks for that type in workbook sheets and compares
+    to experiment types of GEO record/dataset. If present in both, will write
+    experiments to file; if either is missing, will print an warning message.
+    '''
     expt_dict = {'Atacseq': 'ATAC-seq', 'Damid': 'DamID', 'Chiapet': 'ChIA-PET',
                       'Seq': 'ChIP-seq, RNA-seq, SPRITE, or TSA-seq'}
     expt_name = sheetname[10:] if sheetname[10:] not in expt_dict.keys() else expt_dict[sheetname[10:]]
@@ -315,6 +329,13 @@ def experiment_type_compare(sheetname, expt_list, geo, alias_prefix, file_dict, 
 
 
 def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=valid_types):
+    '''
+    Looks up a GEO Series record, parses it along with its associated SRA and
+    BioSample records, and writes relevant attributes to the specified file. An
+    excel template workbook must be specified, and for each type of metadata
+    object, will look for the relevant sheet in the workbook. If sheet is absent
+    these won't get written.
+    '''
     gds = create_dataset(geo, experiment_type)
     if not gds:
         return
@@ -330,6 +351,7 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
         row = book.sheet_by_name('Biosample').nrows
         print("Writing Biosample sheet...")
         for entry in gds.biosamples:
+            # write each Biosample object to file
             alias = alias_prefix + ':' + entry.acc
             bs.write(row, sheet_dict_bs['aliases'], alias)
             bs.write(row, sheet_dict_bs['description'], entry.description)
@@ -348,6 +370,7 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
         row = book.sheet_by_name('BiosampleCellCulture').nrows
         print("Writing BiosampleCellCulture sheet...")
         for entry in gds.biosamples:
+            # generate aliases for BiosampleCellCulture sheet
             bcc.write(row, sheet_dict_bcc['aliases'], alias_prefix + ':' + entry.acc + '-cellculture')
             row += 1
 
@@ -363,6 +386,8 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
         for entry in gds.experiments:
             file_dict[entry.geo] = []
             for run in entry.runs:
+                # write information about SRA runs to file -
+                # assumes they will be downloaded as fastq files
                 if entry.layout.lower() == 'paired':
                     fq1 = alias_prefix + ':' + run + '_1_fq'
                     fq2 = alias_prefix + ':' + run + '_2_fq'
@@ -401,7 +426,9 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
 
     exp_sheets = [name for name in book.sheet_names() if name.startswith('Experiment')]
     if len(exp_sheets) > 0:
-
+        # looks for each experiment type in parsed data
+        # then looks for relevant worksheet in excel template
+        # writes experiments to file if both present
         hic_expts = [exp for exp in gds.experiments if exp.exptype.startswith('hic') or
                      exp.exptype.startswith('dnase hic')]
         # experiment_type_compare(sheetname, expt_list, geo, alias_prefix, file_dict, inbook, outbook)
