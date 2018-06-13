@@ -28,6 +28,22 @@ def _filter_none(l):
     return nl
 
 
+def get_attribution(items):
+    award = lab = None
+    for i in items:
+        award = i.get('award')
+        lab = i.get('lab')
+        if award and lab:
+            try:
+                award = award.get('uuid')
+                lab = lab.get('uuid')
+            except AttributeError:
+                pass
+            return award, lab
+    # default to 4dn-dcic award and lab
+    return 'b0b9c607-f8b4-4f02-93f4-9895b461334b', '828cd4fe-ebb0-4b36-a94a-d2e3a36cc989'
+
+
 def create_wfr_meta_only_json(auth, workflow, inputs, outputs, alias=None, description=None):
     '''provide input file(s), output file(s), optional alias,
        optional description builds a metadata only workflow_run json
@@ -43,11 +59,13 @@ def create_wfr_meta_only_json(auth, workflow, inputs, outputs, alias=None, descr
         alias = '4dn-dcic-lab:' + workflow.get('name') + '_run_' + now.replace(':', '-').replace(' ', '-')
     wfr_title = workflow.get('title') + ' run on ' + now
 
+    award, lab = get_attribution(infiles + outfiles + [workflow])
+
     wfr_json = {
         'workflow': workflow.get('uuid'),
         'aliases': [alias],
-        'award': infiles[0].get('award'),
-        'lab': infiles[0].get('lab'),
+        'award': award,
+        'lab': lab,
         'status': 'in review by lab',
         'title': wfr_title,
         'run_status': 'complete'

@@ -146,6 +146,48 @@ def wfr_out_json():
     }
 
 
+def test_get_attribution_with_attr(infiles):
+    award, lab = gw.get_attribution(infiles)
+    assert award == infiles[0]['award']
+    assert lab == infiles[0]['lab']
+
+
+def test_get_attribution_with_attr_in_second(infiles):
+    infiles[1]['award'] = 'test_award'
+    infiles[1]['lab'] = 'test_lab'
+    del infiles[0]['award']
+    del infiles[0]['lab']
+    award, lab = gw.get_attribution(infiles)
+    assert award == infiles[1]['award']
+    assert lab == infiles[1]['lab']
+
+
+def test_get_attribution_attr_topsy_turvy_gets_dcic(infiles):
+    del infiles[0]['award']
+    del infiles[1]['lab']
+    award, lab = gw.get_attribution(infiles)
+    assert award == 'b0b9c607-f8b4-4f02-93f4-9895b461334b'
+    assert lab == '828cd4fe-ebb0-4b36-a94a-d2e3a36cc989'
+
+
+def test_get_attribution_attr_none_gets_dcic(infiles):
+    del infiles[0]['award']
+    del infiles[0]['lab']
+    del infiles[1]['award']
+    del infiles[1]['lab']
+    award, lab = gw.get_attribution(infiles)
+    assert award == 'b0b9c607-f8b4-4f02-93f4-9895b461334b'
+    assert lab == '828cd4fe-ebb0-4b36-a94a-d2e3a36cc989'
+
+
+def test_get_attribution_attr_embedded_objs(infiles):
+    infiles[0]['award'] = {'uuid': 'test_award_uuid'}
+    infiles[0]['lab'] = {'uuid': 'test_lab_uuid'}
+    award, lab = gw.get_attribution(infiles)
+    assert award == 'test_award_uuid'
+    assert lab == 'test_lab_uuid'
+
+
 def test_create_wfr_meta_only_json(auth, prov_workflow, infiles, outfile, wfr_out_json):
     eqfields = ['workflow', 'award', 'lab', 'status', 'run_status']
     chkstart = ['aliases', 'title']
@@ -173,5 +215,38 @@ def test_create_wfr_meta_only_json(auth, prov_workflow, infiles, outfile, wfr_ou
                 assert d['type'] == 'Output processed file'
 
 
-def test_create_wfr_meta_only_json_w_alias_and_desc():
-    pass
+def test_create_wfr_meta_only_json_w_no_wf_uuid(mocker, auth, prov_workflow):
+    del prov_workflow['uuid']
+    with mocker.patch('scripts.generate_wfr_from_pf.scu.get_item_if_you_can', return_value=prov_workflow):
+        wfr_json = gw.create_wfr_meta_only_json(auth, prov_workflow, None, None)
+        assert wfr_json is None
+
+
+def test_create_wfr_meta_only_json_w_alias_and_desc(mocker, auth, prov_workflow, infiles, outfile):
+    alias = 'test_alias'
+    desc = 'test description'
+    with mocker.patch('scripts.generate_wfr_from_pf.scu.get_item_if_you_can',
+                      side_effect=[prov_workflow, infiles[0], infiles[1], outfile[0]]):
+        with mocker.patch('scripts.generate_wfr_from_pf.datetime', return_value='2018-06-11 16:29:22.839062'):
+            wfr_json = gw.create_wfr_meta_only_json(auth, prov_workflow, infiles, outfile, alias=alias, description=desc)
+            assert wfr_json['description'] == desc
+            assert wfr_json['aliases'][0] == alias
+
+
+def test_create_wfr_meta_only_json_no_in_or_out_files(mocker, auth, prov_workflow):
+    with mocker.patch('scripts.generate_wfr_from_pf.scu.get_item_if_you_can',
+                      return_value=prov_workflow):
+        with mocker.patch('scripts.generate_wfr_from_pf.datetime', return_value='2018-06-11 16:29:22.839062'):
+            wfr_json = gw.create_wfr_meta_only_json(auth, prov_workflow, [], [])
+            assert 'input_files' not in wfr_json
+            assert 'output_files' not in wfr_json
+
+
+def test_create_wfr_meta_only_json_no_workflow_args(mocker, auth, prov_workflow, infiles, outfile):
+    del prov_workflow['arguments']
+    with mocker.patch('scripts.generate_wfr_from_pf.scu.get_item_if_you_can',
+                      side_effect=[prov_workflow, infiles[0], infiles[1], outfile[0]]):
+        with mocker.patch('scripts.generate_wfr_from_pf.datetime', return_value='2018-06-11 16:29:22.839062'):
+            wfr_json = gw.create_wfr_meta_only_json(auth, prov_workflow, infiles, outfile)
+            assert 'input_files' not in wfr_json
+            assert 'output_files' not in wfr_json
