@@ -1,3 +1,4 @@
+import pytest
 from scripts import get_linked_item_ids as gli
 
 
@@ -71,26 +72,150 @@ def test_gl_get_args_required_default():
     assert args.input == ['i']
 
 
-# @pytest.fixture
-# def key():
-#     return {'key': 'k', 'secret': 'ss', 'server': 'https://data.4dnucleome.org'}
-#
-#
-# def test_get_args_w_options(key):
-#     options = {
-#         'dbupdate': True,
-#         'env': 'staging',
-#         'include_released': True,
-#         'key': key,
-#         'no_children': ['Vendor', 'Individual'],
-#         'search': True,
-#         'types2exclude': ['Protocol'],
-#         'types2include': ['Organism', 'Ontology']
-#     }
-#     # import pdb; pdb.set_trace()
-#     args = gli.get_args("i --dbuupdate --env staging --include_released \
-#         --key {'key': 'k', 'secret': 'ss', 'server': 'https://data.4dnucleome.org'} \
-#         --no_children Vendor Individual --search --types2exclude Protocol --types2include Organism Ontology")
-#     for k, v in options.items():
-#         assert getattr(args, k) == v
-#     assert args.input == ['i']
+class MockedNamespace(object):
+    def __init__(self, dic):
+        for k, v in dic.items():
+            setattr(self, k, v)
+
+
+@pytest.fixture
+def mocked_args_no_args():
+    return MockedNamespace({})
+
+
+@pytest.fixture
+def mocked_args_standard():
+    return MockedNamespace(
+        {
+            'key': None,
+            'env': 'prod',
+            'dbupdate': False,
+            'input': 'i',
+            'search': False,
+            'types2exclude': None,
+            'types2include': None,
+            'no_children': None,
+            'include_released': False,
+        }
+    )
+
+
+@pytest.fixture
+def mocked_args_plus():
+    return MockedNamespace(
+        {
+            'key': None,
+            'env': 'prod',
+            'dbupdate': False,
+            'input': 'i',
+            'search': False,
+            'types2exclude': None,
+            'types2include': None,
+            'no_children': ['Biosample'],
+            'include_released': True,
+        }
+    )
+
+
+@pytest.fixture
+def mocked_args_plus_more():
+    return MockedNamespace(
+        {
+            'key': None,
+            'env': 'prod',
+            'dbupdate': False,
+            'input': 'i',
+            'search': False,
+            'types2exclude': None,
+            'types2include': None,
+            'no_children': ['Biosample'],
+            'include_released': False,
+        }
+    )
+
+
+@pytest.fixture
+def got_item_ids():
+    return {
+        'test_eset_uuid': 'ExperimentSetReplicate',
+        'ret_uuid1': 'ExperimentHiC',
+        'ret_uuid2': 'ExperimentHiC',
+        'ret_uuid3': 'Biosample',
+        'ret_uuid4': 'Biosample',
+        'ret_uuid5': 'Protocol'
+    }
+
+
+def test_gl_main_no_auth(mocker, capsys, mocked_args_no_args):
+    with pytest.raises(SystemExit):
+        with mocker.patch('scripts.get_linked_item_ids.get_args',
+                          return_value=mocked_args_no_args):
+            gli.main()
+            out = capsys.readouterr()[0]
+            assert out == "Authentication failed"
+
+
+def test_gl_main_standard(mocker, capsys, mocked_args_standard, auth, got_item_ids):
+    se = [False] * 6
+    with mocker.patch('scripts.get_linked_item_ids.get_args',
+                      return_value=mocked_args_standard):
+        with mocker.patch('scripts.get_linked_item_ids.get_authentication_with_server',
+                          return_value=auth):
+            with mocker.patch('scripts.generate_wfr_from_pf.scu.get_item_ids_from_args',
+                              return_value=['test_eset_uuid']):
+                with mocker.patch('scripts.get_linked_item_ids.get_excluded',
+                                  return_value=['User', 'Lab', 'Award', 'OntologyTerm', 'Ontology',
+                                                'Organism', 'Publication', 'IndividualHuman']):
+                    with mocker.patch('scripts.get_linked_item_ids.scu.get_linked_items',
+                                      return_value=got_item_ids):
+                        with mocker.patch('scripts.get_linked_item_ids.scu.filter_dict_by_value',
+                                          return_value=got_item_ids):
+                            with mocker.patch('scripts.get_linked_item_ids.is_released',
+                                              side_effect=se):
+                                gli.main()
+                                out = capsys.readouterr()[0]
+                                for f, v in got_item_ids.items():
+                                    assert f in out
+                                    assert v in out
+
+
+def test_gl_main_plus(mocker, capsys, mocked_args_plus, auth, got_item_ids):
+    se = [False] * 5 + [True]
+    with mocker.patch('scripts.get_linked_item_ids.get_args',
+                      return_value=mocked_args_plus):
+        with mocker.patch('scripts.get_linked_item_ids.get_authentication_with_server',
+                          return_value=auth):
+            with mocker.patch('scripts.generate_wfr_from_pf.scu.get_item_ids_from_args',
+                              return_value=['test_eset_uuid']):
+                with mocker.patch('scripts.get_linked_item_ids.get_excluded',
+                                  return_value=None):
+                    with mocker.patch('scripts.get_linked_item_ids.scu.get_linked_items',
+                                      return_value=got_item_ids):
+                            with mocker.patch('scripts.get_linked_item_ids.is_released',
+                                              side_effect=se):
+                                gli.main()
+                                out = capsys.readouterr()[0]
+                                for f, v in got_item_ids.items():
+                                    assert f in out
+                                    assert v in out
+
+
+def test_gl_main_plus_more(mocker, capsys, mocked_args_plus_more, auth, got_item_ids):
+    se = [False] * 5 + [True] + [False]
+    with mocker.patch('scripts.get_linked_item_ids.get_args',
+                      return_value=mocked_args_plus_more):
+        with mocker.patch('scripts.get_linked_item_ids.get_authentication_with_server',
+                          return_value=auth):
+            with mocker.patch('scripts.generate_wfr_from_pf.scu.get_item_ids_from_args',
+                              return_value=['test_eset_uuid', 'test_eset_uuid2']):
+                with mocker.patch('scripts.get_linked_item_ids.get_excluded',
+                                  return_value=None):
+                    with mocker.patch('scripts.get_linked_item_ids.scu.get_linked_items',
+                                      side_effect=[got_item_ids, {'ret_uuid1': got_item_ids['ret_uuid1']}]):
+                            with mocker.patch('scripts.get_linked_item_ids.is_released',
+                                              side_effect=se):
+                                gli.main()
+                                out = capsys.readouterr()[0]
+                                for f, v in got_item_ids.items():
+                                    assert f in out
+                                    assert v in out
