@@ -16,8 +16,11 @@ from Bio import Entrez
 description = '''
 Script for fetching metadata from GEO and inserting it into a Submit4dn metadata workbook.
 
-Note: Use of NCBI's Entrez querying system requires an email address.
+Note1: Use of NCBI's Entrez querying system requires an email address.
 There will be a prompt to enter an email address when this script is run.
+
+Note2: Currently only works if each experiment in GEO has an SRA record. Will not
+work properly for sequences in dbgap, but hope to implement this in the future.
 
 '''
 
@@ -120,6 +123,7 @@ def find_sra_id(geo_id):
             break
     if not sra_acc:
         print('No SRA record associated with ID %s.' % geo_id)
+        # look for sign of restricted data/dbgap data/sra record type
         return
     handle = handle_timeout(Entrez.esearch(db='sra', term=sra_acc))
     sra_xml = ET.fromstring(handle.read())
