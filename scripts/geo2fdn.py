@@ -431,133 +431,21 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
         # writes experiments to file if both present
         hic_expts = [exp for exp in gds.experiments if exp.exptype.startswith('hic') or
                      exp.exptype.startswith('dnase hic')]
-        # experiment_type_compare(sheetname, expt_list, geo, alias_prefix, file_dict, inbook, outbook)
-        outbook = experiment_type_compare('ExperimentHiC', hic_expts, geo, alias_prefix,
-                                          file_dict, book, outbook)
-        # if 'ExperimentHiC' in book.sheet_names() and hic_expts:
-        #     outbook = write_experiments('ExperimentHiC', hic_expts, alias_prefix,
-        #                                 file_dict, book, outbook)
-        # elif 'ExperimentHiC' in book.sheet_names() and not hic_expts:
-        #     print("\nNo HiC experiments parsed from %s." % geo)
-        #     print("If all samples are known to be HiC experiments,",
-        #           "this script can be rerun using -t HiC")
-        # elif 'ExperimentHiC' not in book.sheet_names() and hic_expts:
-        #     print("\nHiC experiments found in %s but no ExperimentHiC sheet present in workbook." % geo,
-        #           "HiC experiments will not be written to file.")
-
         seq_expts = [exp for exp in gds.experiments if exp.exptype in
                      ['chipseq', 'rnaseq', 'tsaseq'] or 'sprite' in exp.exptype]
-        outbook = experiment_type_compare('ExperimentSeq', seq_expts, geo, alias_prefix,
-                                          file_dict, book, outbook)
-        # if 'ExperimentSeq' in book.sheet_names() and seq_expts:
-        #     outbook = write_experiments('ExperimentSeq', seq_expts, alias_prefix,
-        #                                 file_dict, book, outbook)
-        # elif 'ExperimentSeq' in book.sheet_names() and not seq_expts:
-        #     print("\nNo ChIP-seq, RNA-seq, SPRITE, or TSA-seq experiments parsed from %s." % geo)
-        #     print("If all samples are known to be a single experiment type,",
-        #           "this script can be rerun using -t option.")
-        # elif 'ExperimentSeq' not in book.sheet_names() and seq_expts:
-        #     print("\nChIP-seq, RNA-seq, SPRITE, or TSA-seq experiments found in %s" % geo,
-        #           "but no ExperimentSeq sheet present in workbook.",
-        #           "These experiments will not be written to file.")
-            # sheet_dict_seq = {}
-            # seq_sheets = book.sheet_by_name('ExperimentSeq').row_values(0)
-            # for item in seq_sheets:
-            #     sheet_dict_seq[item] = seq_sheets.index(item)
-            # seq = outbook.get_sheet('ExperimentSeq')
-            # row = book.sheet_by_name('ExperimentSeq').nrows
-            # print("Writing ExperimentSeq sheet...")
-            # for entry in gds.experiments:
-            #     if entry.exptype in ['chipseq', 'rnaseq', 'tsaseq']:
-            #         seq.write(row, sheet_dict_seq['aliases'], alias_prefix + ':' + entry.geo)
-            #         seq.write(row, sheet_dict_seq['description'], entry.title)
-            #         seq.write(row, sheet_dict_seq['*biosample'], alias_prefix + ':' + entry.bs)
-            #         seq.write(row, sheet_dict_seq['files'], ','.join(file_dict[entry.geo]))
-            #         seq.write(row, sheet_dict_seq['dbxrefs'], 'GEO:' + entry.geo)
-            #         if entry.exptype.lower() == 'chip-seq':
-            #             seq.write(row, sheet_dict_seq['*experiment_type'], 'CHIP-seq')
-            #         elif entry.exptype.lower() == 'tsa-seq':
-            #             seq.write(row, sheet_dict_seq['*experiment_type'], 'TSA-seq')
-            #         elif entry.exptype.lower() == 'rna-seq':
-            #             seq.write(row, sheet_dict_seq['*experiment_type'], 'RNA-seq')
-            #         row += 1
         atac_expts = [exp for exp in gds.experiments if exp.exptype == 'atacseq']
-        outbook = experiment_type_compare('ExperimentAtacseq', atac_expts, geo,
-                                          alias_prefix, file_dict, book, outbook)
-        # if 'ExperimentAtacseq' in book.sheet_names() and atac_expts:
-        #     outbook = write_experiments('ExperimentAtacseq', atac_expts, alias_prefix,
-        #                                 file_dict, book, outbook)
-        # elif 'ExperimentAtacseq' in book.sheet_names() and not atac_expts:
-        #     print("\nNo ATAC-seq experiments parsed from %s." % geo)
-        #     print("If all samples are known to be ATAC-seq experiments,",
-        #           "this script can be rerun using -t ATAC-seq")
-        # elif 'ExperimentAtacseq' not in book.sheet_names() and atac_expts:
-        #     print("\nATAC-seq experiments found in %s" % geo,
-        #           "but no ExperimentAtacseq sheet present in workbook.",
-        #           "ATAC-seq experiments will not be written to file.")
-        # if 'other' in exp_types:
-        #     # need to add these attributes to class
-        #     titles = [exp.title.lower() for exp in gds.experiments] +
-        #                 [exp.study_title.lower() for exp in gds.experiments]
         rep_expts = [exp for exp in gds.experiments if exp.exptype == 'repliseq']
-        outbook = experiment_type_compare('ExperimentRepliseq', rep_expts, geo,
-                                          alias_prefix, file_dict, book, outbook)
-        # if 'ExperimentRepliseq' in book.sheet_names() and rep_expts:
-        #     outbook = write_experiments('ExperimentRepliseq', rep_expts, alias_prefix,
-        #                                 file_dict, book, outbook)
-        # elif 'ExperimentRepliseq' in book.sheet_names() and not rep_expts:
-        #     print("\nNo Repliseq experiments parsed from %s." % geo)
-        #     print("If all samples are known to be Repliseq experiments,",
-        #           "this script can be rerun using -t Repliseq")
-        # elif 'ExperimentRepliseq' not in book.sheet_names() and rep_expts:
-        #     print("\nRepliseq experiments found in %s" % geo,
-        #           "but no ExperimentRepliseq sheet present in workbook.",
-        #           "Repliseq experiments will not be written to file.")
-
         dam_expts = [exp for exp in gds.experiments if exp.exptype.startswith('damid')]
-        outbook = experiment_type_compare('ExperimentDamid', dam_expts, geo,
-                                          alias_prefix, file_dict, book, outbook)
-        # if 'ExperimentDamid' in book.sheet_names() and dam_expts:
-        #     outbook = write_experiments('ExperimentDamid', dam_expts, alias_prefix,
-        #                                 file_dict, book, outbook)
-        # elif 'ExperimentDamid' in book.sheet_names() and not dam_expts:
-        #     print("\nNo DamID experiments found in %s." % geo)
-        #     print("If all samples are known to be DamID experiments,",
-        #           "this script can be rerun using -t DamID")
-        # elif 'ExperimentDamid' not in book.sheet_names() and dam_expts:
-        #     print("\nDamID experiments found in %s" % geo,
-        #           "but no ExperimentDamid sheet present in workbook.",
-        #           "DamID experiments will not be written to file.")
-
         cap_expts = [exp for exp in gds.experiments if exp.exptype == 'capturec']
-        outbook = experiment_type_compare('ExperimentCaptureC', cap_expts, geo,
-                                          alias_prefix, file_dict, book, outbook)
-        # if 'ExperimentCaptureC' in book.sheet_names() and cap_expts:
-        #     outbook = write_experiments('ExperimentCaptureC', cap_expts, alias_prefix,
-        #                                 file_dict, book, outbook)
-        # elif 'ExperimentCaptureC' in book.sheet_names() and not cap_expts:
-        #     print("\nNo Capture-C experiments parsed from %s." % geo)
-        #     print("If all samples are known to be Capture-C experiments,",
-        #           "this script can be rerun using -t CaptureC")
-        # elif 'ExperimentCaptureC' not in book.sheet_names() and cap_expts:
-        #     print("\nCapture-C experiments found in %s" % geo,
-        #           "but no ExperimentCaptureC sheet present in workbook."
-        #           "Capture-C experiments will not be written to file.")
-
         chia_expts = [exp for exp in gds.experiments if exp.exptype in ['chiapet', 'placseq']]
-        outbook = experiment_type_compare('ExperimentChiapet', chia_expts, geo,
-                                          alias_prefix, file_dict, book, outbook)
-        # if 'ExperimentChiapet' in book.sheet_names() and chia_expts:
-        #     outbook = write_experiments('ExperimentChiapet', chia_expts, alias_prefix,
-        #                                 file_dict, book, outbook)
-        # elif 'ExperimentChiapet' in book.sheet_names() and not chia_expts:
-        #     print("\nNo ChIA-Pet experiments parsed from %s." % geo)
-        #     print("If all samples are known to be ChIA-Pet experiments,",
-        #           "this script can be rerun using -t Chia-Pet")
-        # elif 'ExperimentChiapet' not in book.sheet_names() and chia_expts:
-        #     print("\nChIA-Pet experiments found in %s" % geo,
-        #           "but no ExperimentChiapet sheet present in workbook.",
-        #           "ChIA-Pet experiments will not be written to file.")
+
+        sheet_types = {'HiC': hic_expts, 'Seq': seq_expts, 'Damid': dam_expts,
+                           'Atacseq': atac_expts, 'Repliseq': rep_expts,
+                           'CaptureC': cap_expts, 'Chiapet': chia_expts}
+
+        for key in sheet_types.keys():
+            outbook = experiment_type_compare('Experiment' + key, sheet_types[key], geo,
+                                              alias_prefix, file_dict, book, outbook)
 
         other = [exp for exp in gds.experiments if exp.exptype not in types]
         if other:
