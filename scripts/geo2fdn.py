@@ -168,6 +168,30 @@ def parse_sra_record(sra_id, experiment_type=None):
     return exp
 
 
+def parse_gsm_soft(gsm):
+    soft = request.urlopen('https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=' +
+                           gsm + '&form=text&view=full')
+    record = soft.read().decode('utf-8').split('\r\n')
+    for line in record:
+        if line.startswith('!Sample_type = ') and 'SRA' not in line:
+            return
+        # get title
+        elif line.startswith('!Sample_title = '):
+            title = line[line.index('=') + 2:]
+        # get library strategy
+        elif line.startswith('!Sample_library_strategy = '):
+            exptype = line[line.index('=') + 2:]
+        # check for SRA
+        # get BioSample
+        elif line.startswith('!Sample_relation = BioSample:'):
+            bs = line[line.index('SAMN'):]
+        # get instrument model
+        elif line.startswith('!Sample_instrument_model = '):
+            instr = line[line.index('=') + 2:]
+    return Experiment(exptype, instr, layout=None, gsm, title, runs=[], length=0,
+                      study_title=None, bs)
+
+
 def parse_bs_record(geo_id):
     # takes in an GEO id, fetches the related BioSample record, and
     # parses it into a Biosample object
