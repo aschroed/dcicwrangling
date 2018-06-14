@@ -48,6 +48,22 @@ def get_item_ids_from_args(id_input, auth, is_search=False):
         return id_input
 
 
+def get_item_if_you_can(auth, value, itype=None):
+    try:
+        value.get('uuid')
+        return value
+    except AttributeError:
+        svalue = str(value)
+        item = get_metadata(svalue, auth)
+        try:
+            item.get('uuid')
+            return item
+        except AttributeError:
+            if itype is not None:
+                svalue = '/' + itype + svalue + '/?datastore=database'
+                return get_metadata(svalue, auth)
+
+
 def get_item_uuid(iid, auth):
     """return a uuid for an item passed another id type"""
     if is_uuid(iid):

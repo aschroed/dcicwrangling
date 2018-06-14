@@ -44,12 +44,12 @@ def get_args(args):
                         default=False,
                         action='store_true',
                         help='Normally released items are skipped \
-                        - this flag includes them in the final list'),
+                        - this flag includes them in the final list')
     args = parser.parse_args(args)
     return args
 
 
-def main():  # pragma: no cover
+def main():
     args = get_args(sys.argv[1:])
     try:
         auth = get_authentication_with_server(args.key, args.env)
@@ -60,7 +60,8 @@ def main():  # pragma: no cover
     excluded_types = get_excluded(args.types2exclude, args.types2include)
     no_child = ['Publication', 'Lab', 'User', 'Award']  # default no_childs
     if args.no_children:
-        no_child = list(set(no_child.extend(args.no_children)))
+        no_child.extend(args.no_children)
+        no_child = list(set(no_child))
 
     all_linked_ids = []
     # main loop through the top level item ids

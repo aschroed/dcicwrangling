@@ -382,3 +382,47 @@ def test_get_linked_item_ids_w_recursive(auth, mocker):
             for i in iids:
                 assert i in goodids
                 assert i not in badids
+
+
+@pytest.fixture
+def cell_line_json():
+    return {
+        "is_slim_for": "cell",
+        "namespace": "http://www.ebi.ac.uk/efo",
+        "term_id": "EFO:0000322",
+        "term_name": "cell line",
+        "source_ontology": "530006bc-8535-4448-903e-854af460b254",
+        "term_url": "http://www.ebi.ac.uk/efo/EFO_0000322"
+    }
+
+
+def test_get_item_if_you_can_json_w_uuid(auth, eset_json):
+    result = scu.get_item_if_you_can(auth, eset_json)
+    assert result == eset_json
+
+
+def test_get_item_if_you_can_w_uuid(mocker, auth, eset_json):
+    with mocker.patch('scripts.script_utils.get_metadata', return_value=eset_json):
+        result = scu.get_item_if_you_can(auth, eset_json['uuid'])
+        assert result == eset_json
+
+
+def test_get_item_if_you_can_w_termname_and_itype(mocker, auth, cell_line_json):
+    with mocker.patch('scripts.script_utils.get_metadata',
+                      side_effect=[None, cell_line_json]):
+        result = scu.get_item_if_you_can(auth, cell_line_json['term_name'], 'OntologyTerm')
+        assert result == cell_line_json
+
+
+def test_get_item_if_you_can_w_termname_and_no_itype_no_item(mocker, auth, cell_line_json):
+    with mocker.patch('scripts.script_utils.get_metadata',
+                      side_effect=[None, None]):
+        result = scu.get_item_if_you_can(auth, cell_line_json['term_name'])
+        assert result is None
+
+
+def test_get_item_if_you_can_w_fakename_and_itype_no_item(mocker, auth):
+    with mocker.patch('scripts.script_utils.get_metadata',
+                      side_effect=[None, None]):
+        result = scu.get_item_if_you_can(auth, 'fake name', 'OntologyTerm')
+        assert result is None
