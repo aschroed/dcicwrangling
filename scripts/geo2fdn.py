@@ -108,6 +108,23 @@ def find_geo_ids(acc):
     return [geo_id for geo_id in ids if geo_id.startswith('3')]
 
 
+def find_accs(acc):
+    if acc.startswith('GSE'):
+        soft = request.urlopen('https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=' + acc +
+                                   '&form=text&view=full')
+        gse = soft.read().decode('utf-8').split('\r\n')
+        series_type = '; '.join([line for line in gse if line.startswith('!Series_type = ')])
+        if 'array' in series_type and 'sequencing' not in series_type:
+            print('The GEO Series associated with this accession does not contain',
+                  'sequencing experiments. Exiting.')
+            sys.exit()
+    elif acc.startswith('GSM'):
+        return acc
+    else:
+        print('Input not a valid GEO accession.')
+        return
+
+
 def find_sra_id(geo_id):
     # finds SRA id number associated with a GEO id number
     try:
