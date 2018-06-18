@@ -52,6 +52,7 @@ class Experiment:
         self.link = link
 
     def get_sra(self):
+        # look up SRA record to fill out more attributes
         handle = handle_timeout(Entrez.efetch(db="sra", id=self.link))
         record = ET.fromstring(handle.readlines()[2])
         self.length = int(mean([int(float(item.get('average'))) for item in record.iter('Read') if item.get('count') != '0']))
@@ -86,6 +87,9 @@ valid_types = ['hic', 'hicseq', 'dnase hic', 'rnaseq', 'tsaseq', 'chipseq',
 
 
 def handle_timeout(command):
+    '''
+    To retry commands if the server connection times out.
+    '''
     try:
         result = command
     except HTTPError:
@@ -98,7 +102,12 @@ def handle_timeout(command):
     return result
 
 
-def parse_gsm_soft(gsm, experiment_type):
+def parse_gsm_soft(gsm, experiment_type=None):
+    '''
+    Parses information about individual experiment. Input is a GEOparse.gsm object.
+    Function creates an Experiment object; if GSM record has an associated SRA record,
+    it will also look up the SRA record and fill out more attributes.
+    '''
     # if experiment is a microarray, don't parse
     if 'SRA' not in gsm.metadata['type']:
         return
@@ -123,7 +132,15 @@ def parse_gsm_soft(gsm, experiment_type):
     return exp
 
 
-def get_geo_metadata(acc, experiment_type):
+def get_geo_metadata(acc, experiment_type=None):
+    '''
+    Parses information associated with a GEO Series or single experiment.
+    Uses GEOparse library which downloads records from NCBI ftp rather than using
+    NCBI Entrez e-utils, resulting in a single request rather than many. This
+    function will parse information from the files and then delete them. Returns
+    a Dataset object, holding information about all the associated experiments
+    and biosamples.
+    '''
     if acc.startswith('GSE'):  # experiment series
         gse = GEOparse.get_GEO(geo=acc)
         # create Experiment objects from each GSM file
@@ -151,8 +168,10 @@ def get_geo_metadata(acc, experiment_type):
 
 
 def parse_bs_record(bs_acc):
-    # takes in an GEO id, fetches the related BioSample record, and
-    # parses it into a Biosample object
+    '''
+    Takes in a BioSample accession, fetches the BioSample record, and
+    parses it into a Biosample object.
+    '''
     print("Fetching Biosample record...")
     bs_handle = handle_timeout(Entrez.efetch(db='biosample', id=bs_acc))
     bs_xml = ET.fromstring(bs_handle.read())
@@ -160,7 +179,6 @@ def parse_bs_record(bs_acc):
     descr = ''
     acc = bs_xml.find('./BioSample').attrib['accession']
     org = [item.text for item in bs_xml.iter("OrganismName")][0]
-    # treatments = None
     for item in bs_xml.iter("Attribute"):
         atts[item.attrib['attribute_name']] = item.text
     for name in ['source_name', 'sample_name', 'gender', 'strain', 'genotype', 'cross',
@@ -171,6 +189,7 @@ def parse_bs_record(bs_acc):
             if name == 'treatment':
                 treatments = atts[name]
                 if not sum([term in treatments.lower() for term in ['blank', 'none', 'n/a']]):
+                    # print message to indicate that Treatment tab will need to be filled
                     print("BioSample accession %s has treatment attribute" % acc,
                           "but treatment not written to file")
     descr = descr.rstrip('; ')
