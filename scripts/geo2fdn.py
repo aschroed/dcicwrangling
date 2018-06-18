@@ -2,6 +2,7 @@
 # -*- coding: latin-1 -*-
 
 import argparse
+import os
 import re
 import sys
 import time
@@ -11,6 +12,7 @@ import xml.etree.ElementTree as ET
 import xlrd
 from xlutils.copy import copy
 from Bio import Entrez
+import GEOparse
 
 
 description = '''
@@ -37,16 +39,27 @@ $ python scripts/geo2fdn.py GSE68992 -i hic_workbook.xls -o GSE68992_metadata.xl
 
 class Experiment:
 
-    def __init__(self, exptype, instr, layout, geo, title, runs, length, study_title, biosample):
+    def __init__(self, exptype, instr, geo, title, biosample, link):
         self.exptype = exptype.lower()  # experiment type
         self.instr = instr  # sequencing instrument
-        self.layout = layout  # single or paired end
+        self.layout = ''  # single or paired end
         self.geo = geo  # geo accession starting with GSM
         self.title = title
-        self.runs = runs  # list of SRA accessions starting with SRR
-        self.length = length  # mean read length
-        self.study_title = study_title
+        self.runs = []  # list of SRA accessions starting with SRR
+        self.length = ''  # mean read length
+        # self.study_title = study_title
         self.bs = biosample
+        self.link = link
+
+    def get_sra(self):
+        handle = handle_timeout(Entrez.efetch(db="sra", id=self.link))
+        record = ET.fromstring(handle.readlines()[2])
+        self.length = int(mean([int(float(item.get('average'))) for item in record.iter('Read') if item.get('count') != '0']))
+        self.st = record.find('STUDY').find('DESCRIPTOR').find('STUDY_TITLE').text
+        for item in record.find('EXPERIMENT').find('DESIGN').find('LIBRARY_DESCRIPTOR').find('LIBRARY_LAYOUT'):
+            self.layout = item.tag.lower()
+            break
+        self.runs = [item.get('accession') for item in record.find('RUN_SET').findall('RUN')]
 
 
 class Biosample:
@@ -85,138 +98,56 @@ def handle_timeout(command):
     return result
 
 
-def find_geo_ids(acc):
-    # finds GEO id numbers associated with a GEO series accession
-    try:
-        assert acc.startswith('GSM') or acc.startswith('GSE')
-    except:
-        raise ValueError('Input not a GEO Datasets accession. Accession must start with GSE or GSM.')
-
-    print("Searching GEO accession...")
-    handle = handle_timeout(Entrez.esearch(db='gds', term=acc, retmax=1000))
-    geo_xml = ET.fromstring(handle.read())
-    ids = [item.text for item in geo_xml.find('IdList')]
-    gse_ids = [item for item in ids if item.startswith('2')]
-    soft = request.urlopen('https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=' + acc +
-                               '&form=text&view=full')
-    gse = soft.read().decode('utf-8').split('\r\n')
-    if gse_ids:
-        for line in gse:
-            if line.startswith('!Series_type = '):
-                if "other" not in line.lower() and "sequencing" not in line:
-                    print('')
-    return [geo_id for geo_id in ids if geo_id.startswith('3')]
-
-
-def find_accs(acc):
+def get_geo_metadata(acc, experiment_type):
     if acc.startswith('GSE'):
-        soft = request.urlopen('https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=' + acc +
-                                   '&form=text&view=full')
-        gse = soft.read().decode('utf-8').split('\r\n')
-        series_type = '; '.join([line for line in gse if line.startswith('!Series_type = ')])
-        if 'array' in series_type and 'sequencing' not in series_type:
-            print('The GEO Series associated with this accession does not contain',
-                  'sequencing experiments. Exiting.')
+        gse = GEOparse.get_GEO(geo=acc)
+        # create Experiment objects from each GSM file
+        experiments = []
+        biosamples = []
+        for gsm in gse.gsms.values():
+            if 'SRA' not in gsm.metadata['type']:
+                continue
+            exp_type = experiment_type if experiment_type else gsm.metadata['library_strategy'][0]
+            if not exp_type or exp_type.lower() == 'other':
+                for item in gsm.metadata['data_processing']:
+                    if item.startswith('Library strategy'):
+                        exp_type = item[item.index(':') + 2:]
+            link = None
+            for item in gsm.metadata['relation']:
+                if item.startswith('BioSample:'):
+                    bs = item[item.index('SAMN'):]
+                    biosamples.append(bs)
+                    # then call biosample function to create biosample objects
+                elif item.startswith('SRA:'):
+                    link = item[item.index('SRX'):]
+            exp = Experiment(re.sub('-', '', exp_type.lower()), gsm.metadata['instrument_model'],
+                             gsm.name, gsm.metadata['title'], bs, link)
+            if link:
+                exp.get_sra()
+            experiments.append(exp)
+        # then find SRA data to finish Experiment objects
+        if not experiments:
+            print('Sequencing experiments not found. Exiting.')
             sys.exit()
+        gds = Dataset(acc, gse.metadata['sample_id'], experiments,
+                     [parse_bs_record(biosample) for biosample in biosamples])
+        os.remove('{}_family.soft.gz'.format(acc))
+        return gds
     elif acc.startswith('GSM'):
-        return acc
+        pass
     else:
         print('Input not a valid GEO accession.')
         return
 
 
-def find_sra_id(geo_id):
-    # finds SRA id number associated with a GEO id number
-    try:
-        int(geo_id)
-    except ValueError:
-        print("{} not a valid GEO id - must be a numerical string".format(geo_id))
-        return
-    lines = handle_timeout(Entrez.efetch(db='gds', id=geo_id).read().split('\n'))
-    sra_acc = None
-    for line in lines:
-        if line.startswith('SRA Run Selector'):
-            sra_acc = line[line.index('=') + 1:]
-            break
-    if not sra_acc:
-        print('No SRA record associated with ID %s.' % geo_id)
-        # look for sign of restricted data/dbgap data/sra record type
-        return
-    handle = handle_timeout(Entrez.esearch(db='sra', term=sra_acc))
-    sra_xml = ET.fromstring(handle.read())
-    return sra_xml.find('IdList').find('Id').text
-
-
-def parse_sra_record(sra_id, experiment_type=None):
-    # takes in an SRA id, fetches the corresponding SRA record, and
-    # parses it into an Experiment object
-    try:
-        int(sra_id)
-    except ValueError:
-        print("{} not a valid SRA id - must be a numerical string".format(sra_id))
-        return
-    print("Fetching SRA record...")
-    handle = handle_timeout(Entrez.efetch(db="sra", id=sra_id))
-    record = ET.fromstring(handle.readlines()[2])
-    if experiment_type:
-        exp_type = experiment_type
-    else:
-        exp_type = record.find('EXPERIMENT').find('DESIGN').find('LIBRARY_DESCRIPTOR').find('LIBRARY_STRATEGY').text
-    geo = record.find('EXPERIMENT').get('alias')
-    if exp_type.lower() == "other":
-        # get GEO record
-        soft = request.urlopen('https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=' +
-                               geo + '&form=text&view=full')
-        gsm = soft.read().decode('utf-8').split('\r\n')
-        for line in gsm:
-            if line.startswith('!Sample_data_processing = Library strategy:'):
-                exp_type = line[line.index(':') + 2:]
-    title = record.find('SAMPLE').find('TITLE').text
-    instrument = [item.text for item in record.iter('INSTRUMENT_MODEL')][0]
-    length = int(mean([int(float(item.get('average'))) for item in record.iter('Read') if item.get('count') != '0']))
-    st = record.find('STUDY').find('DESCRIPTOR').find('STUDY_TITLE').text
-    bs = list(set([item.text for item in record.iter('EXTERNAL_ID') if item.attrib['namespace'] == 'BioSample']))[0]
-    for item in record.find('EXPERIMENT').find('DESIGN').find('LIBRARY_DESCRIPTOR').find('LIBRARY_LAYOUT'):
-        layout = item.tag.lower()
-        break
-    runs = [item.get('accession') for item in record.find('RUN_SET').findall('RUN')]
-    exp = Experiment(re.sub('-', '', exp_type.lower()), instrument, layout, geo,
-                     title, runs, length, st, bs)
-    return exp
-
-
-def parse_gsm_soft(gsm):
-    soft = request.urlopen('https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=' +
-                           gsm + '&form=text&view=full')
-    record = soft.read().decode('utf-8').split('\r\n')
-    for line in record:
-        if line.startswith('!Sample_type = ') and 'SRA' not in line:
-            return
-        # get title
-        elif line.startswith('!Sample_title = '):
-            title = line[line.index('=') + 2:]
-        # get library strategy
-        elif line.startswith('!Sample_library_strategy = '):
-            exptype = line[line.index('=') + 2:]
-        # check for SRA
-        # get BioSample
-        elif line.startswith('!Sample_relation = BioSample:'):
-            bs = line[line.index('SAMN'):]
-        # get instrument model
-        elif line.startswith('!Sample_instrument_model = '):
-            instr = line[line.index('=') + 2:]
-    return Experiment(exptype, instr, layout=None, gsm, title, runs=[], length=0,
-                      study_title=None, bs)
-
-
-def parse_bs_record(geo_id):
+def parse_bs_record(bs_acc):
     # takes in an GEO id, fetches the related BioSample record, and
     # parses it into a Biosample object
     print("Fetching Biosample record...")
-    bs_link = handle_timeout(Entrez.elink(dbfrom='gds', db='biosample', id=geo_id))
-    bslink_xml = ET.fromstring(bs_link.read())
-    bs_id = [item.find('Id').text for item in bslink_xml.iter("Link")][0]
-    bs_handle = handle_timeout(Entrez.efetch(db='biosample', id=bs_id))
+    # bs_link = handle_timeout(Entrez.elink(dbfrom='gds', db='biosample', id=geo_id))
+    # bslink_xml = ET.fromstring(bs_link.read())
+    # bs_id = [item.find('Id').text for item in bslink_xml.iter("Link")][0]
+    bs_handle = handle_timeout(Entrez.efetch(db='biosample', id=bs_acc))
     bs_xml = ET.fromstring(bs_handle.read())
     atts = {}
     descr = ''
@@ -226,7 +157,7 @@ def parse_bs_record(geo_id):
     for item in bs_xml.iter("Attribute"):
         atts[item.attrib['attribute_name']] = item.text
     for name in ['source_name', 'sample_name', 'gender', 'strain', 'genotype', 'cross',
-                 'cell_line', 'cell line', 'tissue', 'sirna transfected', 'treatment']:
+                 'cell_line', 'cell line', 'cell lines', 'tissue', 'sirna transfected', 'treatment']:
         if name in atts.keys() and atts[name].lower() != 'none':
             if atts[name] not in descr:
                 descr += atts[name] + '; '
@@ -287,25 +218,6 @@ def get_geo_table(geo_acc, outf, lab_alias='4dn-dcic-lab', email=''):
         for biosample in biosamples:
             outfile.write('%s:%s\t%s\t%s\n' %
                           (lab_alias, biosample.acc, biosample.description, biosample.acc))
-
-
-def create_dataset(geo_acc, experiment_type=None):
-    '''
-    Takes in a GEO accession, looks up SRA and BioSample records associated
-    with it, and parses them into a Dataset object with associated
-    Biosample and Experiment objects
-    '''
-    geo_ids = find_geo_ids(geo_acc)
-    if not geo_ids:
-        print("No experiments found in {}".format(geo_acc))
-        return
-    sra_ids = [item for item in [find_sra_id(geo_id) for geo_id in geo_ids] if item]
-    if not sra_ids:
-        print('No SRA records associated with accession. Exiting.')
-        return
-    gds = Dataset(geo_acc, geo_ids, [parse_sra_record(sra_id, experiment_type) for sra_id in sra_ids],
-                  [parse_bs_record(geo_id) for geo_id in geo_ids])
-    return gds
 
 
 def write_experiments(sheet_name, experiments, alias_prefix, file_dict, inbook, outbook):
@@ -381,7 +293,7 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
     object, will look for the relevant sheet in the workbook. If sheet is absent
     these won't get written.
     '''
-    gds = create_dataset(geo, experiment_type)
+    gds = get_geo_metadata(geo, experiment_type)
     if not gds:
         return
     book = xlrd.open_workbook(infile)
