@@ -98,43 +98,52 @@ def handle_timeout(command):
     return result
 
 
+def parse_gsm_soft(gsm, experiment_type):
+    # if experiment is a microarray, don't parse
+    if 'SRA' not in gsm.metadata['type']:
+        return
+    exp_type = experiment_type if experiment_type else gsm.metadata['library_strategy'][0]
+    if not exp_type or exp_type.lower() == 'other':
+        for item in gsm.metadata['data_processing']:
+            if item.startswith('Library strategy'):
+                exp_type = item[item.index(':') + 2:]
+    link = None
+    for item in gsm.metadata['relation']:
+        # get biosample relation
+        if item.startswith('BioSample:'):
+            bs = item[item.index('SAMN'):]
+        # get SRA relation
+        elif item.startswith('SRA:'):
+            link = item[item.index('SRX'):]
+    exp = Experiment(re.sub('-', '', exp_type.lower()), gsm.metadata['instrument_model'],
+                     gsm.name, gsm.metadata['title'], bs, link)
+    if link:
+        # if no SRA relation is in GSM metadata, sequencing data might be in dbgap
+        exp.get_sra()  # get more metadata about sequencing runs
+    return exp
+
 def get_geo_metadata(acc, experiment_type):
     if acc.startswith('GSE'):
         gse = GEOparse.get_GEO(geo=acc)
         # create Experiment objects from each GSM file
-        experiments = []
-        biosamples = []
-        for gsm in gse.gsms.values():
-            if 'SRA' not in gsm.metadata['type']:
-                continue
-            exp_type = experiment_type if experiment_type else gsm.metadata['library_strategy'][0]
-            if not exp_type or exp_type.lower() == 'other':
-                for item in gsm.metadata['data_processing']:
-                    if item.startswith('Library strategy'):
-                        exp_type = item[item.index(':') + 2:]
-            link = None
-            for item in gsm.metadata['relation']:
-                if item.startswith('BioSample:'):
-                    bs = item[item.index('SAMN'):]
-                    biosamples.append(bs)
-                    # then call biosample function to create biosample objects
-                elif item.startswith('SRA:'):
-                    link = item[item.index('SRX'):]
-            exp = Experiment(re.sub('-', '', exp_type.lower()), gsm.metadata['instrument_model'],
-                             gsm.name, gsm.metadata['title'], bs, link)
-            if link:
-                exp.get_sra()
-            experiments.append(exp)
+        experiments = [parse_gsm_soft(gsm, experiment_type) for gsm in gse.gsms.values()]
         # then find SRA data to finish Experiment objects
+        os.remove('{}_family.soft.gz'.format(acc))
         if not experiments:
             print('Sequencing experiments not found. Exiting.')
             sys.exit()
         gds = Dataset(acc, gse.metadata['sample_id'], experiments,
-                     [parse_bs_record(biosample) for biosample in biosamples])
-        os.remove('{}_family.soft.gz'.format(acc))
+                     [parse_bs_record(experiment.bs) for experiment in experiments])
         return gds
     elif acc.startswith('GSM'):
-        pass
+        gsm = GEOparse.get_GEO(geo=acc)
+        exp = parse_gsm_soft(gsm, experiment_type)
+        os.remove('{}.txt'.format(acc))
+        if not exp:
+            print("Accession not a sequencing experiment, or couldn't be parsed. Exiting.")
+            sys.exit()
+        gds = Dataset(None, [acc], [exp], [parse_bs_record(exp.bs)])
+        return gds
     else:
         print('Input not a valid GEO accession.')
         return
@@ -144,9 +153,6 @@ def parse_bs_record(bs_acc):
     # takes in an GEO id, fetches the related BioSample record, and
     # parses it into a Biosample object
     print("Fetching Biosample record...")
-    # bs_link = handle_timeout(Entrez.elink(dbfrom='gds', db='biosample', id=geo_id))
-    # bslink_xml = ET.fromstring(bs_link.read())
-    # bs_id = [item.find('Id').text for item in bslink_xml.iter("Link")][0]
     bs_handle = handle_timeout(Entrez.efetch(db='biosample', id=bs_acc))
     bs_xml = ET.fromstring(bs_handle.read())
     atts = {}
