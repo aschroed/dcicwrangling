@@ -122,12 +122,13 @@ def parse_gsm_soft(gsm, experiment_type):
         exp.get_sra()  # get more metadata about sequencing runs
     return exp
 
+
 def get_geo_metadata(acc, experiment_type):
-    if acc.startswith('GSE'):
+    if acc.startswith('GSE'):  # experiment series
         gse = GEOparse.get_GEO(geo=acc)
         # create Experiment objects from each GSM file
         experiments = [parse_gsm_soft(gsm, experiment_type) for gsm in gse.gsms.values()]
-        # then find SRA data to finish Experiment objects
+        # delete file after GSMs are parsed
         os.remove('{}_family.soft.gz'.format(acc))
         if not experiments:
             print('Sequencing experiments not found. Exiting.')
@@ -135,10 +136,10 @@ def get_geo_metadata(acc, experiment_type):
         gds = Dataset(acc, gse.metadata['sample_id'], experiments,
                      [parse_bs_record(experiment.bs) for experiment in experiments])
         return gds
-    elif acc.startswith('GSM'):
+    elif acc.startswith('GSM'):  # single experiment
         gsm = GEOparse.get_GEO(geo=acc)
         exp = parse_gsm_soft(gsm, experiment_type)
-        os.remove('{}.txt'.format(acc))
+        os.remove('{}.txt'.format(acc))  # delete file after GSM is parsed
         if not exp:
             print("Accession not a sequencing experiment, or couldn't be parsed. Exiting.")
             sys.exit()
@@ -187,27 +188,15 @@ def get_geo_table(geo_acc, outf, lab_alias='4dn-dcic-lab', email=''):
     outf - prefix for output files. Output files will be named
            <outf>_expts.tsv, <outf>_fqs.tsv, and <outf>_bs.tsv.
     '''
-    if not geo_acc.startswith('GSE') and not geo_acc.startswith('GSM'):
-        raise ValueError('Input not a GEO Datasets series accession. Accession \
-                         must start with GSE.')
-    if email:
-        Entrez.email = email
-    else:
-        Entrez.email = input('Enter email address to use NCBI Entrez: ')
-    geo_ids = find_geo_ids(geo_acc)
-    sra_ids = [find_sra_id(geo_id) for geo_id in geo_ids]
-    experiments = []
-    for sra_id in sra_ids:
-        # parse data from each experiment
-        if sra_id:
-            experiments.append(parse_sra_record(sra_id))
+    Entrez.email = email if email else input('Enter email address to use NCBI Entrez: ')
+    gds = get_geo_metadata(geo_acc, experiment_type=None)
     with open(outf + '_expts.tsv', 'w') as outfile:
-        for exp in experiments:
+        for exp in gds.experiments:
             outfile.write('%s:%s\t%s\t%s\t%s\t%s\t%s\n' %
                           (lab_alias, exp.geo, exp.title, exp.exptype,
                            exp.bs, ','.join(exp.runs), exp.geo))
     with open(outf + '_fqs.tsv', 'w') as outfile:
-        for exp in experiments:
+        for exp in gds.experiments:
             if exp.layout == 'single':  # single end reads
                 for run in exp.runs:
                     outfile.write('%s:%s_fq\t%s\tfastq\t \t \t \t%s\t%s\t%s\n' %
@@ -219,9 +208,8 @@ def get_geo_table(geo_acc, outf, lab_alias='4dn-dcic-lab', email=''):
                                   (alias, exp.title, alias, str(exp.length), exp.instr, run))
                     outfile.write('%s_fq2\t%s\tfastq\t2\tpaired with\t%s_fq1\t%s\t%s\t%s\n' %
                                   (alias, exp.title, alias, str(exp.length), exp.instr, run))
-    biosamples = [parse_bs_record(geo_id) for geo_id in geo_ids]
     with open(outf + '_bs.tsv', 'w') as outfile:
-        for biosample in biosamples:
+        for biosample in [experiment.bs for experiment in experiments]:
             outfile.write('%s:%s\t%s\t%s\n' %
                           (lab_alias, biosample.acc, biosample.description, biosample.acc))
 
