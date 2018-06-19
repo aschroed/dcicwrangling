@@ -7,7 +7,6 @@ import re
 import sys
 import time
 from statistics import mean
-from urllib import request
 import xml.etree.ElementTree as ET
 import xlrd
 from xlutils.copy import copy
@@ -55,7 +54,8 @@ class Experiment:
         # look up SRA record to fill out more attributes
         handle = handle_timeout(Entrez.efetch(db="sra", id=self.link))
         record = ET.fromstring(handle.readlines()[2])
-        self.length = int(mean([int(float(item.get('average'))) for item in record.iter('Read') if item.get('count') != '0']))
+        self.length = int(mean([int(float(item.get('average'))) for item in record.iter('Read') if
+                                item.get('count') != '0']))
         self.st = record.find('STUDY').find('DESCRIPTOR').find('STUDY_TITLE').text
         for item in record.find('EXPERIMENT').find('DESIGN').find('LIBRARY_DESCRIPTOR').find('LIBRARY_LAYOUT'):
             self.layout = item.tag.lower()
@@ -92,11 +92,11 @@ def handle_timeout(command):
     '''
     try:
         result = command
-    except HTTPError:
+    except urllib.error.HTTPError as err:
         time.sleep(1)
         try:
             result = command
-        except HTTPError:
+        except urllib.error.HTTPError as err:
             time.sleep(5)
             result = command
     return result
@@ -152,7 +152,7 @@ def get_geo_metadata(acc, experiment_type=None):
             print('Sequencing experiments not found. Exiting.')
             sys.exit()
         gds = Dataset(acc, gse.metadata['sample_id'], experiments,
-                     [parse_bs_record(experiment.bs) for experiment in experiments])
+                      [parse_bs_record(experiment.bs) for experiment in experiments])
         return gds
     elif acc.startswith('GSM'):  # single experiment
         gsm = GEOparse.get_GEO(geo=acc)
@@ -249,7 +249,7 @@ def get_geo_table(geo_acc, outf, lab_alias='4dn-dcic-lab', email=''):
                     outfile.write('%s_fq2\t%s\tfastq\t2\tpaired with\t%s_fq1\t%s\t%s\t%s\n' %
                                   (alias, exp.title, alias, str(exp.length), exp.instr, run))
     with open(outf + '_bs.tsv', 'w') as outfile:
-        for biosample in [experiment.bs for experiment in experiments]:
+        for biosample in [experiment.bs for experiment in gds.experiments]:
             outfile.write('%s:%s\t%s\t%s\n' %
                           (lab_alias, biosample.acc, biosample.description, biosample.acc))
 
@@ -296,7 +296,7 @@ def experiment_type_compare(sheetname, expt_list, geo, alias_prefix, file_dict, 
     experiments to file; if either is missing, will print an warning message.
     '''
     expt_dict = {'Atacseq': 'ATAC-seq', 'Damid': 'DamID', 'Chiapet': 'ChIA-PET',
-                      'Seq': 'ChIP-seq, RNA-seq, SPRITE, or TSA-seq'}
+                 'Seq': 'ChIP-seq, RNA-seq, SPRITE, or TSA-seq'}
     expt_name = sheetname[10:] if sheetname[10:] not in expt_dict.keys() else expt_dict[sheetname[10:]]
     type_name = sheetname[10:] if sheetname != 'ExperimentSeq' else '<experiment_type>'
     if sheetname in inbook.sheet_names() and expt_list:
@@ -309,8 +309,8 @@ def experiment_type_compare(sheetname, expt_list, geo, alias_prefix, file_dict, 
         return outbook
     elif sheetname not in inbook.sheet_names() and expt_list:
         print("\n{} experiments found in {} but no {} sheet".format(expt_name, geo, sheetname))
-        print("present in workbook. {} experiments will not be written to file. \
-              ".format(expt_name if sheetname != 'ExperimentSeq' else 'These'))
+        print("present in workbook. {} experiments will not be written to file.".format(
+              expt_name if sheetname != 'ExperimentSeq' else 'These'))
         return outbook
     return outbook
 
@@ -427,8 +427,8 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
         chia_expts = [exp for exp in gds.experiments if exp.exptype in ['chiapet', 'placseq']]
 
         sheet_types = {'HiC': hic_expts, 'Seq': seq_expts, 'Damid': dam_expts,
-                           'Atacseq': atac_expts, 'Repliseq': rep_expts,
-                           'CaptureC': cap_expts, 'Chiapet': chia_expts}
+                       'Atacseq': atac_expts, 'Repliseq': rep_expts,
+                       'CaptureC': cap_expts, 'Chiapet': chia_expts}
 
         for key in sheet_types.keys():
             outbook = experiment_type_compare('Experiment' + key, sheet_types[key], geo,
