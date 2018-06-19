@@ -1,6 +1,5 @@
 from dcicutils import ff_utils
 from dcicutils import s3Utils
-from core.utils import run_workflow
 from datetime import datetime
 import time
 
@@ -293,21 +292,7 @@ def release_files(set_id, list_items, auth):
             ff_utils.patch_metadata({"status": item_status}, obj_id=a_file, key=auth)
 
 
-def run_missing_wfr(wf_info, input_files, run_name, env, tag='0.2.5'):
-    all_inputs = []
-    for arg, files in input_files.iteritems():
-        inp = extract_file_info(files, arg, env)
-        all_inputs.append(inp)
-    wf_name = wf_info['wf_name']
-    wf_uuid = wf_info['wf_uuid']
-    parameters = wf_info['parameters']
-    input_json = run_json(all_inputs, env, parameters, wf_uuid, wf_name, run_name, tag)
-    # print input_json
-    run_workflow(input_json)
-    time.sleep(10)
-
-
-def run_missing_wfr2(wf_info, input_files, run_name, auth, env, tag='0.2.5'):
+def run_missing_wfr(wf_info, input_files, run_name, auth, env, tag='0.2.5'):
     all_inputs = []
     for arg, files in input_files.iteritems():
         inp = extract_file_info(files, arg, env)
