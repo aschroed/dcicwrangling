@@ -173,6 +173,25 @@ def parse_bs_record(bs_acc):
     '''
     Takes in a BioSample accession, fetches the BioSample record, and
     parses it into a Biosample object.
+
+    BioSample example xml snippet (some non-relevant fields removed):
+
+    <BioSampleSet>
+        <BioSample access="public" id="9430390" accession="SAMN09430390">
+            <Ids>...</Ids>
+            <Description>
+                <Title>iPSC_WT_rep1</Title>
+                <Organism taxonomy_id="9606" taxonomy_name="Homo sapiens">
+                    <OrganismName>Homo sapiens</OrganismName>
+                </Organism>
+            </Description>
+            <Attributes>
+                <Attribute attribute_name="source_name" harmonized_name="source_name" display_name="source name">IMR90 iPSC 30</Attribute>
+                <Attribute attribute_name="cell type" harmonized_name="cell_type" display_name="cell type">hiPSC</Attribute>
+                <Attribute attribute_name="genotype" harmonized_name="genotype" display_name="genotype">WT</Attribute>
+            </Attributes>
+        </BioSample>
+    </BioSampleSet>
     '''
     print("Fetching BioSample record...")
     bs_handle = handle_timeout(Entrez.efetch(db='biosample', id=bs_acc))
