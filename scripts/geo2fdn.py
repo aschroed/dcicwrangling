@@ -146,6 +146,7 @@ def get_geo_metadata(acc, experiment_type=None):
         # create Experiment objects from each GSM file
         experiments = [parse_gsm_soft(gsm, experiment_type) for gsm in gse.gsms.values()]
         # delete file after GSMs are parsed
+        print("GEO parsing done. Removing downloaded soft file.")
         os.remove('{}_family.soft.gz'.format(acc))
         if not experiments:
             print('Sequencing experiments not found. Exiting.')
@@ -156,6 +157,7 @@ def get_geo_metadata(acc, experiment_type=None):
     elif acc.startswith('GSM'):  # single experiment
         gsm = GEOparse.get_GEO(geo=acc)
         exp = parse_gsm_soft(gsm, experiment_type)
+        print("GEO parsing done. Removing downloaded soft file.")
         os.remove('{}.txt'.format(acc))  # delete file after GSM is parsed
         if not exp:
             print("Accession not a sequencing experiment, or couldn't be parsed. Exiting.")
@@ -172,7 +174,7 @@ def parse_bs_record(bs_acc):
     Takes in a BioSample accession, fetches the BioSample record, and
     parses it into a Biosample object.
     '''
-    print("Fetching Biosample record...")
+    print("Fetching BioSample record...")
     bs_handle = handle_timeout(Entrez.efetch(db='biosample', id=bs_acc))
     bs_xml = ET.fromstring(bs_handle.read())
     atts = {}
