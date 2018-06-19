@@ -10,6 +10,7 @@ requires = [
     'boto3',
     'dcicutils',
     'biopython',
+    'GEOparse',
     'xlrd',
     'xlutils'
 ]
