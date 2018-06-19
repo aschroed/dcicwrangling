@@ -66,9 +66,12 @@ def main():  # pragma: no cover
                     phase2json['slim_terms'] = term['slim_terms']
                     del term['slim_terms']
 
-                dbterm = get_metadata(tid, auth)
+                try:
+                    dbterm = get_metadata(tid, auth)
+                except:  # noqa
+                    dbterm = None
                 op = ''
-                if 'OntologyTerm' in dbterm['@type']:
+                if dbterm and 'OntologyTerm' in dbterm.get('@type', []):
                     if args.dbupdate:
                         e = patch_metadata(term, dbterm["uuid"], auth)
                     else:
