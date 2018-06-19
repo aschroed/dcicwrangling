@@ -264,10 +264,6 @@ def write_experiments(sheet_name, experiments, alias_prefix, file_dict, inbook, 
         sheet.write(row, sheet_dict['dbxrefs'], 'GEO:' + entry.geo)
         if entry.exptype in type_dict.keys():
             sheet.write(row, sheet_dict['*experiment_type'], type_dict[entry.exptype])
-        # elif entry.exptype == 'tsaseq':
-        #     sheet.write(row, sheet_dict['*experiment_type'], 'TSA-seq')
-        # elif entry.exptype == 'rnaseq':
-        #     sheet.write(row, sheet_dict['*experiment_type'], 'RNA-seq')
         row += 1
     return outbook
 
