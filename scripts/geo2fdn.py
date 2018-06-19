@@ -41,10 +41,10 @@ class Experiment:
 
     def __init__(self, exptype, instr, geo, title, biosample, link):
         self.exptype = exptype.lower()  # experiment type
-        self.instr = instr  # sequencing instrument
+        self.instr = instr[0] if len(instr) == 1 else instr  # sequencing instrument
         self.layout = ''  # single or paired end
         self.geo = geo  # geo accession starting with GSM
-        self.title = title
+        self.title = title[0] if len(title) == 1 else title
         self.runs = []  # list of SRA accessions starting with SRR
         self.length = ''  # mean read length
         # self.study_title = study_title
@@ -85,6 +85,13 @@ class Dataset:
 valid_types = ['hic', 'hicseq', 'dnase hic', 'rnaseq', 'tsaseq', 'chipseq',
                'dna sprite', 'dnarna sprite', 'rnadna sprite', 'capturec',
                'repliseq', 'atacseq', 'damid', 'damidseq', 'chiapet']
+
+
+type_dict = {'chipseq': 'CHIP-seq', 'tsaseq': 'TSA-seq', 'rnaseq': 'RNA-seq',
+             'atacseq': 'ATAC-seq', 'capturec': 'capture Hi-C', 'damid': 'DAM-ID seq',
+             'damidseq': 'DAM-ID seq', 'chiapet': 'CHIA-pet', 'placseq': 'PLAC-seq',
+             'dnase hic': 'DNase Hi-C', 'dna sprite': 'DNA SPRITE',
+             'dnarna sprite': 'RNA-DNA SPRITE', 'rnadna sprite': 'RNA-DNA SPRITE'}
 
 
 def handle_timeout(command):
@@ -200,43 +207,47 @@ def parse_bs_record(bs_acc):
     return bs
 
 
-def get_geo_table(geo_acc, outf, lab_alias='4dn-dcic-lab', email=''):
+def get_geo_tables(geo_acc, outf, lab_alias='4dn-dcic-lab', email='', types=type_dict):
     '''
     Creates 3 separate tsv files containing information for fastq files,
-    experiments, and biosamples associated with a GEO accession.
+    experiments, and biosamples associated with a GEO accession. Can be used if a
+    blank workbook with the required Experiment sheets hasn't been created.
+
     Parameters:
     geo_acc - GEO accession (e.g. 'GSE93431')
     lab_alias - alias prefix; default is '4dn-dcic-lab'
     outf - prefix for output files. Output files will be named
            <outf>_expts.tsv, <outf>_fqs.tsv, and <outf>_bs.tsv.
+    email - email to be supplied for NCBI Entrez e-utils.
+    types - dictionary of experiment types - do not use, leave default.
     '''
     Entrez.email = email if email else input('Enter email address to use NCBI Entrez: ')
     gds = get_geo_metadata(geo_acc, experiment_type=None)
     with open(outf + '_expts.tsv', 'w') as outfile:
         for exp in gds.experiments:
-            outfile.write('%s:%s\t%s\t%s\t%s\t%s\t%s\n' %
-                          (lab_alias, exp.geo, exp.title, exp.exptype,
-                           exp.bs, ','.join(exp.runs), exp.geo))
+            outfile.write('%s:%s\t%s\t%s\t%s\t%s\tGEO:%s\n' %
+                          (lab_alias, exp.geo, exp.title, types[exp.exptype], exp.bs,
+                           ','.join(exp.runs), exp.geo))
     with open(outf + '_fqs.tsv', 'w') as outfile:
         for exp in gds.experiments:
             if exp.layout == 'single':  # single end reads
                 for run in exp.runs:
-                    outfile.write('%s:%s_fq\t%s\tfastq\t \t \t \t%s\t%s\t%s\n' %
+                    outfile.write('%s:%s_fq\t%s\tfastq\t \t \t \t%s\t%s\tSRA:%s\n' %
                                   (lab_alias, run, exp.title, str(exp.length), exp.instr, run))
             elif exp.layout == 'paired':  # paired end reads
                 for run in exp.runs:
                     alias = lab_alias + ':' + run
-                    outfile.write('%s_fq1\t%s\tfastq\t1\tpaired with\t%s_fq2\t%s\t%s\t%s\n' %
+                    outfile.write('%s_fq1\t%s\tfastq\t1\tpaired with\t%s_fq2\t%s\t%s\tSRA:%s\n' %
                                   (alias, exp.title, alias, str(exp.length), exp.instr, run))
-                    outfile.write('%s_fq2\t%s\tfastq\t2\tpaired with\t%s_fq1\t%s\t%s\t%s\n' %
+                    outfile.write('%s_fq2\t%s\tfastq\t2\tpaired with\t%s_fq1\t%s\t%s\tSRA:%s\n' %
                                   (alias, exp.title, alias, str(exp.length), exp.instr, run))
     with open(outf + '_bs.tsv', 'w') as outfile:
-        for biosample in [experiment.bs for experiment in gds.experiments]:
-            outfile.write('%s:%s\t%s\t%s\n' %
+        for biosample in gds.biosamples:
+            outfile.write('%s:%s\t%s\tBioSample:%s\n' %
                           (lab_alias, biosample.acc, biosample.description, biosample.acc))
 
 
-def write_experiments(sheet_name, experiments, alias_prefix, file_dict, inbook, outbook):
+def write_experiments(sheet_name, experiments, alias_prefix, file_dict, inbook, outbook, types=type_dict):
     '''
     Writes relevant Experiment object attributes to an Experiment sheet.
     Possible sheet types: ExperimentSeq, ExperimentHiC, ExperimentRepliseq,
@@ -245,11 +256,6 @@ def write_experiments(sheet_name, experiments, alias_prefix, file_dict, inbook, 
     fields, as appropriate.
     '''
     sheet_dict = {}
-    type_dict = {'chipseq': 'CHIP-seq', 'tsaseq': 'TSA-seq', 'rnaseq': 'RNA-seq',
-                 'atacseq': 'ATAC-seq', 'capturec': 'capture Hi-C', 'damid': 'DAM-ID seq',
-                 'damidseq': 'DAM-ID seq', 'chiapet': 'CHIA-pet', 'placseq': 'PLAC-seq',
-                 'dnase hic': 'DNase Hi-C', 'dna sprite': 'DNA SPRITE',
-                 'dnarna sprite': 'RNA-DNA SPRITE', 'rnadna sprite': 'RNA-DNA SPRITE'}
     fields = inbook.sheet_by_name(sheet_name).row_values(0)
     for item in fields:
         sheet_dict[item] = fields.index(item)
@@ -266,7 +272,7 @@ def write_experiments(sheet_name, experiments, alias_prefix, file_dict, inbook, 
             sheet.write(row, sheet_dict['files'], ','.join(file_dict[entry.geo]))
         sheet.write(row, sheet_dict['dbxrefs'], 'GEO:' + entry.geo)
         if entry.exptype in type_dict.keys():
-            sheet.write(row, sheet_dict['*experiment_type'], type_dict[entry.exptype])
+            sheet.write(row, sheet_dict['*experiment_type'], types[entry.exptype])
         row += 1
     return outbook
 
