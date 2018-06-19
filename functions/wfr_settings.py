@@ -15,12 +15,12 @@ def step_settings(step_name, my_organism, lab):
         'wf_name': 'md5',
         'wf_uuid': 'd3f25cd3-e726-4b3c-a022-48f844474b41',
         'parameters': {}
-        },
+    },
         {
         'wf_name': 'fastqc-0-11-4-1',
         'wf_uuid': '2324ad76-ff37-4157-8bcc-3ce72b7dace9',
         'parameters': {}
-        },
+    },
         {
         'wf_name': 'bwa-mem',
         'wf_uuid': '3feedadc-50f9-4bb4-919b-09a8b731d0cc',
@@ -154,7 +154,8 @@ def step_settings(step_name, my_organism, lab):
                 'contributing_labs': lab},
             'count_bg': {
                 'genome_assembly': genome,
-                'file_type': 'read counts',
+                'file_type': 'counts',
+                'description': 'read counts per 50kb bin, unfiltered, unnormalized',
                 'description': out_n_rep,
                 'contributing_labs': lab}
         }}]
