@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ET
 import xlrd
 from xlutils.copy import copy
 from Bio import Entrez
+from Bio._py3k import HTTPError as _HTTPError
 import GEOparse
 
 
@@ -92,11 +93,11 @@ def handle_timeout(command):
     '''
     try:
         result = command
-    except urllib.error.HTTPError as err:
+    except _HTTPError:
         time.sleep(1)
         try:
             result = command
-        except urllib.error.HTTPError as err:
+        except _HTTPError:
             time.sleep(5)
             result = command
     return result
