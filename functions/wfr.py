@@ -50,7 +50,7 @@ def extract_file_info(obj_id, arg_name, env):
         # check bucket consistency
         try:
             assert len(list(set(buckets))) == 1
-        except:
+        except AssertionError:
             print('Files from different buckets', obj_id)
             return
         template['object_key'] = object_key
@@ -218,7 +218,7 @@ def get_wfr_out(file_id, wfr_name, auth, md_qc=False, run=100):
         workflows = sorted(workflows, key=lambda k: (k['run_type'], -k['run_hours']))
     try:
         last_wfr = [i for i in workflows if i['run_type'] == wfr_name][-1]
-    except:
+    except (KeyError, IndexError):
         return {'status': "no workflow in file"}
 
     wfr = ff_utils.get_metadata(last_wfr['uuid'], key=auth)

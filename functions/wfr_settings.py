@@ -9,7 +9,7 @@ def step_settings(step_name, my_organism, lab):
     out_n = "This is an output file of the Hi-C processing pipeline"
     int_n = "This is an intermediate file in the HiC processing pipeline"
     out_n_rep = "This is an output file of the RepliSeq processing pipeline"
-    int_n_rep = "This is an intermediate file in the Repliseq processing pipeline"
+    # int_n_rep = "This is an intermediate file in the Repliseq processing pipeline"
 
     wf_dict = [{
         'wf_name': 'md5',
@@ -156,7 +156,6 @@ def step_settings(step_name, my_organism, lab):
                 'genome_assembly': genome,
                 'file_type': 'counts',
                 'description': 'read counts per 50kb bin, unfiltered, unnormalized',
-                'description': out_n_rep,
                 'contributing_labs': lab}
         }}]
     return [i for i in wf_dict if i['wf_name'] == step_name][0]
