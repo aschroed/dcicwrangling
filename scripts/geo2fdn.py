@@ -174,7 +174,7 @@ def get_geo_metadata(acc, experiment_type=None):
         return gds
     else:
         print('Input not a valid GEO accession.')
-        return
+        sys.exit()
 
 
 def parse_bs_record(bs_acc):
@@ -312,8 +312,6 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
     these won't get written.
     '''
     gds = get_geo_metadata(geo, experiment_type)
-    if not gds:
-        return
     book = xlrd.open_workbook(infile)
     outbook = copy(book)
 
