@@ -181,7 +181,7 @@ def get_linked_items(auth, itemid, found_items={},
     unk = 'Unknown'
     no_children.append(unk)
     if not found_items.get(itemid):
-        res = get_metadata(itemid, auth, frame='raw')
+        res = get_metadata(itemid, auth, add_on='frame=raw')
         if 'error' not in res['status']:
             # create an entry for this item in found_items
             try:
