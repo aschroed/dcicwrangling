@@ -110,7 +110,7 @@ def handle_timeout(command):
     return result
 
 
-def parse_gsm_soft(gsm, experiment_type=None):
+def parse_gsm(gsm, experiment_type=None):
     '''
     Parses information about individual experiment. Input is a GEOparse.gsm object.
     Function creates an Experiment object; if GSM record has an associated SRA record,
@@ -140,7 +140,7 @@ def parse_gsm_soft(gsm, experiment_type=None):
     return exp
 
 
-def get_geo_metadata(acc, experiment_type=None):
+def get_geo_metadata(acc, filepath=None, experiment_type=None):
     '''
     Parses information associated with a GEO Series or single experiment.
     Uses GEOparse library which downloads records from NCBI ftp rather than using
@@ -150,12 +150,15 @@ def get_geo_metadata(acc, experiment_type=None):
     and biosamples.
     '''
     if acc.startswith('GSE'):  # experiment series
-        gse = GEOparse.get_GEO(geo=acc)
+        gse = GEOparse.get_GEO(geo=acc) if not filepath else GEOparse.get_GEO(filepath=filepath)
         # create Experiment objects from each GSM file
-        experiments = [parse_gsm_soft(gsm, experiment_type) for gsm in gse.gsms.values()]
+        experiments = [parse_gsm(gsm, experiment_type) for gsm in gse.gsms.values()]
         # delete file after GSMs are parsed
         print("GEO parsing done. Removing downloaded soft file.")
-        os.remove('{}_family.soft.gz'.format(acc))
+        try:
+            os.remove('{}_family.soft.gz'.format(acc))
+        except:
+            pass
         if not experiments:
             print('Sequencing experiments not found. Exiting.')
             sys.exit()
@@ -163,10 +166,13 @@ def get_geo_metadata(acc, experiment_type=None):
                       [parse_bs_record(experiment.bs) for experiment in experiments])
         return gds
     elif acc.startswith('GSM'):  # single experiment
-        gsm = GEOparse.get_GEO(geo=acc)
-        exp = parse_gsm_soft(gsm, experiment_type)
+        gsm = GEOparse.get_GEO(geo=acc) if not filepath else GEOparse.get_GEO(filepath=filepath)
+        exp = parse_gsm(gsm, experiment_type)
         print("GEO parsing done. Removing downloaded soft file.")
-        os.remove('{}.txt'.format(acc))  # delete file after GSM is parsed
+        try:
+            os.remove('{}.txt'.format(acc))  # delete file after GSM is parsed
+        except:
+            pass
         if not exp:
             print("Accession not a sequencing experiment, or couldn't be parsed. Exiting.")
             sys.exit()
