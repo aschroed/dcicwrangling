@@ -152,16 +152,14 @@ def get_geo_metadata(acc, filepath=None, experiment_type=None):
     if acc.startswith('GSE'):  # experiment series
         gse = GEOparse.get_GEO(geo=acc) if not filepath else GEOparse.get_GEO(filepath=filepath)
         # create Experiment objects from each GSM file
-        experiments = [parse_gsm(gsm, experiment_type) for gsm in gse.gsms.values()]
+        experiments = [obj for obj in [parse_gsm(gsm, experiment_type) for gsm in gse.gsms.values()] if obj]
         # delete file after GSMs are parsed
-        print("GEO parsing done. Removing downloaded soft file.")
-        try:
+        if not filepath:
+            print('GEO parsing done. Removing downloaded soft file.')
             os.remove('{}_family.soft.gz'.format(acc))
-        except:
-            pass
         if not experiments:
             print('Sequencing experiments not found. Exiting.')
-            sys.exit()
+            return
         gds = Dataset(acc, gse.metadata['sample_id'], experiments,
                       [parse_bs_record(experiment.bs) for experiment in experiments])
         return gds
@@ -175,12 +173,12 @@ def get_geo_metadata(acc, filepath=None, experiment_type=None):
             pass
         if not exp:
             print("Accession not a sequencing experiment, or couldn't be parsed. Exiting.")
-            sys.exit()
+            return
         gds = Dataset(None, [acc], [exp], [parse_bs_record(exp.bs)])
         return gds
     else:
         print('Input not a valid GEO accession.')
-        sys.exit()
+        return
 
 
 def parse_bs_record(bs_acc):
@@ -318,6 +316,8 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
     these won't get written.
     '''
     gds = get_geo_metadata(geo, experiment_type)
+    if not gds:
+        return
     book = xlrd.open_workbook(infile)
     outbook = copy(book)
 
