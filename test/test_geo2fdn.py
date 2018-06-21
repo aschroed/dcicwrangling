@@ -1,16 +1,43 @@
 from scripts import geo2fdn as geo
 from Bio import Entrez
+import GEOparse
 import pytest
 
 @pytest.fixture
 def email():
     return '4dndcic@gmail.com'
 
-def test_parse_gsm_with_sra():
-    pass
 
-def test_parse_gsm_dbgap():
-    pass
+@pytest.fixture
+def srx_file():
+    return './test/data_files/SRX3028942.xml'
+
+
+def test_parse_gsm_with_sra(mocker, srx_file):
+    with open(srx_file, 'r') as srx:
+        with mocker.patch('Bio.Entrez.efetch', return_value = srx):
+            gsm = GEOparse.get_GEO(filepath='./test/data_files/GSM2715320.txt')
+            exp = geo.parse_gsm(gsm)
+    assert exp.link in srx_file
+    assert exp.bs == 'SAMN07405769'
+    assert exp.layout == 'single'
+    assert exp.instr == 'Ion Torrent Proton'
+    assert len(exp.runs) == 1
+    assert exp.length == 51
+
+def test_parse_gsm_dbgap(mocker):
+    with open('./test/data_files/SRX3028942.xml', 'r') as srx:
+        with mocker.patch('Bio.Entrez.efetch', return_value = srx):
+            gsm = GEOparse.get_GEO(filepath='./test/data_files/GSM2254215.txt')
+            exp = geo.parse_gsm(gsm)
+    assert exp.bs == 'SAMN05449633'
+    assert not exp.layout
+    assert exp.instr == 'Illumina HiSeq 2500'
+    assert exp.exptype.startswith('hic')
+    assert not exp.link
+    assert not exp.runs
+    assert not exp.length
+
 
 def test_parse_bs_xml():
     pass
