@@ -5,11 +5,6 @@ import pytest
 
 
 @pytest.fixture
-def email():
-    return '4dndcic@gmail.com'
-
-
-@pytest.fixture
 def srx_file():
     return './test/data_files/SRX3028942.xml'
 
@@ -61,8 +56,8 @@ def test_get_geo_metadata_seq(mocker):
     assert len([bs for bs in gse.biosamples]) == 32
 
 
-def test_get_geo_metadata_microarray(email, capfd):
-    Entrez.email = email
+def test_get_geo_metadata_microarray(capfd):
+    # Entrez.email = email
     gse = geo.get_geo_metadata('GSE102960', filepath='./test/data_files/GSE102960_family.soft.gz')
     out, err = capfd.readouterr()
     assert not gse
