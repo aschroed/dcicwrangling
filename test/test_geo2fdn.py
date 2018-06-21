@@ -3,6 +3,7 @@ from Bio import Entrez
 import GEOparse
 import pytest
 
+
 @pytest.fixture
 def email():
     return '4dndcic@gmail.com'
@@ -25,6 +26,7 @@ def test_parse_gsm_with_sra(mocker, srx_file):
     assert len(exp.runs) == 1
     assert exp.length == 51
 
+
 def test_parse_gsm_dbgap(mocker):
     with open('./test/data_files/SRX3028942.xml', 'r') as srx:
         with mocker.patch('Bio.Entrez.efetch', return_value = srx):
@@ -39,8 +41,13 @@ def test_parse_gsm_dbgap(mocker):
     assert not exp.length
 
 
-def test_parse_bs_xml():
-    pass
+def test_parse_bs_record(mocker):
+    with open('./test/data_files/SAMN06219555.xml', 'r') as samn:
+        with mocker.patch('Bio.Entrez.efetch', return_value = samn):
+            bs = geo.parse_bs_record('SAMN06219555')
+    for item in ['tamoxifen', 'liver', 'NIPBL', 'Nipbl(flox/flox)']:
+        assert item in bs.description
+
 
 def test_get_geo_metadata_seq(email):
     Entrez.email = email
