@@ -45,7 +45,6 @@ def test_parse_bs_record(mocker):
 
 
 def test_get_geo_metadata_seq(mocker):
-    # Entrez.email = email
     with open('./test/data_files/SRX3028942.xml', 'r') as srx:
         with mocker.patch('scripts.geo2fdn.Experiment.get_sra'):
             with mocker.patch('scripts.geo2fdn.parse_bs_record', return_value = 'SAMNXXXXXXXX'):
@@ -57,7 +56,6 @@ def test_get_geo_metadata_seq(mocker):
 
 
 def test_get_geo_metadata_microarray(capfd):
-    # Entrez.email = email
     gse = geo.get_geo_metadata('GSE102960', filepath='./test/data_files/GSE102960_family.soft.gz')
     out, err = capfd.readouterr()
     assert not gse
