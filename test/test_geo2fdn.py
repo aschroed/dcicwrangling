@@ -49,9 +49,12 @@ def test_parse_bs_record(mocker):
         assert item in bs.description
 
 
-def test_get_geo_metadata_seq(email):
-    Entrez.email = email
-    gse = geo.get_geo_metadata('GSE93431', filepath='./test/data_files/GSE93431_family.soft.gz')
+def test_get_geo_metadata_seq(mocker):
+    # Entrez.email = email
+    with open('./test/data_files/SRX3028942.xml', 'r') as srx:
+        with mocker.patch('scripts.geo2fdn.Experiment.get_sra'):
+            with mocker.patch('scripts.geo2fdn.parse_bs_record', return_value = 'SAMNXXXXXXXX'):
+                gse = geo.get_geo_metadata('GSE93431', filepath='./test/data_files/GSE93431_family.soft.gz')
     assert len([exp for exp in gse.experiments if exp.exptype == 'hic']) == 6
     assert len([exp for exp in gse.experiments if exp.exptype == 'chipseq']) == 14
     assert len([exp for exp in gse.experiments if exp.exptype == 'rnaseq']) == 12
