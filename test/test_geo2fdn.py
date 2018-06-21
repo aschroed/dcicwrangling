@@ -9,6 +9,21 @@ def srx_file():
     return './test/data_files/SRX3028942.xml'
 
 
+@pytest.fixture
+def bs_obj(mocker):
+    with open('./test/data_files/SAMN06219555.xml', 'r') as samn:
+        with mocker.patch('Bio.Entrez.efetch', return_value = samn):
+            return geo.parse_bs_record('SAMN06219555')
+
+
+@pytest.fixture
+def exp_with_sra(mocker, srx_file):
+    with open(srx_file, 'r') as srx:
+        with mocker.patch('Bio.Entrez.efetch', return_value = srx):
+            gsm = GEOparse.get_GEO(filepath='./test/data_files/GSM2715320.txt')
+            return geo.parse_gsm(gsm)
+
+
 def test_parse_gsm_with_sra(mocker, srx_file):
     with open(srx_file, 'r') as srx:
         with mocker.patch('Bio.Entrez.efetch', return_value = srx):
@@ -93,8 +108,12 @@ def test_get_geo_metadata_microarray(capfd):
     assert out == 'Sequencing experiments not found. Exiting.\n'
 
 
-# def test_modify_xls(mocker):
-#     with mocker.patch('scripts.geo2fdn.Experiment.get_sra'):
+def test_modify_xls(mocker, bs_obj, exp_with_sra):
+    with mocker.patch('scripts.geo2fdn.parse_gsm', return_value = exp_with_sra):
+        with mocker.patch('scripts.geo2fdn.parse_bs_record', return_value = bs_obj):
+            gds = geo.get_geo_metadata('GSM2715320', filepath='./test/data_files/GSM2715320.txt')
+    assert gds.biosamples
+    # turn into modify_xls test - may need to change a couple things around in original script
 
     # input blank excel
     # create dataset
