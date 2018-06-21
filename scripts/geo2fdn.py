@@ -307,7 +307,7 @@ def experiment_type_compare(sheetname, expt_list, geo, alias_prefix, file_dict, 
     return outbook
 
 
-def modify_xls(geo, infile, alias_prefix, experiment_type=None, types=valid_types):
+def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=valid_types):
     '''
     Looks up a GEO Series record, parses it along with its associated SRA and
     BioSample records, and writes relevant attributes to the specified file. An
@@ -438,9 +438,9 @@ def modify_xls(geo, infile, alias_prefix, experiment_type=None, types=valid_type
             print("If these samples are of a single known experiment type,",
                   "this script can be rerun using -t <experiment_type>")
 
-    # outbook.save(outfile)
-    # print("\nWrote file to %s." % outfile)
-    return outbook
+    outbook.save(outfile)
+    print("\nWrote file to %s." % outfile)
+    return
 
 
 def main(types=valid_types, descr=description, epilog=epilog):
@@ -468,8 +468,7 @@ def main(types=valid_types, descr=description, epilog=epilog):
         parser.print_help()
         sys.exit()
     Entrez.email = input('Enter email address to use NCBI Entrez: ')
-    output = modify_xls(args.geo_accession, args.infile, out_file, args.alias, experiment_type=args.type)
-    output.save(out_file)
+    modify_xls(args.geo_accession, args.infile, out_file, args.alias, experiment_type=args.type)
 
 if __name__ == '__main__':
     main()

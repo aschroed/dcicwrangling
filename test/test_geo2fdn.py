@@ -1,7 +1,9 @@
 from scripts import geo2fdn as geo
 from Bio import Entrez
 import GEOparse
+import xlrd
 import pytest
+import os
 
 
 @pytest.fixture
@@ -111,8 +113,13 @@ def test_get_geo_metadata_microarray(capfd):
 def test_modify_xls(mocker, bs_obj, exp_with_sra):
     with mocker.patch('scripts.geo2fdn.parse_gsm', return_value = exp_with_sra):
         with mocker.patch('scripts.geo2fdn.parse_bs_record', return_value = bs_obj):
-            gds = geo.get_geo_metadata('GSM2715320', filepath='./test/data_files/GSM2715320.txt')
-    assert gds.biosamples
+            # gds = geo.get_geo_metadata('GSM2715320', filepath='./test/data_files/GSM2715320.txt')
+            geo.modify_xls('GSM2715320', './test/data_files/repliseq_template.xls', 'out.xls', 'abc')
+    book = xlrd.open_workbook('out.xls')
+    assert book.sheet_by_name('Biosample').cell_value(4, 1).startswith('abc')
+    os.remove('out.xls')
+
+    # assert gds.biosamples
     # turn into modify_xls test - may need to change a couple things around in original script
 
     # input blank excel
