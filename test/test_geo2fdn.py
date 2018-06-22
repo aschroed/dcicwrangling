@@ -1,5 +1,5 @@
 from scripts import geo2fdn as geo
-from Bio import Entrez
+# from Bio import Entrez
 import GEOparse
 import xlrd
 import pytest
@@ -110,21 +110,50 @@ def test_get_geo_metadata_microarray(capfd):
     assert out == 'Sequencing experiments not found. Exiting.\n'
 
 
+def create_xls_dict(inbook):
+    xls_dict = {}
+    for name in inbook.sheet_names():
+        current_sheet = inbook.sheet_by_name(name)
+        if current_sheet.nrows > 4:
+            headers = [current_sheet.cell_value(0, i) for i in range(1, current_sheet.ncols)]
+            col_dict = {}
+            for header in headers:
+                col_dict[header] = [current_sheet.cell_value(j, headers.index(header) + 1) for
+                                    j in range(4, current_sheet.nrows)]
+            xls_dict[name] = col_dict
+    return xls_dict
+
+
 def test_modify_xls(mocker, bs_obj, exp_with_sra):
     with mocker.patch('scripts.geo2fdn.parse_gsm', return_value = exp_with_sra):
         with mocker.patch('scripts.geo2fdn.parse_bs_record', return_value = bs_obj):
             # gds = geo.get_geo_metadata('GSM2715320', filepath='./test/data_files/GSM2715320.txt')
             geo.modify_xls('GSM2715320', './test/data_files/repliseq_template.xls', 'out.xls', 'abc')
     book = xlrd.open_workbook('out.xls')
-    assert book.sheet_by_name('Biosample').cell_value(4, 1).startswith('abc')
+    outfile_dict = create_xls_dict(book)
     os.remove('out.xls')
+    assert outfile_dict['Biosample']['aliases'][0].startswith('abc:')
+    assert outfile_dict['Biosample']['dbxrefs'][0].startswith('BioSample:SAMN')
+    # assert BiosampleCellCulture has alias
+    assert (outfile_dict['BiosampleCellCulture']['aliases'][0].startswith('abc:') and
+            outfile_dict['BiosampleCellCulture']['aliases'][0].endswith('-cellculture'))
+    # assert BiosampleCellCulture alias is in Biosample sheet
+    assert (outfile_dict['Biosample']['cell_culture_details'][0].startswith('abc:') and
+            outfile_dict['Biosample']['cell_culture_details'][0].endswith('-cellculture'))
+    # FileFastq assert(s)
+    assert outfile_dict['FileFastq']['*file_format'][0] == 'fastq'
+    assert not outfile_dict['FileFastq']['paired_end'][0]
+    assert not (outfile_dict['FileFastq']['related_files.relationship_type'][0] or
+                outfile_dict['FileFastq']['related_files.file'][0])
+    assert outfile_dict['FileFastq']['read_length'][0]
+    assert outfile_dict['FileFastq']['instrument'][0]
+    assert outfile_dict['FileFastq']['dbxrefs'][0].startswith('SRA:SRR')
+    # ExperimentRepliseq assert(s)
+    assert outfile_dict['ExperimentRepliseq']['dbxrefs'][0].startswith('GEO:GSM')
+    assert outfile_dict['ExperimentRepliseq']['description'][0]
+    assert outfile_dict['ExperimentRepliseq']['files'][0]
+    assert outfile_dict['ExperimentRepliseq']['*biosample'][0]
 
-    # assert gds.biosamples
-    # turn into modify_xls test - may need to change a couple things around in original script
-
-    # input blank excel
-    # create dataset
-    # save excel
     # compare saved excel to data_file excel
     # delete saved excel
     # modify original function to return outbook rather than save to file?
