@@ -79,8 +79,9 @@ def test_parse_gsm_atacseq(mocker):
     assert atac.exptype == 'atacseq'
 
 
-def test_parse_gsm_damid():
-    pass
+def test_parse_gsm_damid(mocker):
+    dam = gsm_soft_to_exp_obj(mocker, './test/data_files/GSM2586973.txt')
+    assert dam.exptype == 'damidseq'
 
 
 def test_parse_gsm_chiapet():
