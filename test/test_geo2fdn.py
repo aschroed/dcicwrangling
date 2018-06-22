@@ -165,16 +165,36 @@ def test_modify_xls(mocker, bs_obj, exp_with_sra):
 
 # experiment_type_compare tests?
 
-# def test_experiment_type_compare_sheet_noexp():
+def test_experiment_type_compare_sheet_noexp(mocker, capfd):
     # maybe just mock all experiments with same biosample, same sra file
-    # mocker.patch()
-    # mocker.patch('scripts.geo2fdn.Experiment.get_sra')
-    # mocker.patch('scripts.geo2fdn.parse_bs_record', return_value = bs_obj):
-    # geo.modify_xls('GSE99607', './test/data_files/x', 'out2.xls', 'abc')
+    mocker.patch('scripts.geo2fdn.Experiment.get_sra')
+    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value = bs_obj(mocker))
+    # input xls needs ExperimentSeq, ExperimentCaptureC sheets
+    geo.modify_xls('./test/data_files/GSE99607_family.soft.gz',
+                   './test/data_files/capturec_seq_template.xls', 'out2.xls', 'abc')
+    book = xlrd.open_workbook('out2.xls')
+    outfile_dict = create_xls_dict(book)
+    os.remove('out2.xls')
+    out, err = capfd.readouterr()
     # examine experiment sheet, look for exp_type, number of experiments
+    assert len(outfile_dict['ExperimentSeq']['aliases']) > 0
+    assert 'ExperimentCaptureC' not in outfile_dict.keys()
     # check for print messages
+    assert 'The following accessions had experiment types that could not be parsed:' in out.split('\n')
 
 
 
-def test_experiment_type_compare_nosheet_exp():
-    pass
+def test_experiment_type_compare_nosheet_exp(mocker, capfd):
+    mocker.patch('scripts.geo2fdn.Experiment.get_sra')
+    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value = bs_obj(mocker))
+    # input xls needs ExperimentSeq, ExperimentCaptureC sheets
+    geo.modify_xls('./test/data_files/GSE99607_family.soft.gz',
+                   './test/data_files/capturec_seq_template.xls', 'out3.xls', 'abc',
+                   experiment_type='CaptureC')
+    book = xlrd.open_workbook('out3.xls')
+    out, err = capfd.readouterr()
+    outfile_dict = create_xls_dict(book)
+    os.remove('out3.xls')
+    assert 'ExperimentSeq' not in outfile_dict.keys()
+    assert len(outfile_dict['ExperimentCaptureC']['aliases']) > 20
+    assert 'The following accessions had experiment types that could not be parsed:' not in out.split('\n')
