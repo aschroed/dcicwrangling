@@ -1,9 +1,9 @@
 from scripts import geo2fdn as geo
-# from Bio import Entrez
 import GEOparse
 import xlrd
 import pytest
 import os
+from xlutils.copy import copy
 
 
 @pytest.fixture
@@ -25,6 +25,9 @@ def exp_with_sra(mocker, srx_file):
             gsm = GEOparse.get_GEO(filepath='./test/data_files/GSM2715320.txt')
             return geo.parse_gsm(gsm)
 
+
+# @pytest.fixture
+# def repliseq_exp(mocker):
 
 def test_parse_gsm_with_sra(mocker, srx_file):
     with open(srx_file, 'r') as srx:
@@ -53,11 +56,6 @@ def test_parse_gsm_dbgap(mocker):
     assert not exp.runs
     assert not exp.length
 
-# test gsm parse with different experiment types autodetected
-    # mock get_sra
-    # ['dnase hic', 'rnaseq', 'tsaseq', 'chipseq', 'capturec',
-    #    'atacseq', 'damid', 'damidseq', 'chiapet']
-    # multiple functions or all one function?
 
 def gsm_soft_to_exp_obj(mocker, gsm_file, exp_type=None):
     with mocker.patch('scripts.geo2fdn.Experiment.get_sra'):
@@ -142,18 +140,8 @@ def test_modify_xls(mocker, bs_obj, exp_with_sra):
     assert outfile_dict['ExperimentRepliseq']['files'][0]
     assert outfile_dict['ExperimentRepliseq']['*biosample'][0]
 
-    # compare saved excel to data_file excel
-    # delete saved excel
-    # modify original function to return outbook rather than save to file?
 
-# modify_xls test with experiment_type
-#     exp = gsm_soft_to_exp_obj('./test/data_files/GSM2648491.txt')
-# above: unparsable captureC experiment
-
-
-# experiment_type_compare tests?
-
-def test_experiment_type_compare_sheet_noexp(mocker, capfd):
+def test_modify_xls_some_unparsable_types(mocker, capfd):
     # maybe just mock all experiments with same biosample, same sra file
     mocker.patch('scripts.geo2fdn.Experiment.get_sra')
     mocker.patch('scripts.geo2fdn.parse_bs_record', return_value = bs_obj(mocker))
@@ -173,8 +161,7 @@ def test_experiment_type_compare_sheet_noexp(mocker, capfd):
     assert 'The following accessions had experiment types that could not be parsed:' in out.split('\n')
 
 
-
-def test_experiment_type_compare_nosheet_exp(mocker, capfd):
+def test_modify_xls_set_experiment_type(mocker, capfd):
     mocker.patch('scripts.geo2fdn.Experiment.get_sra')
     mocker.patch('scripts.geo2fdn.parse_bs_record', return_value = bs_obj(mocker))
     # input xls needs ExperimentSeq, ExperimentCaptureC sheets
@@ -188,3 +175,34 @@ def test_experiment_type_compare_nosheet_exp(mocker, capfd):
     assert 'ExperimentSeq' not in outfile_dict.keys()
     assert len(outfile_dict['ExperimentCaptureC']['aliases']) > 20
     assert 'The following accessions had experiment types that could not be parsed:' not in out.split('\n')
+
+
+def run_compare(capfd, exp_with_sra, template, exp_type, sheet):
+    inbook = xlrd.open_workbook(template)
+    book = copy(inbook)
+    exp_list = [exp for exp in [exp_with_sra] if exp.exptype == exp_type]
+    acc = exp_with_sra.geo
+    outbook = geo.experiment_type_compare(sheet, exp_list, acc, 'abc',
+                                          {acc: ['file.fq']}, inbook, book)
+    out, err = capfd.readouterr()
+    return out.split('\n'), acc
+
+
+def test_experiment_type_compare_nosheet_exp(capfd, exp_with_sra):
+    out, acc = run_compare(capfd, exp_with_sra, './test/data_files/capturec_seq_template.xls',
+                           'repliseq', 'ExperimentRepliseq')
+    assert 'Repliseq experiments found in {} but no ExperimentRepliseq sheet'.format(acc) in out
+
+
+def test_experiment_type_compare_sheet_noexp(capfd, exp_with_sra):
+    out, acc = run_compare(capfd, exp_with_sra, './test/data_files/capturec_seq_template.xls',
+                           'capturec', 'ExperimentCaptureC')
+    assert 'No CaptureC experiments parsed from {}.'.format(acc) in out
+
+
+def test_experiment_type_compare_sheet_exp(capfd, exp_with_sra):
+    out, acc = run_compare(capfd, exp_with_sra, './test/data_files/repliseq_template.xls',
+                           'repliseq', 'ExperimentRepliseq')
+    assert 'Writing ExperimentRepliseq sheet...' in out
+    assert 'No Repliseq experiments parsed from {}.'.format(acc) not in out
+    assert 'Repliseq experiments found in {} but no ExperimentRepliseq sheet'.format(acc) not in out
