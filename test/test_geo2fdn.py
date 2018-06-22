@@ -178,6 +178,8 @@ def test_experiment_type_compare_sheet_noexp(mocker, capfd):
     out, err = capfd.readouterr()
     # examine experiment sheet, look for exp_type, number of experiments
     assert len(outfile_dict['ExperimentSeq']['aliases']) > 0
+    types_in_outfile = outfile_dict['ExperimentSeq']['*experiment_type']
+    assert 'RNA-seq' in types_in_outfile and 'CHIP-seq' in types_in_outfile and len(types_in_outfile) > 20
     assert 'ExperimentCaptureC' not in outfile_dict.keys()
     # check for print messages
     assert 'The following accessions had experiment types that could not be parsed:' in out.split('\n')
