@@ -69,12 +69,14 @@ def test_parse_gsm_sprite(mocker):
     sprite = gsm_soft_to_exp_obj(mocker, './test/data_files/GSM3154187.txt')
     assert sprite.exptype == 'dna sprite'
 
-def test_parse_gsm_capturec():
-    pass
+def test_parse_gsm_capturec(mocker):
+    cap = gsm_soft_to_exp_obj(mocker, './test/data_files/GSM2198225.txt')
+    assert cap.exptype == 'capturec'
 
 
-def test_parse_gsm_atacseq():
-    pass
+def test_parse_gsm_atacseq(mocker):
+    atac = gsm_soft_to_exp_obj(mocker, './test/data_files/GSM3149191.txt')
+    assert atac.exptype == 'atacseq'
 
 
 def test_parse_gsm_damid():
