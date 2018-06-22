@@ -65,27 +65,12 @@ def gsm_soft_to_exp_obj(mocker, gsm_file, exp_type=None):
         return geo.parse_gsm(gsm, experiment_type=exp_type)
 
 
-def test_parse_gsm_sprite(mocker):
-    sprite = gsm_soft_to_exp_obj(mocker, './test/data_files/GSM3154187.txt')
-    assert sprite.exptype == 'dna sprite'
-
-def test_parse_gsm_capturec(mocker):
-    cap = gsm_soft_to_exp_obj(mocker, './test/data_files/GSM2198225.txt')
-    assert cap.exptype == 'capturec'
-
-
-def test_parse_gsm_atacseq(mocker):
-    atac = gsm_soft_to_exp_obj(mocker, './test/data_files/GSM3149191.txt')
-    assert atac.exptype == 'atacseq'
-
-
-def test_parse_gsm_damid(mocker):
-    dam = gsm_soft_to_exp_obj(mocker, './test/data_files/GSM2586973.txt')
-    assert dam.exptype == 'damidseq'
-
-
-def test_parse_gsm_chiapet():
-    pass
+def test_parse_gsm_exptypes(mocker):
+    soft_file_dict = {'GSM3154187': 'dna sprite', 'GSM2198225': 'capturec',
+                      'GSM3149191': 'atacseq', 'GSM2586973': 'damidseq', 'GSM3003988': 'chiapet'}
+    for acc in soft_file_dict.keys():
+        parsed = gsm_soft_to_exp_obj(mocker, './test/data_files/' + acc + '.txt')
+        assert parsed.exptype == soft_file_dict[acc]
 
 
 def test_parse_bs_record(mocker):
