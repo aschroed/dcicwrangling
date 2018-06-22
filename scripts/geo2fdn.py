@@ -140,7 +140,7 @@ def parse_gsm(gsm, experiment_type=None):
     return exp
 
 
-def get_geo_metadata(acc, filepath=None, experiment_type=None):
+def get_geo_metadata(acc, experiment_type=None):
     '''
     Parses information associated with a GEO Series or single experiment.
     Uses GEOparse library which downloads records from NCBI ftp rather than using
@@ -149,12 +149,15 @@ def get_geo_metadata(acc, filepath=None, experiment_type=None):
     a Dataset object, holding information about all the associated experiments
     and biosamples.
     '''
-    if acc.startswith('GSE'):  # experiment series
-        gse = GEOparse.get_GEO(geo=acc) if not filepath else GEOparse.get_GEO(filepath=filepath)
+    if acc.startswith('GSE') or '/GSE' in acc:  # experiment series
+        if '/' in acc:
+            gse = GEOparse.get_GEO(filepath=acc)
+        else:
+            gse = GEOparse.get_GEO(geo=acc)
         # create Experiment objects from each GSM file
         experiments = [obj for obj in [parse_gsm(gsm, experiment_type) for gsm in gse.gsms.values()] if obj]
         # delete file after GSMs are parsed
-        if not filepath:
+        if '/' not in acc:
             print('GEO parsing done. Removing downloaded soft file.')
             os.remove('{}_family.soft.gz'.format(acc))
         if not experiments:
@@ -163,8 +166,11 @@ def get_geo_metadata(acc, filepath=None, experiment_type=None):
         gds = Dataset(acc, gse.metadata['sample_id'], experiments,
                       [parse_bs_record(experiment.bs) for experiment in experiments])
         return gds
-    elif acc.startswith('GSM'):  # single experiment
-        gsm = GEOparse.get_GEO(geo=acc) if not filepath else GEOparse.get_GEO(filepath=filepath)
+    elif acc.startswith('GSM') or '/GSM' in acc:  # single experiment
+        if '/' in acc:
+            gsm = GEOparse.get_GEO(filepath=acc)
+        else:
+            gsm = GEOparse.get_GEO(geo=acc)
         exp = parse_gsm(gsm, experiment_type)
         print("GEO parsing done. Removing downloaded soft file.")
         try:

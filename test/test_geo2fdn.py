@@ -96,7 +96,7 @@ def test_parse_bs_record(mocker):
 def test_get_geo_metadata_seq(mocker):
     with mocker.patch('scripts.geo2fdn.Experiment.get_sra'):
         with mocker.patch('scripts.geo2fdn.parse_bs_record', return_value = 'SAMNXXXXXXXX'):
-            gse = geo.get_geo_metadata('GSE93431', filepath='./test/data_files/GSE93431_family.soft.gz')
+            gse = geo.get_geo_metadata('./test/data_files/GSE93431_family.soft.gz')
     assert len([exp for exp in gse.experiments if exp.exptype == 'hic']) == 6
     assert len([exp for exp in gse.experiments if exp.exptype == 'chipseq']) == 14
     assert len([exp for exp in gse.experiments if exp.exptype == 'rnaseq']) == 12
@@ -104,7 +104,7 @@ def test_get_geo_metadata_seq(mocker):
 
 
 def test_get_geo_metadata_microarray(capfd):
-    gse = geo.get_geo_metadata('GSE102960', filepath='./test/data_files/GSE102960_family.soft.gz')
+    gse = geo.get_geo_metadata('./test/data_files/GSE102960_family.soft.gz')
     out, err = capfd.readouterr()
     assert not gse
     assert out == 'Sequencing experiments not found. Exiting.\n'
@@ -125,10 +125,10 @@ def create_xls_dict(inbook):
 
 
 def test_modify_xls(mocker, bs_obj, exp_with_sra):
-    with mocker.patch('scripts.geo2fdn.parse_gsm', return_value = exp_with_sra):
-        with mocker.patch('scripts.geo2fdn.parse_bs_record', return_value = bs_obj):
-            # gds = geo.get_geo_metadata('GSM2715320', filepath='./test/data_files/GSM2715320.txt')
-            geo.modify_xls('GSM2715320', './test/data_files/repliseq_template.xls', 'out.xls', 'abc')
+    mocker.patch('scripts.geo2fdn.parse_gsm', return_value = exp_with_sra)
+    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value = bs_obj)
+    # gds = geo.get_geo_metadata('GSM2715320', filepath='./test/data_files/GSM2715320.txt')
+    geo.modify_xls('GSM2715320', './test/data_files/repliseq_template.xls', 'out.xls', 'abc')
     book = xlrd.open_workbook('out.xls')
     outfile_dict = create_xls_dict(book)
     os.remove('out.xls')
@@ -165,8 +165,15 @@ def test_modify_xls(mocker, bs_obj, exp_with_sra):
 
 # experiment_type_compare tests?
 
-def test_experiment_type_compare_sheet_noexp():
-    pass
+# def test_experiment_type_compare_sheet_noexp():
+    # maybe just mock all experiments with same biosample, same sra file
+    # mocker.patch()
+    # mocker.patch('scripts.geo2fdn.Experiment.get_sra')
+    # mocker.patch('scripts.geo2fdn.parse_bs_record', return_value = bs_obj):
+    # geo.modify_xls('GSE99607', './test/data_files/x', 'out2.xls', 'abc')
+    # examine experiment sheet, look for exp_type, number of experiments
+    # check for print messages
+
 
 
 def test_experiment_type_compare_nosheet_exp():
