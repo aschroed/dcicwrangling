@@ -153,7 +153,7 @@ def get_geo_metadata(acc, experiment_type=None):
         if '/' in acc:
             gse = GEOparse.get_GEO(filepath=acc)
         else:
-            gse = GEOparse.get_GEO(geo=acc)
+            gse = GEOparse.get_GEO(geo=acc)  # pragma: no cover
         # create Experiment objects from each GSM file
         experiments = [obj for obj in [parse_gsm(gsm, experiment_type) for gsm in gse.gsms.values()] if obj]
         # delete file after GSMs are parsed
@@ -170,7 +170,7 @@ def get_geo_metadata(acc, experiment_type=None):
         if '/' in acc:
             gsm = GEOparse.get_GEO(filepath=acc)
         else:
-            gsm = GEOparse.get_GEO(geo=acc)
+            gsm = GEOparse.get_GEO(geo=acc)  # pragma: no cover
         exp = parse_gsm(gsm, experiment_type)
         print("GEO parsing done. Removing downloaded soft file.")
         try:
@@ -449,7 +449,7 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
     return
 
 
-def main(types=valid_types, descr=description, epilog=epilog):
+def main(types=valid_types, descr=description, epilog=epilog):  # pragma: no cover
     parser = argparse.ArgumentParser(description=descr, epilog=epilog,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('geo_accession', help="GEO accession", action="store")
@@ -475,7 +475,7 @@ def main(types=valid_types, descr=description, epilog=epilog):
         sys.exit()
     Entrez.email = input('Enter email address to use NCBI Entrez: ')
     modify_xls(args.geo_accession, args.infile, out_file, args.alias, experiment_type=args.type)
-    
+
 
 if __name__ == '__main__':
     main()
