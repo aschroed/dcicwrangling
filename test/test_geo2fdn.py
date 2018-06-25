@@ -26,9 +26,7 @@ def exp_with_sra(mocker, srx_file):
             return geo.parse_gsm(gsm)
 
 
-# @pytest.fixture
-# def repliseq_exp(mocker):
-
+# edit to use above fixture?
 def test_parse_gsm_with_sra(mocker, srx_file):
     with open(srx_file, 'r') as srx:
         with mocker.patch('Bio.Entrez.efetch', return_value = srx):
@@ -96,6 +94,13 @@ def test_get_geo_metadata_microarray(capfd):
     assert out == 'Sequencing experiments not found. Exiting.\n'
 
 
+def test_get_geo_metadata_bad_accession(capfd):
+    gse = geo.get_geo_metadata('GDS102960')
+    out, err = capfd.readouterr()
+    assert not gse
+    assert out == 'Input not a valid GEO accession.\n'
+
+
 def create_xls_dict(inbook):
     xls_dict = {}
     for name in inbook.sheet_names():
@@ -142,29 +147,24 @@ def test_modify_xls(mocker, bs_obj, exp_with_sra):
 
 
 def test_modify_xls_some_unparsable_types(mocker, capfd):
-    # maybe just mock all experiments with same biosample, same sra file
     mocker.patch('scripts.geo2fdn.Experiment.get_sra')
     mocker.patch('scripts.geo2fdn.parse_bs_record', return_value = bs_obj(mocker))
-    # input xls needs ExperimentSeq, ExperimentCaptureC sheets
     geo.modify_xls('./test/data_files/GSE99607_family.soft.gz',
                    './test/data_files/capturec_seq_template.xls', 'out2.xls', 'abc')
     book = xlrd.open_workbook('out2.xls')
     outfile_dict = create_xls_dict(book)
     os.remove('out2.xls')
     out, err = capfd.readouterr()
-    # examine experiment sheet, look for exp_type, number of experiments
     assert len(outfile_dict['ExperimentSeq']['aliases']) > 0
     types_in_outfile = outfile_dict['ExperimentSeq']['*experiment_type']
     assert 'RNA-seq' in types_in_outfile and 'CHIP-seq' in types_in_outfile and len(types_in_outfile) > 20
     assert 'ExperimentCaptureC' not in outfile_dict.keys()
-    # check for print messages
     assert 'The following accessions had experiment types that could not be parsed:' in out.split('\n')
 
 
 def test_modify_xls_set_experiment_type(mocker, capfd):
     mocker.patch('scripts.geo2fdn.Experiment.get_sra')
     mocker.patch('scripts.geo2fdn.parse_bs_record', return_value = bs_obj(mocker))
-    # input xls needs ExperimentSeq, ExperimentCaptureC sheets
     geo.modify_xls('./test/data_files/GSE99607_family.soft.gz',
                    './test/data_files/capturec_seq_template.xls', 'out3.xls', 'abc',
                    experiment_type='CaptureC')
