@@ -1,3 +1,6 @@
 boto3
 dcicutils>=0.1.85
 xlrd
+xlutils
+Bio
+GEOparse
