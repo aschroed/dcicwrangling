@@ -175,7 +175,7 @@ def get_geo_metadata(acc, experiment_type=None):
         print("GEO parsing done. Removing downloaded soft file.")
         try:
             os.remove('{}.txt'.format(acc))  # delete file after GSM is parsed
-        except:
+        except Exception:
             pass
         if not exp:
             print("Accession not a sequencing experiment, or couldn't be parsed. Exiting.")
@@ -475,6 +475,7 @@ def main(types=valid_types, descr=description, epilog=epilog):
         sys.exit()
     Entrez.email = input('Enter email address to use NCBI Entrez: ')
     modify_xls(args.geo_accession, args.infile, out_file, args.alias, experiment_type=args.type)
+    
 
 if __name__ == '__main__':
     main()

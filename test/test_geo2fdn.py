@@ -14,14 +14,14 @@ def srx_file():
 @pytest.fixture
 def bs_obj(mocker):
     with open('./test/data_files/SAMN06219555.xml', 'r') as samn:
-        with mocker.patch('Bio.Entrez.efetch', return_value = samn):
+        with mocker.patch('Bio.Entrez.efetch', return_value=samn):
             return geo.parse_bs_record('SAMN06219555')
 
 
 @pytest.fixture
 def exp_with_sra(mocker, srx_file):
     with open(srx_file, 'r') as srx:
-        with mocker.patch('Bio.Entrez.efetch', return_value = srx):
+        with mocker.patch('Bio.Entrez.efetch', return_value=srx):
             gsm = GEOparse.get_GEO(filepath='./test/data_files/GSM2715320.txt')
             return geo.parse_gsm(gsm)
 
@@ -29,7 +29,7 @@ def exp_with_sra(mocker, srx_file):
 # edit to use above fixture?
 def test_parse_gsm_with_sra(mocker, srx_file):
     with open(srx_file, 'r') as srx:
-        with mocker.patch('Bio.Entrez.efetch', return_value = srx):
+        with mocker.patch('Bio.Entrez.efetch', return_value=srx):
             gsm = GEOparse.get_GEO(filepath='./test/data_files/GSM2715320.txt')
             exp = geo.parse_gsm(gsm)
     assert exp.link in srx_file
@@ -43,7 +43,7 @@ def test_parse_gsm_with_sra(mocker, srx_file):
 
 def test_parse_gsm_dbgap(mocker):
     with open('./test/data_files/SRX3028942.xml', 'r') as srx:
-        with mocker.patch('Bio.Entrez.efetch', return_value = srx):
+        with mocker.patch('Bio.Entrez.efetch', return_value=srx):
             gsm = GEOparse.get_GEO(filepath='./test/data_files/GSM2254215.txt')
             exp = geo.parse_gsm(gsm)
     assert exp.bs == 'SAMN05449633'
@@ -71,7 +71,7 @@ def test_parse_gsm_exptypes(mocker):
 
 def test_parse_bs_record(mocker):
     with open('./test/data_files/SAMN06219555.xml', 'r') as samn:
-        with mocker.patch('Bio.Entrez.efetch', return_value = samn):
+        with mocker.patch('Bio.Entrez.efetch', return_value=samn):
             bs = geo.parse_bs_record('SAMN06219555')
     for item in ['tamoxifen', 'liver', 'NIPBL', 'Nipbl(flox/flox)']:
         assert item in bs.description
@@ -79,7 +79,7 @@ def test_parse_bs_record(mocker):
 
 def test_get_geo_metadata_seq(mocker):
     with mocker.patch('scripts.geo2fdn.Experiment.get_sra'):
-        with mocker.patch('scripts.geo2fdn.parse_bs_record', return_value = 'SAMNXXXXXXXX'):
+        with mocker.patch('scripts.geo2fdn.parse_bs_record', return_value='SAMNXXXXXXXX'):
             gse = geo.get_geo_metadata('./test/data_files/GSE93431_family.soft.gz')
     assert len([exp for exp in gse.experiments if exp.exptype == 'hic']) == 6
     assert len([exp for exp in gse.experiments if exp.exptype == 'chipseq']) == 14
@@ -116,8 +116,8 @@ def create_xls_dict(inbook):
 
 
 def test_modify_xls(mocker, bs_obj, exp_with_sra):
-    mocker.patch('scripts.geo2fdn.parse_gsm', return_value = exp_with_sra)
-    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value = bs_obj)
+    mocker.patch('scripts.geo2fdn.parse_gsm', return_value=exp_with_sra)
+    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
     # gds = geo.get_geo_metadata('GSM2715320', filepath='./test/data_files/GSM2715320.txt')
     geo.modify_xls('GSM2715320', './test/data_files/repliseq_template.xls', 'out.xls', 'abc')
     book = xlrd.open_workbook('out.xls')
@@ -148,7 +148,7 @@ def test_modify_xls(mocker, bs_obj, exp_with_sra):
 
 def test_modify_xls_some_unparsable_types(mocker, capfd):
     mocker.patch('scripts.geo2fdn.Experiment.get_sra')
-    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value = bs_obj(mocker))
+    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj(mocker))
     geo.modify_xls('./test/data_files/GSE99607_family.soft.gz',
                    './test/data_files/capturec_seq_template.xls', 'out2.xls', 'abc')
     book = xlrd.open_workbook('out2.xls')
@@ -164,7 +164,7 @@ def test_modify_xls_some_unparsable_types(mocker, capfd):
 
 def test_modify_xls_set_experiment_type(mocker, capfd):
     mocker.patch('scripts.geo2fdn.Experiment.get_sra')
-    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value = bs_obj(mocker))
+    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj(mocker))
     geo.modify_xls('./test/data_files/GSE99607_family.soft.gz',
                    './test/data_files/capturec_seq_template.xls', 'out3.xls', 'abc',
                    experiment_type='CaptureC')
@@ -182,8 +182,7 @@ def run_compare(capfd, exp_with_sra, template, exp_type, sheet):
     book = copy(inbook)
     exp_list = [exp for exp in [exp_with_sra] if exp.exptype == exp_type]
     acc = exp_with_sra.geo
-    outbook = geo.experiment_type_compare(sheet, exp_list, acc, 'abc',
-                                          {acc: ['file.fq']}, inbook, book)
+    geo.experiment_type_compare(sheet, exp_list, acc, 'abc', {acc: ['file.fq']}, inbook, book)
     out, err = capfd.readouterr()
     return out.split('\n'), acc
 
