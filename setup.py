@@ -9,6 +9,10 @@ requires = [
     'pytest-runner',
     'boto3',
     'dcicutils',
+    'biopython',
+    'GEOparse',
+    'xlrd',
+    'xlutils'
 ]
 
 tests_require = [
