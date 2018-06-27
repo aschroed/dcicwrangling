@@ -110,7 +110,7 @@ def handle_timeout(command):
     return result
 
 
-def parse_gsm_soft(gsm, experiment_type=None):
+def parse_gsm(gsm, experiment_type=None):
     '''
     Parses information about individual experiment. Input is a GEOparse.gsm object.
     Function creates an Experiment object; if GSM record has an associated SRA record,
@@ -149,32 +149,42 @@ def get_geo_metadata(acc, experiment_type=None):
     a Dataset object, holding information about all the associated experiments
     and biosamples.
     '''
-    if acc.startswith('GSE'):  # experiment series
-        gse = GEOparse.get_GEO(geo=acc)
+    if acc.startswith('GSE') or '/GSE' in acc:  # experiment series
+        if '/' in acc:
+            gse = GEOparse.get_GEO(filepath=acc)
+        else:
+            gse = GEOparse.get_GEO(geo=acc)  # pragma: no cover
         # create Experiment objects from each GSM file
-        experiments = [parse_gsm_soft(gsm, experiment_type) for gsm in gse.gsms.values()]
+        experiments = [obj for obj in [parse_gsm(gsm, experiment_type) for gsm in gse.gsms.values()] if obj]
         # delete file after GSMs are parsed
-        print("GEO parsing done. Removing downloaded soft file.")
-        os.remove('{}_family.soft.gz'.format(acc))
+        if '/' not in acc:
+            print('GEO parsing done. Removing downloaded soft file.')
+            os.remove('{}_family.soft.gz'.format(acc))
         if not experiments:
             print('Sequencing experiments not found. Exiting.')
-            sys.exit()
+            return
         gds = Dataset(acc, gse.metadata['sample_id'], experiments,
                       [parse_bs_record(experiment.bs) for experiment in experiments])
         return gds
-    elif acc.startswith('GSM'):  # single experiment
-        gsm = GEOparse.get_GEO(geo=acc)
-        exp = parse_gsm_soft(gsm, experiment_type)
+    elif acc.startswith('GSM') or '/GSM' in acc:  # single experiment
+        if '/' in acc:
+            gsm = GEOparse.get_GEO(filepath=acc)
+        else:
+            gsm = GEOparse.get_GEO(geo=acc)  # pragma: no cover
+        exp = parse_gsm(gsm, experiment_type)
         print("GEO parsing done. Removing downloaded soft file.")
-        os.remove('{}.txt'.format(acc))  # delete file after GSM is parsed
+        try:
+            os.remove('{}.txt'.format(acc))  # delete file after GSM is parsed
+        except Exception:
+            pass
         if not exp:
             print("Accession not a sequencing experiment, or couldn't be parsed. Exiting.")
-            sys.exit()
+            return
         gds = Dataset(None, [acc], [exp], [parse_bs_record(exp.bs)])
         return gds
     else:
         print('Input not a valid GEO accession.')
-        sys.exit()
+        return
 
 
 def parse_bs_record(bs_acc):
@@ -312,6 +322,8 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
     these won't get written.
     '''
     gds = get_geo_metadata(geo, experiment_type)
+    if not gds:
+        return
     book = xlrd.open_workbook(infile)
     outbook = copy(book)
 
@@ -437,7 +449,7 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
     return
 
 
-def main(types=valid_types, descr=description, epilog=epilog):
+def main(types=valid_types, descr=description, epilog=epilog):  # pragma: no cover
     parser = argparse.ArgumentParser(description=descr, epilog=epilog,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('geo_accession', help="GEO accession", action="store")
