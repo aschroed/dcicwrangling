@@ -162,12 +162,62 @@ def has_field_value(item_dict, field, value=None, val_is_item=False):
 def get_types_that_can_have_field(auth, field):
     """find items that have the passed in fieldname in their properties
         even if there is currently no value for that field"""
-    profiles = get_metadata('/profiles/', auth, frame='raw')
+    profiles = get_metadata('/profiles/', auth, add_on="frame=raw")
     types_w_field = []
     for t, j in profiles.items():
         if j['properties'].get(field):
             types_w_field.append(t)
     return types_w_field
+
+
+def is_linked_field(val):
+    val = str(val)
+    return 'linkTo' in val
+
+
+def _scan_schema_props(props, linkto=None):
+    links = {}
+    for f, v in props.items():
+        if is_linked_field(v):
+            fty = v.get('type')
+            if fty == 'string':
+                lt = v.get('linkTo')
+                if linkto is not None and lt != linkto:
+                    continue
+                links[f] = {'link': v.get('linkTo'), 'field_type': fty}
+            elif fty == 'array':
+                ity = v.get('items').get('type')
+                if ity == 'string':
+                    lt = v.get('items').get('linkTo')
+                    if linkto is not None and lt != linkto:
+                        continue
+                    links[f] = {'link': lt, 'field_type': fty}
+                else:  # ity == 'object'
+                    lo = _scan_schema_props(v.get('items').get('properties'), linkto)
+                    for l, o in lo.items():
+                        label = '.'.join([f, l])
+                        links[label] = o
+            else:  # fty == 'object'
+                lo = _scan_schema_props(v.get('properties'), linkto)
+                for l, o in lo.items():
+                    label = '.'.join([f, l])
+                    links[label] = o
+    return links
+
+
+def find_linkto_fields(auth, item_type=None, linkto=None):
+    """check schemas for linkTo fields and return a dict of field and linkTo types
+        if an item_type is provided will only check that schema
+        if a linkto is provided will only look for fields with linkTo to that kind of item"""
+    profiles = get_metadata('/profiles/', auth, add_on="frame=raw")
+    result = {}
+    if item_type and item_type in profiles:
+        profiles = {item_type: profiles.get(item_type)}
+    for ty, schema in profiles.items():
+        links = _scan_schema_props(schema.get('properties'), linkto)
+        if links:
+            result[ty] = links
+    return result
 
 
 def get_linked_items(auth, itemid, found_items={},

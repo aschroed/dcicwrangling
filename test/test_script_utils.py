@@ -74,6 +74,37 @@ def profiles():
                 "documents": {"uniqueItems": "true", "description": "Documents that provide additional information (not data file).", "type": "array", "default": [], "comment": "See Documents sheet or collection for existing items.", "title": "Documents", "items": {"title": "Document", "description": "A document that provides additional information (not data file).", "type": "string", "linkTo": "Document"}},  # noqa: E501
                 "public_release": {"anyOf": [{"format": "date-time"}, {"format": "date"}], "exclude_from": ["submit4dn", "FFedit-create"], "description": "The date which the item was released to the public", "permission": "import_items", "type": "string", "comment": "Do not submit, value is assigned when released.", "title": "Public Release Date"},  # noqa: E501
             }
+        },
+        "ExperimentHiC": {
+          "title": "Hi-C Experiment",
+          "description": "Genome-wide chromosome conformation capture experiments including Hi-C, micro-C, DNase Hi-C", "type": "object",  # noqa: E501
+          "properties": {
+            "status": {"type": "string", "default": "in review by lab", "title": "Status"},
+            "accession": {"type": "string", "title": "Accession"},
+            "experiment_type": {"type": "string", "title": "Experiment Type"},
+            "protocol": {"type": "string", "linkTo": "Protocol", "title": "Reference Protocol"},
+            "protocol_variation": {"type": "array", "items": {"type": "string", "linkTo": "Protocol"}, "title": "Protocol Documents"},  # noqa: E501
+            "experiment_relation": {"type": "array", "items": {"title": "Experiment relation", "type": "object", "properties": {  # noqa: E501
+                "relationship_type": {"type": "string", "title": "Relationship Type"},
+                "experiment": {"type": "string", "lookup": 311, "linkTo": "Experiment"}}},
+                "title": "Experiment Relations", "description": "All related experiments"},
+            "biosample": {"type": "string", "linkTo": "Biosample", "title": "Biological Sample", "lookup": 40},
+            "biosample_quantity": {"type": "number", "title": "Biosample Quantity", "lookup": 41},
+            "biosample_quantity_units": {"type": "string", "enum": ["g", "mg", "μg", "ml", "cells"], "title": "Biosample Quantity Units", "lookup": 42},  # noqa: E501
+            "files": {"type": "array", "items": {"title": "File", "description": "File metadata.", "type": "string", "linkTo": "File"}, "title": "Data Files"},  # noqa: E501
+            "other_processed_files": {"type": "array", "items": {"title": "Archived/Preliminary Processed Filesets", "type": "object", "properties": {  # noqa: E501
+                "title": {"title": "Fileset Title", "type": "string", "lookup": 411},
+                "type": {"title": "Fileset Type", "type": "string"},
+                "description": {"title": "Description", "type": "string", "lookup": 413},
+                "files": {"title": "Files", "type": "array", "lookup": 414, "items": {"title": "File", "type": "string", "linkTo": "FileProcessed"}}  # noqa: E501
+            }}},
+            "quality_metric_flags": {"type": "array", "items": {"title": "Flag", "type": "string", "linkTo": "QualityMetricFlag"}, "title": "Quality Metric Flags"},  # noqa: E501
+            "produced_in_pub": {"type": "string", "linkTo": "Publication", "calculatedProperty": True, "title": "Produced in Publication"},  # noqa: E501
+            "last_modified": {"title": "Last Modified", "type": "object", "properties": {
+                "date_modified": {"title": "Date modified", "type": "string"},
+                "modified_by": {"title": "Modified by", "type": "string", "linkTo": "User"}
+            }}
+          }
         }
     }
 
@@ -426,3 +457,49 @@ def test_get_item_if_you_can_w_fakename_and_itype_no_item(mocker, auth):
                       side_effect=[None, None]):
         result = scu.get_item_if_you_can(auth, 'fake name', 'OntologyTerm')
         assert result is None
+
+
+def test_find_linkto_fields(mocker, auth, profiles):
+    to_check = {
+        'documents': ('Document', 'array'),
+        'protocol': ('Protocol', 'string'),
+        'protocol_variation': ('Protocol', 'array'),
+        'experiment_relation.experiment': ('Experiment', 'string'),
+        'biosample': ('Biosample', 'string'),
+        'files': ('File', 'array'),
+        'other_processed_files.files': ('FileProcessed', 'array'),
+        'quality_metric_flags': ('QualityMetricFlag', 'array'),
+        'produced_in_pub': ('Publication', 'string'),
+        'last_modified.modified_by': ('User', 'string')
+    }
+    with mocker.patch('scripts.script_utils.get_metadata',
+                      return_value=profiles):
+        result = scu.find_linkto_fields(auth)
+        for k, v in result.items():
+            assert k in profiles
+            for k2, v2 in v.items():
+                assert v2['link'] == to_check[k2][0]
+                assert v2['field_type'] == to_check[k2][1]
+
+
+def test_find_linkto_fields_w_item_type(mocker, auth, profiles):
+    with mocker.patch('scripts.script_utils.get_metadata',
+                      return_value={'ExperimentSetReplicate': profiles['ExperimentSetReplicate']}):
+        result = scu.find_linkto_fields(auth, 'ExperimentSetReplicate')
+        assert len(result) == 1
+        assert 'ExperimentSetReplicate' in result
+
+
+def test_find_linkto_fields_w_linkto_not_found(mocker, auth, profiles):
+    with mocker.patch('scripts.script_utils.get_metadata',
+                      return_value=profiles):
+        result = scu.find_linkto_fields(auth, linkto='Biosource')
+        assert not result
+
+
+def test_find_linkto_fields_w_linkto_found(mocker, auth, profiles):
+    with mocker.patch('scripts.script_utils.get_metadata',
+                      return_value=profiles):
+        result = scu.find_linkto_fields(auth, linkto='Biosample')
+        assert 'ExperimentHiC' in result
+        assert len(result['ExperimentHiC']) == 1
