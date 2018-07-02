@@ -1,10 +1,10 @@
 import sys
 import argparse
-from dcicutils.ff_utils import get_authentication_with_server, patch_metadata
+from dcicutils.ff_utils import get_authentication_with_server, patch_metadata, delete_field
 from dcicwrangling.scripts import script_utils as scu
 
 
-def get_args():
+def get_args(args):
     parser = argparse.ArgumentParser(
         parents=[scu.create_input_arg_parser(), scu.create_ff_arg_parser()],
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -19,25 +19,30 @@ def get_args():
                         action='store_true',
                         help="Field is an array.  Default is False \
                         use this so value is correctly formatted even if only a single value")
-    return parser.parse_args()
+    args = parser.parse_args(args)
+    return args
 
 
 def main():
-    args = get_args()
+    args = get_args(sys.argv[1:])
     try:
         auth = get_authentication_with_server(args.key, args.env)
     except Exception:
         print("Authentication failed")
         sys.exit(1)
     itemids = scu.get_item_ids_from_args(args.input, auth, args.search)
+    field = args.field
     val = args.value
     if args.isarray:
         val = val.split("'")[1::2]
     for iid in itemids:
-        print("PATCHING", iid, "to", args.field, "=", val)
+        print("PATCHING", iid, "to", field, "=", val)
         if (args.dbupdate):
             # do the patch
-            res = patch_metadata({args.field: val}, iid, auth)
+            if val == '*delete*':
+                res = delete_field(iid, field, auth)
+            else:
+                res = patch_metadata({args.field: val}, iid, auth)
             if res['status'] == 'success':
                 print("SUCCESS!")
             else:
@@ -45,5 +50,5 @@ def main():
                 # print(res)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma:nocover
     main()
