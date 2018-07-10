@@ -50,13 +50,11 @@ def record_object(uuid, store, item_uuids, con_key, schema_name, add_pc_wfr=Fals
         add_from_embedded = {}
 
     #find schema name, store as obj_key, create empty list if missing in store
-
     obj_type = ff_utils.get_metadata(uuid, key=con_key, add_on='frame=object')['@type'][0]
-
     try:
         obj_key = schema_name[obj_type]
     except:
-        #print 'CAN NOT FIND', obj_type, uuid
+        print('CAN NOT FIND', obj_type, uuid)
         return store, item_uuids
     if obj_key not in store:
         store[obj_key] = []
@@ -87,7 +85,7 @@ def record_object(uuid, store, item_uuids, con_key, schema_name, add_pc_wfr=Fals
 
     for key, value in fields_to_check.items():
         # uuid formatted fields to skip
-        if key in ['uuid', 'blob_id', "attachment"]:
+        if key in ['uuid', 'blob_id', "attachment", "sbg_task_id"]:
             continue
         uuid_in_val = find_uuids(value)
 
