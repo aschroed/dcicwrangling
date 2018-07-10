@@ -93,7 +93,7 @@ def record_object(uuid, store, item_uuids, con_key, schema_name, add_pc_wfr=Fals
 
         for a_uuid in uuid_in_val:
             if a_uuid not in item_uuids:
-                store, item_uuids = record_object(a_uuid, store, item_uuids)
+                store, item_uuids = record_object(a_uuid, store, item_uuids, con_key, schema_name, add_pc_wfr)
     return store, item_uuids
 
 
