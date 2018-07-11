@@ -12,7 +12,7 @@ def is_uuid(value):
     try:
         UUID(value, version=4)
         return True
-    except:
+    except:  # noqa
         return False
 
 
@@ -53,7 +53,7 @@ def record_object(uuid, store, item_uuids, con_key, schema_name, add_pc_wfr=Fals
     obj_type = ff_utils.get_metadata(uuid, key=con_key, add_on='frame=object')['@type'][0]
     try:
         obj_key = schema_name[obj_type]
-    except:
+    except:  # noqa
         print('CAN NOT FIND', obj_type, uuid)
         return store, item_uuids
     if obj_key not in store:
