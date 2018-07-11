@@ -12,7 +12,10 @@ def get_args():
     )
     parser.add_argument('reltag',
                         help="The release tag to query DataReleaseUpdates and add to items.")
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.key:
+        args.key = scu.convert_key_arg_to_dict(args.key)
+    return args
 
 
 def has_released(status):

@@ -20,6 +20,8 @@ def get_args(args):
                         help="Field is an array.  Default is False \
                         use this so value is correctly formatted even if only a single value")
     args = parser.parse_args(args)
+    if args.key:
+        args.key = scu.convert_key_arg_to_dict(args.key)
     return args
 
 

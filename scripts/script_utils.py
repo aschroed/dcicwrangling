@@ -1,6 +1,8 @@
 from uuid import UUID
 import copy
 import argparse
+import sys
+import ast
 from dcicutils.ff_utils import search_metadata, get_metadata
 
 
@@ -13,7 +15,7 @@ def create_ff_arg_parser():
     ff_arg_parser.add_argument('--key',
                                default=None,
                                help="An access key dictionary including key, secret and server.\
-                               {'key'='ABCDEF', 'secret'='supersecret', 'server'='https://data.4dnucleome.org'}")
+                               {'key': 'ABCDEF', 'secret': 'supersecret', 'server': 'https://data.4dnucleome.org'}")
     ff_arg_parser.add_argument('--dbupdate',
                                default=False,
                                action='store_true',
@@ -33,6 +35,15 @@ def create_input_arg_parser():
                                   help='Include if you are passing in a search string \
                                   eg. type=Biosource&biosource_type=primary cell')
     return input_arg_parser
+
+
+def convert_key_arg_to_dict(key):
+    if all([v in key for v in ['key', 'secret', 'server']]):
+        key = ast.literal_eval(key)
+    if not isinstance(key, dict):
+        print("You included a key argument but it appears to be malformed or missing required info - see --help")
+        sys.exit(1)
+    return key
 
 
 def get_item_ids_from_args(id_input, auth, is_search=False):

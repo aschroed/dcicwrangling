@@ -10,7 +10,7 @@ from dcicutils.ff_utils import (
     patch_metadata,
     post_metadata,
 )
-from dcicwrangling.scripts.script_utils import create_ff_arg_parser
+from dcicwrangling.scripts.script_utils import create_ff_arg_parser, convert_key_arg_to_dict
 
 
 def get_args():  # pragma: no cover
@@ -23,6 +23,8 @@ def get_args():  # pragma: no cover
     parser.add_argument('infile',
                         help="the datafile containing object data to import")
     args = parser.parse_args()
+    if args.key:
+        args.key = convert_key_arg_to_dict(args.key)
     return args
 
 

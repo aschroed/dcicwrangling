@@ -19,7 +19,10 @@ def get_args():  # pragma: no cover
                         nargs='+',
                         help="A list of values or IDs (uuids, accessions ...) to not transfer")
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.key:
+        args.key = scu.convert_key_arg_to_dict(args.key)
+    return args
 
 
 def remove_skipped_vals(val, vals2skip=None, auth=None):

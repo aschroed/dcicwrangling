@@ -273,6 +273,20 @@ def test_create_input_arg_parser(capsys):
         assert o in out
 
 
+def test_convert_key_arg_to_dict_good_key():
+    inkey = "{'key': 'ABCDEF', 'secret': 'supersecret', 'server': 'https://data.4dnucleome.org'}"
+    outkey = scu.convert_key_arg_to_dict(inkey)
+    assert outkey == {'key': 'ABCDEF', 'secret': 'supersecret', 'server': 'https://data.4dnucleome.org'}
+
+
+def test_convert_key_arg_to_dict_bad_key(capsys):
+    inkey = "{'key': 'ABCDEF', 'secret': 'supersecret'}"
+    with pytest.raises(SystemExit):
+        scu.convert_key_arg_to_dict(inkey)
+        out = capsys.readouterr()[0]
+        assert out == "You included a key argument but it appears to be malformed or missing required info - see --help"
+
+
 def test_get_linked_items_w_item_in_found(auth):
     itemid = 'itemid'
     found_items = {itemid: 1}

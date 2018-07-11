@@ -31,6 +31,8 @@ def get_args():  # pragma: no cover
                         you may have some linked items that can get tags but may \
                         not want to tag them with this tag")
     args = parser.parse_args()
+    if args.key:
+        args.key = scu.convert_key_arg_to_dict(args.key)
     return args
 
 
