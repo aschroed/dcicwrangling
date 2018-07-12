@@ -294,7 +294,7 @@ def release_files(set_id, list_items, auth):
 
 def run_missing_wfr(wf_info, input_files, run_name, auth, env, tag='0.2.5'):
     all_inputs = []
-    for arg, files in input_files.iteritems():
+    for arg, files in input_files.items():
         inp = extract_file_info(files, arg, env)
         all_inputs.append(inp)
     wf_name = wf_info['wf_name']
