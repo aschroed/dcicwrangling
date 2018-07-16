@@ -5,6 +5,34 @@ import os
 import json
 
 
+def get_key(keyname=None, keyfile='keypairs.json'):
+    """get the key from your keypairs.json file
+    is no keyname is given, use default key,
+    but ask before moving on, if keyfile is given,
+    keyname is a must"""
+    # is there a different keyfile?
+    if keyfile != 'keypairs.json':
+        if not keyname:
+            raise Exception('please provide keyname')
+            keys = open(keyfile, 'r').read()
+            my_key = json.loads(keys)['keyname']
+    else:
+        home_dir = os.path.expanduser("~") + "/"
+        key_file = home_dir + keyfile
+        keys = open(key_file, 'r').read()
+        if not keyname:
+            my_key = json.loads(keys)['default']
+            print(my_key['server'])
+            go_on = input("Using the 'default' key? (Y/N)")
+            if go_on.lower() in ['y', 'yes']:
+                pass
+            else:
+                raise Exception('please provide your keyname parameter')
+        else:
+            my_key = json.loads(keys)[keyname]
+    return my_key
+
+
 def is_uuid(value):
     #md5 qualifies as uuid
     if '-' not in value:

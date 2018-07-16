@@ -304,6 +304,7 @@ def run_missing_wfr(wf_info, input_files, run_name, auth, env, tag='0.2.5'):
     # print input_json
     e = ff_utils.post_metadata(input_json, 'WorkflowRun/run', key=auth)
     print(e)
+    # TODO: format e to display the url and important info
     time.sleep(30)
 
 
