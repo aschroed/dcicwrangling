@@ -3,6 +3,8 @@ from uuid import UUID
 import copy
 import os
 import json
+import xlrd
+import xlwt
 
 
 def get_key(keyname=None, keyfile='keypairs.json'):
@@ -31,6 +33,114 @@ def get_key(keyname=None, keyfile='keypairs.json'):
         else:
             my_key = json.loads(keys)[keyname]
     return my_key
+
+
+def get_query_or_linked(con_key, query="", linked=""):
+    schema_name = get_schema_names(con_key)
+    if query:
+        items = ff_utils.search_metadata(query, key=con_key)
+        store = {}
+        # make a object type dictionary with raw jsons
+        for an_item in items:
+            obj_type = an_item['@type'][0]
+            obj_key = schema_name[obj_type]
+            if obj_key not in store:
+                store[obj_key] = []
+            store[obj_key].append(an_item)
+    elif linked:
+        store, uuids = record_object(linked, con_key, schema_name, store_frame='object')
+    return store
+
+
+def append_items_to_xls(input_xls, add_items, schema_name):
+    output_file_name = "_with_items.".join(input_xls.split('.'))
+    bookread = xlrd.open_workbook(input_xls)
+    book_w = xlwt.Workbook()
+    Sheets_read = bookread.sheet_names()
+
+    # text styling for all columns
+    style = xlwt.XFStyle()
+    style.num_format_str = "@"
+
+    for sheet in Sheets_read:
+        active_sheet = bookread.sheet_by_name(sheet)
+        first_row_values = active_sheet.row_values(rowx=0)
+
+        # create a new sheet and write the data
+        new_sheet = book_w.add_sheet(sheet)
+        for write_row_index, write_item in enumerate(first_row_values):
+            read_col_ind = first_row_values.index(write_item)
+            column_val = active_sheet.col_values(read_col_ind)
+            for write_column_index, cell_value in enumerate(column_val):
+                new_sheet.write(write_column_index, write_row_index, cell_value, style)
+
+        # get items to add
+        items_to_add = add_items.get(schema_name[sheet])
+        if items_to_add:
+            formatted_items = format_items(items_to_add, first_row_values)
+            for i, item in enumerate(formatted_items):
+                for ix in range(len(first_row_values)):
+                    write_column_index_II = write_column_index + 1 + i
+                    new_sheet.write(write_column_index_II, ix, str(item[ix]), style)
+        else:
+            write_column_index_II = write_column_index
+
+        # write 100 empty lines with text formatting
+        for i in range(100):
+            for ix in range(len(first_row_values)):
+                write_column_index_III = write_column_index_II + 1 + i
+                new_sheet.write(write_column_index_III, ix, '', style)
+    book_w.save(output_file_name)
+    print('new excel is stored as', output_file_name)
+    return
+
+
+def format_items(items_list, field_list):
+    """For a given sheet, get all released items"""
+    all_items = []
+    # filter for fields that exist on the excel sheet
+    for item in items_list:
+        item_info = []
+        for field in field_list:
+            # required fields will have a star
+            field = field.strip('*')
+            # add # to skip existing items during submission
+            if field == "#Field Name:":
+                item_info.append("#")
+            # the attachment field returns a dictionary
+            elif field == "attachment":
+                    item_info.append("")
+            else:
+                # add sub-embedded objects
+                # 1) only add if the field is not enumerated
+                # 2) only add the first item if there are multiple
+                # any other option becomes confusing
+                if "." in field:
+                    main_field, sub_field = field.split('.')
+                    temp_value = item.get(main_field)
+                    if temp_value:
+                        write_value = temp_value[0].get(sub_field, '')
+                # usual cases
+                else:
+                    write_value = item.get(field, '')
+
+                # take care of empty lists
+                if not write_value:
+                    write_value = ''
+
+                # check for linked items
+                if isinstance(write_value, dict):
+                    write_value = write_value.get('@id')
+
+                # when writing values, check for the lists and turn them into string
+                if isinstance(write_value, list):
+                    # check for linked items
+                    if isinstance(write_value[0], dict):
+                        write_value = [i.get('@id') for i in write_value]
+                    write_value = ','.join(write_value)
+                item_info.append(write_value)
+        all_items.append(item_info)
+    return all_items
 
 
 def is_uuid(value):
@@ -68,7 +178,9 @@ def get_schema_names(con_key):
     return schema_name
 
 
-def record_object(uuid, store, item_uuids, con_key, schema_name, add_pc_wfr=False):
+def record_object(uuid, con_key, schema_name, store_frame='raw', add_pc_wfr=False, store={}, item_uuids=[]):
+    """starting from a single uuid, tracks all linked items,
+    keeps a list of uuids, and dictionary of items for each schema in the given store_frame"""
     #keep list of fields that only exist in frame embedded (revlinks) that you want connected
     if add_pc_wfr:
         add_from_embedded = {'file_fastq': ['workflow_run_inputs', 'workflow_run_outputs'],
@@ -78,7 +190,8 @@ def record_object(uuid, store, item_uuids, con_key, schema_name, add_pc_wfr=Fals
         add_from_embedded = {}
 
     #find schema name, store as obj_key, create empty list if missing in store
-    obj_type = ff_utils.get_metadata(uuid, key=con_key, add_on='frame=object')['@type'][0]
+    object_resp = ff_utils.get_metadata(uuid, key=con_key, add_on='frame=object')
+    obj_type = object_resp['@type'][0]
     try:
         obj_key = schema_name[obj_type]
     except:  # noqa
@@ -87,20 +200,23 @@ def record_object(uuid, store, item_uuids, con_key, schema_name, add_pc_wfr=Fals
     if obj_key not in store:
         store[obj_key] = []
 
-    resp = ff_utils.get_metadata(uuid, key=con_key, add_on='frame=raw')
+    raw_resp = ff_utils.get_metadata(uuid, key=con_key, add_on='frame=raw')
 
-    if resp['status'] not in ['current', 'released']:
-        print(obj_key, uuid, resp['status'])
+    # if resp['status'] not in ['current', 'released']:
+    #     print(obj_key, uuid, resp['status'])
 
     # add raw frame to store and uuid to list
     if uuid not in item_uuids:
-        store[obj_key].append(resp)
+        if store_frame == 'object':
+            store[obj_key].append(object_resp)
+        else:
+            store[obj_key].append(raw_resp)
         item_uuids.append(uuid)
     # this case should not happen actually
     else:
         return store, item_uuids
 
-    fields_to_check = copy.deepcopy(resp)
+    fields_to_check = copy.deepcopy(raw_resp)
 
     # check if any field from the embedded frame is required
     add_fields = add_from_embedded.get(obj_key)
@@ -119,7 +235,7 @@ def record_object(uuid, store, item_uuids, con_key, schema_name, add_pc_wfr=Fals
 
         for a_uuid in uuid_in_val:
             if a_uuid not in item_uuids:
-                store, item_uuids = record_object(a_uuid, store, item_uuids, con_key, schema_name, add_pc_wfr)
+                store, item_uuids = record_object(a_uuid, con_key, schema_name, store_frame, add_pc_wfr, store, item_uuids)
     return store, item_uuids
 
 
