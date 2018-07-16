@@ -7,7 +7,7 @@ import json
 
 def get_key(keyname=None, keyfile='keypairs.json'):
     """get the key from your keypairs.json file
-    is no keyname is given, use default key,
+    if no keyname is given, use default key,
     but ask before moving on, if keyfile is given,
     keyname is a must"""
     # is there a different keyfile?
