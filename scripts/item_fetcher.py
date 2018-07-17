@@ -19,7 +19,8 @@ def get_args():
                         help="The item fields to retrieve/report.")
     parser.add_argument('--noid',
                         action='store_true',
-                        default='False')
+                        default='False',
+                        help="By default the id provided is the first column of output - this flag removes that column")
 
     args = parser.parse_args()
     if args.key:
@@ -35,6 +36,7 @@ def main():  # pragma: no cover
         print("Authentication failed")
         sys.exit(1)
 
+    print('#', auth.get('server'))
     id_list = scu.get_item_ids_from_args(args.input, auth, args.search)
     if args.fields:
         fields = args.fields
@@ -43,8 +45,14 @@ def main():  # pragma: no cover
         if args.noid is True:
             header = header.replace('#id\t', '#')
         print(header)
+    problems = []
     for iid in id_list:
-        res = get_metadata(iid, auth)
+        try:
+            res = get_metadata(iid, auth)
+        except Exception as e:
+            problems.append(iid)
+            continue
+
         if args.fields:
             line = ''
             for f in fields:
@@ -65,6 +73,10 @@ def main():  # pragma: no cover
                 print(res)
             else:
                 print(iid, '\t', res)
+    if problems:
+        print('THERE WAS A PROBLEM GETTING METADATA FOR THE FOLLOWING:')
+        for p in problems:
+            print(p)
 
 
 if __name__ == '__main__':
