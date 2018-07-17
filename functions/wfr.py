@@ -311,16 +311,20 @@ def run_missing_wfr(wf_info, input_files, run_name, auth, env, tag='0.2.5'):
 def extract_nz_file(acc, auth):
     mapping = {"HindIII": "6", "DpnII": "4", "MboI": "4", "NcoI": "6"}
     chr_size = {"human": "4DNFI823LSII",
-                # "mouse": "4DNFI3UBJ3HZ"
+                "mouse": "4DNFI3UBJ3HZ"
                 }
     exp_resp = ff_utils.get_metadata(acc, key=auth)
     exp_type = exp_resp.get('experiment_type')
     # get enzyme
+    nz_num = ""
     nz = exp_resp.get('digestion_enzyme')
     if nz:
         nz_num = mapping.get(nz['display_title'])
+    if nz_num:
+        pass
     # Soo suggested assigning 6 for Chiapet
-    elif exp_type == 'CHIA-pet':
+    # Burak asked for running all without an NZ with paramter 6
+    elif exp_type in ['CHIA-pet', 'micro-C', 'DNase Hi-C', 'TrAC-loop']:
         nz_num = '6'
     else:
         return (None, None)
@@ -332,6 +336,7 @@ def extract_nz_file(acc, auth):
         chrsize = chr_size.get(organisms[0])
     # if organism is not available return empty
     if not chrsize:
+        print(organisms[0], 'not covered')
         return (None, None)
     # return result if both exist
     return nz_num, chrsize
