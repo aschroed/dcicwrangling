@@ -218,7 +218,7 @@ def get_wfr_out(file_id, wfr_name, auth, md_qc=False, run=100):
         workflows = sorted(workflows, key=lambda k: (k['run_type'], -k['run_hours']))
     try:
         last_wfr = [i for i in workflows if i['run_type'] == wfr_name][-1]
-    except (KeyError, IndexError):
+    except (KeyError, IndexError, TypeError):
         return {'status': "no workflow in file"}
 
     wfr = ff_utils.get_metadata(last_wfr['uuid'], key=auth)
