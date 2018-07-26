@@ -1,5 +1,5 @@
 # Step Settings
-def step_settings(step_name, my_organism, lab):
+def step_settings(step_name, my_organism, lab, award):
     """Return a setting dict for given step, and modify variables in
     output files; genome assembly, file_type, desc, contributing lab."""
     genome = ""
@@ -29,8 +29,7 @@ def step_settings(step_name, my_organism, lab):
             'out_bam': {
                 'genome_assembly': genome,
                 'file_type': 'intermediate file',
-                'description': int_n,
-                'contributing_labs': lab}
+                'description': int_n}
         }},
         {
         'wf_name': 'hi-c-processing-bam',
@@ -40,13 +39,11 @@ def step_settings(step_name, my_organism, lab):
             'annotated_bam': {
                 'genome_assembly': genome,
                 'file_type': 'alignment',
-                'description': out_n,
-                'contributing_labs': lab},
+                'description': out_n},
             'filtered_pairs': {
                 'genome_assembly': genome,
                 'file_type': 'contact list-replicate',
-                'description': out_n,
-                'contributing_labs': lab}
+                'description': out_n}
         }},
         {
         'wf_name': 'hi-c-processing-pairs',
@@ -56,23 +53,19 @@ def step_settings(step_name, my_organism, lab):
             'cooler_normvector': {
                 'genome_assembly': genome,
                 'file_type': 'juicebox norm vector',
-                'description': out_n,
-                'contributing_labs': lab},
+                'description': out_n},
             'hic': {
                 'genome_assembly': genome,
                 'file_type': 'contact matrix',
-                'description': out_n,
-                'contributing_labs': lab},
+                'description': out_n},
             'mcool': {
                 'genome_assembly': genome,
                 'file_type': 'contact matrix',
-                'description': out_n,
-                'contributing_labs': lab},
+                'description': out_n},
             'merged_pairs': {
                 'genome_assembly': genome,
                 'file_type': 'contact list-combined',
-                'description': out_n,
-                'contributing_labs': lab}
+                'description': out_n}
         }},
         {
         'wf_name': 'hi-c-processing-pairs-nore',
@@ -82,23 +75,19 @@ def step_settings(step_name, my_organism, lab):
             'cooler_normvector': {
                 'genome_assembly': genome,
                 'file_type': 'juicebox norm vector',
-                'description': out_n,
-                'contributing_labs': lab},
+                'description': out_n},
             'hic': {
                 'genome_assembly': genome,
                 'file_type': 'contact matrix',
-                'description': out_n,
-                'contributing_labs': lab},
+                'description': out_n},
             'mcool': {
                 'genome_assembly': genome,
                 'file_type': 'contact matrix',
-                'description': out_n,
-                'contributing_labs': lab},
+                'description': out_n},
             'merged_pairs': {
                 'genome_assembly': genome,
                 'file_type': 'contact list-combined',
-                'description': out_n,
-                'contributing_labs': lab}
+                'description': out_n}
         }},
         {
         'wf_name': 'hi-c-processing-pairs-nonorm',
@@ -108,18 +97,15 @@ def step_settings(step_name, my_organism, lab):
             'hic': {
                 'genome_assembly': genome,
                 'file_type': 'contact matrix',
-                'description': out_n,
-                'contributing_labs': lab},
+                'description': out_n},
             'mcool': {
                 'genome_assembly': genome,
                 'file_type': 'contact matrix',
-                'description': out_n,
-                'contributing_labs': lab},
+                'description': out_n},
             'merged_pairs': {
                 'genome_assembly': genome,
                 'file_type': 'contact list-combined',
-                'description': out_n,
-                'contributing_labs': lab}
+                'description': out_n}
         }},
         {
         'wf_name': 'hi-c-processing-pairs-nore-nonorm',
@@ -129,18 +115,15 @@ def step_settings(step_name, my_organism, lab):
             'hic': {
                 'genome_assembly': genome,
                 'file_type': 'contact matrix',
-                'description': out_n,
-                'contributing_labs': lab},
+                'description': out_n},
             'mcool': {
                 'genome_assembly': genome,
                 'file_type': 'contact matrix',
-                'description': out_n,
-                'contributing_labs': lab},
+                'description': out_n},
             'merged_pairs': {
                 'genome_assembly': genome,
                 'file_type': 'contact list-combined',
-                'description': out_n,
-                'contributing_labs': lab}
+                'description': out_n}
         }},
         {
         'wf_name': 'repliseq-parta',
@@ -150,12 +133,18 @@ def step_settings(step_name, my_organism, lab):
             'filtered_sorted_deduped_bam': {
                 'genome_assembly': genome,
                 'file_type': 'alignment',
-                'description': out_n_rep,
-                'contributing_labs': lab},
+                'description': out_n_rep},
             'count_bg': {
                 'genome_assembly': genome,
                 'file_type': 'counts',
-                'description': 'read counts per 50kb bin, unfiltered, unnormalized',
-                'contributing_labs': lab}
+                'description': 'read counts per 50kb bin, unfiltered, unnormalized'}
         }}]
-    return [i for i in wf_dict if i['wf_name'] == step_name][0]
+    template = [i for i in wf_dict if i['wf_name'] == step_name][0]
+    if template.get('custom_pf_fields'):
+        for a_file in template['custom_pf_fields']:
+            template['custom_pf_fields'][a_file]['lab'] = lab
+            template['custom_pf_fields'][a_file]['award'] = award
+            template['custom_pf_fields'][a_file]['contributing_labs'] = []
+    template['wfr_meta'] = {'lab': lab,
+                            'award': award,
+                            }

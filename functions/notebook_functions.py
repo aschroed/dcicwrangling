@@ -317,7 +317,7 @@ def get_wfr_report(wfrs, con_key):
         wfr_rep = {}
         """For a given workflow_run item, grabs details, uuid, run_status, wfr name, date, and run time"""
         wfr_uuid = wfr_data['uuid']
-        wfr_data = ff_utils.get_metadata(wfr_uuid, key=con_key, add_on='frame=object')
+        wfr_data = ff_utils.get_metadata(wfr_uuid, key=con_key)
         wfr_status = wfr_data['run_status']
         try:
             wfr_name = wfr_data['title'].split(' run ')[0].strip()
@@ -327,8 +327,6 @@ def get_wfr_report(wfrs, con_key):
             continue
         wfr_time = datetime.strptime(wfr_data['date_created'], '%Y-%m-%dT%H:%M:%S.%f+00:00')
         run_hours = (datetime.utcnow() - wfr_time).total_seconds() / 3600
-        wfr_name_list = wfr_data['title'].split(' run ')[0].split('/')
-        wfr_name = wfr_name_list[0]
         try:
             wfr_rev = wfr_name_list[1]
         except:
