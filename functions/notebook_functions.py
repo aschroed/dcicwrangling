@@ -321,15 +321,17 @@ def get_wfr_report(wfrs, con_key):
         wfr_status = wfr_data['run_status']
         try:
             wfr_name = wfr_data['title'].split(' run ')[0].strip()
-        except:
+        except:  # noqa
             print('ProblematicCase')
             print(wfr_data['uuid'], wfr_data.get('display_title', 'no title'))
             continue
         wfr_time = datetime.strptime(wfr_data['date_created'], '%Y-%m-%dT%H:%M:%S.%f+00:00')
         run_hours = (datetime.utcnow() - wfr_time).total_seconds() / 3600
+        wfr_name_list = wfr_data['title'].split(' run ')[0].split('/')
+        wfr_name = wfr_name_list[0].strip()
         try:
-            wfr_rev = wfr_name_list[1]
-        except:
+            wfr_rev = wfr_name_list[1].strip()
+        except:  # noqa
             wfr_rev = "0"
         output_files = wfr_data.get('output_files', None)
         output_uuids = []
