@@ -69,7 +69,8 @@ def create_wfr_meta_only_json(auth, workflow, inputs, outputs, alias=None, descr
         'lab': lab,
         'status': 'in review by lab',
         'title': wfr_title,
-        'run_status': 'complete'
+        'run_status': 'complete',
+        'metadata_only': True
     }
 
     if description is not None:

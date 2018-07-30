@@ -206,6 +206,8 @@ def test_create_wfr_meta_only_json(auth, prov_workflow, infiles, outfile, wfr_ou
                 assert d['workflow_argument_name'] == 'inputs'
                 assert 'ordinal' in d
                 assert d['value'] in ['658ecf64-57a1-41aa-ac04-7224c7ed3208', '658ecf64-57a1-41aa-ac04-7224c7ed3209']
+        elif f == 'metadata_only':
+            assert v
         else:
             assert len(v) == 1
             for d in v:
