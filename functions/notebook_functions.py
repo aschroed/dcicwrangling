@@ -5,6 +5,7 @@ import os
 import json
 import xlrd
 import xlwt
+from datetime import datetime
 
 
 def get_key(keyname=None, keyfile='keypairs.json'):
@@ -288,7 +289,7 @@ def record_object_es(uuid, con_key, schema_name, store_frame='raw', add_pc_wfr=F
             if field_val:
                 #turn it into string
                 field_val = str(field_val)
-                # check if any of embedded uuids is in the starting
+                # check if any of embedded uuids is in the field value
                 for a_uuid in ES_item['embedded_uuids']:
                     if a_uuid in field_val:
                         uuids_to_check.append(a_uuid)
@@ -307,3 +308,60 @@ def dump_results_to_json(store, folder):
         filename = folder + '/' + a_type + '.json'
         with open(filename, 'w') as outfile:
             json.dump(store[a_type], outfile, indent=4)
+
+
+def get_wfr_report(wfrs, con_key):
+    # for a given list of wfrs, produce a simpler report
+    wfr_report = []
+    for wfr_data in wfrs:
+        wfr_rep = {}
+        """For a given workflow_run item, grabs details, uuid, run_status, wfr name, date, and run time"""
+        wfr_uuid = wfr_data['uuid']
+        wfr_data = ff_utils.get_metadata(wfr_uuid, key=con_key)
+        wfr_status = wfr_data['run_status']
+        try:
+            wfr_name = wfr_data['title'].split(' run ')[0].strip()
+        except:  # noqa
+            print('ProblematicCase')
+            print(wfr_data['uuid'], wfr_data.get('display_title', 'no title'))
+            continue
+        wfr_time = datetime.strptime(wfr_data['date_created'], '%Y-%m-%dT%H:%M:%S.%f+00:00')
+        run_hours = (datetime.utcnow() - wfr_time).total_seconds() / 3600
+        wfr_name_list = wfr_data['title'].split(' run ')[0].split('/')
+        wfr_name = wfr_name_list[0].strip()
+        try:
+            wfr_rev = wfr_name_list[1].strip()
+        except:  # noqa
+            wfr_rev = "0"
+        output_files = wfr_data.get('output_files', None)
+        output_uuids = []
+        if output_files:
+            for i in output_files:
+                if i.get('value', None):
+                    output_uuids.append(i['value']['uuid'])
+
+        wfr_rep = {'wfr_uuid': wfr_data['uuid'],
+                   'wfr_status': wfr_data['run_status'],
+                   'wfr_name': wfr_name,
+                   'wfr_rev': wfr_rev,
+                   'wfr_date': wfr_time,
+                   'run_time': run_hours,
+                   'status': wfr_status,
+                   'outputs': output_uuids}
+        wfr_report.append(wfr_rep)
+    wfr_report = sorted(wfr_report, key=lambda k: (k['wfr_date'], k['wfr_name']))
+    return wfr_report
+
+
+def printTable(myDict, colList=None):
+    """ Pretty print a list of dictionaries Author: Thierry Husson"""
+    if not colList:
+        colList = list(myDict[0].keys() if myDict else [])
+    myList = [colList] # 1st row = header
+    for item in myDict:
+        myList.append([str(item[col] or '') for col in colList])
+    colSize = [max(map(len, col)) for col in zip(*myList)]
+    formatStr = ' | '.join(["{{:<{}}}".format(i) for i in colSize])
+    myList.insert(1, ['-' * i for i in colSize]) # Seperating line
+    for item in myList:
+        print(formatStr.format(*item))
