@@ -58,9 +58,10 @@ def main():  # pragma: no cover
             for f in fields:
                 val = res.get(f)
                 if isinstance(val, list):
+                    vs = ''
                     for v in val:
                         v = str(v)
-                        vs = v + ', '
+                        vs = vs + v + ', '
                     val = vs
                     if val.endswith(', '):
                         val = val[:-2]
