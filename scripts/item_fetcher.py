@@ -59,7 +59,7 @@ def main():  # pragma: no cover
                 val = res.get(f)
                 if isinstance(val, list):
                     vs = ''
-                    for v in val:
+                    for v in sorted(val):
                         v = str(v)
                         vs = vs + v + ', '
                     val = vs

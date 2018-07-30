@@ -35,6 +35,10 @@ def main():
     itemids = scu.get_item_ids_from_args(args.input, auth, args.search)
     field = args.field
     val = args.value
+    if val == 'True':
+        val = True
+    elif val == 'False':
+        val = False
     if args.isarray:
         val = val.split("'")[1::2]
     for iid in itemids:
