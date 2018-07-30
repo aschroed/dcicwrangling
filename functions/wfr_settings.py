@@ -1,5 +1,5 @@
 # Step Settings
-def step_settings(step_name, my_organism, lab, award):
+def step_settings(step_name, my_organism, attribution):
     """Return a setting dict for given step, and modify variables in
     output files; genome assembly, file_type, desc, contributing lab."""
     genome = ""
@@ -139,12 +139,12 @@ def step_settings(step_name, my_organism, lab, award):
                 'file_type': 'counts',
                 'description': 'read counts per 50kb bin, unfiltered, unnormalized'}
         }}]
+
     template = [i for i in wf_dict if i['wf_name'] == step_name][0]
+
     if template.get('custom_pf_fields'):
         for a_file in template['custom_pf_fields']:
-            template['custom_pf_fields'][a_file]['lab'] = lab
-            template['custom_pf_fields'][a_file]['award'] = award
-            template['custom_pf_fields'][a_file]['contributing_labs'] = []
-    template['wfr_meta'] = {'lab': lab,
-                            'award': award,
-                            }
+            template['custom_pf_fields'][a_file].update(attribution)
+    template['wfr_meta'] = attribution
+    print(template)
+    return template

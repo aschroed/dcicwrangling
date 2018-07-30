@@ -21,6 +21,34 @@ re_nz = {"human": {'MboI': '/files-reference/4DNFI823L812/',
          }
 
 
+def get_attribution(file_json):
+    attributions = {
+        'lab': file_json['lab']['@id'],
+        'award': file_json['award']['@id']
+    }
+    cont_labs = []
+    if file_json.get('contributing_labs'):
+        cont_labs = [i['@id'] for i in file_json['contributing_labs']]
+
+    appendFDN = True
+    if attributions['lab'] == '/labs/4dn-dcic-lab/':
+        appendFDN = False
+
+    if cont_labs:
+        if appendFDN:
+            cont_labs.append('/labs/4dn-dcic-lab/')
+            cont_labs = list(set(cont_labs))
+        attributions['contributing_labs'] = cont_labs
+
+    else:
+        if appendFDN:
+            cont_labs = ['/labs/4dn-dcic-lab/']
+            attributions['contributing_labs'] = cont_labs
+        else:
+            pass
+    return attributions
+
+
 def extract_file_info(obj_id, arg_name, env):
     auth = ff_utils.get_authentication_with_server({}, ff_env=env)
     my_s3_util = s3Utils(env=env)
@@ -70,17 +98,17 @@ def extract_file_info(obj_id, arg_name, env):
     return template
 
 
-def run_json(input_files, env, parameters, wf_uuid, wf_name, run_name, tag):
+def run_json(input_files, env, wf_info, run_name, tag):
     my_s3_util = s3Utils(env=env)
     out_bucket = my_s3_util.outfile_bucket
-
     """Creates the trigger json that is used by foufront endpoint.
     """
     input_json = {'input_files': input_files,
                   'output_bucket': out_bucket,
-                  'workflow_uuid': wf_uuid,
-                  "app_name": wf_name,
-                  "parameters": parameters,
+                  'workflow_uuid': wf_info['wf_uuid'],
+                  "app_name": wf_info['wf_name'],
+                  "wfr_meta": wf_info['wfr_meta'],
+                  "parameters": wf_info['parameters'],
                   "config": {"ebs_type": "io1",
                              "json_bucket": "4dn-aws-pipeline-run-json",
                              "ebs_iops": 500,
@@ -93,7 +121,7 @@ def run_json(input_files, env, parameters, wf_uuid, wf_name, run_name, tag):
                              "key_name": "4dn-encode"
                              },
                   "_tibanna": {"env": env,
-                               "run_type": wf_name,
+                               "run_type": wf_info['wf_name'],
                                "run_id": run_name},
                   "tag": tag
                   }
@@ -297,11 +325,10 @@ def run_missing_wfr(wf_info, input_files, run_name, auth, env, tag='0.2.5'):
     for arg, files in input_files.items():
         inp = extract_file_info(files, arg, env)
         all_inputs.append(inp)
-    wf_name = wf_info['wf_name']
-    wf_uuid = wf_info['wf_uuid']
-    parameters = wf_info['parameters']
-    input_json = run_json(all_inputs, env, parameters, wf_uuid, wf_name, run_name, tag)
-    # print input_json
+
+    input_json = run_json(all_inputs, env, wf_info, run_name, tag)
+    if wf_info.get("custom_pf_fields"):
+        input_json["custom_pf_fields"] = wf_info['custom_pf_fields']
     e = ff_utils.post_metadata(input_json, 'WorkflowRun/run', key=auth)
     print(e)
     # TODO: format e to display the url and important info
