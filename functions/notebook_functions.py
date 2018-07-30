@@ -251,7 +251,7 @@ def record_object_es(uuid, con_key, schema_name, store_frame='raw', add_pc_wfr=F
     else:
         add_from_embedded = {}
     #find schema name, store as obj_key, create empty list if missing in store
-    ES_item = ff_utils.get_es_metadata(uuid, key=con_key)
+    ES_item = ff_utils.get_es_metadata([uuid], key=con_key)[0]
     object_resp = ES_item['object']
     obj_type = object_resp['@type'][0]
     try:
@@ -298,6 +298,71 @@ def record_object_es(uuid, con_key, schema_name, store_frame='raw', add_pc_wfr=F
     for a_uuid in uuids_to_check:
         if a_uuid not in item_uuids:
             store, item_uuids = record_object_es(a_uuid, con_key, schema_name, store_frame, add_pc_wfr, store, item_uuids)
+    return store, item_uuids
+
+
+def record_object_es2(uuid_list, con_key, schema_name, store_frame='raw', add_pc_wfr=False, store={}, item_uuids=[]):
+    """starting from a single uuid, tracks all linked items,
+    keeps a list of uuids, and dictionary of items for each schema in the given store_frame"""
+    #keep list of fields that only exist in frame embedded (revlinks) that you want connected
+    if add_pc_wfr:
+        add_from_embedded = {'file_fastq': ['workflow_run_inputs', 'workflow_run_outputs'],
+                             'file_processed': ['workflow_run_inputs', 'workflow_run_outputs']
+                             }
+    else:
+        add_from_embedded = {}
+
+    #find schema name, store as obj_key, create empty list if missing in store
+    ES_items = ff_utils.get_es_metadata(uuid_list, key=con_key)
+
+    for ES_item in ES_items:
+        uuids_to_check = []
+        uuid = ES_item['uuid']
+        object_resp = ES_item['object']
+        obj_type = object_resp['@type'][0]
+        obj_key = schema_name[obj_type]
+        if obj_key not in store:
+            store[obj_key] = []
+        raw_resp = ES_item['properties']
+        raw_resp['uuid'] = uuid
+        # add raw frame to store and uuid to list
+        if uuid not in item_uuids:
+            if store_frame == 'object':
+                store[obj_key].append(object_resp)
+            else:
+                store[obj_key].append(raw_resp)
+            item_uuids.append(uuid)
+        # this case should not happen actually
+        else:
+            print('Problem encountered - skipped - check')
+            return store, item_uuids
+
+        #get linked items from es
+        for key in ES_item['links']:
+            uuids_to_check.extend(ES_item['links'][key])
+
+        # check if any field from the embedded frame is required
+        add_fields = add_from_embedded.get(obj_key)
+        if add_fields:
+            emb_resp = ES_item['embedded']
+            for a_field in add_fields:
+                field_val = emb_resp.get(a_field)
+                if field_val:
+                    #turn it into string
+                    field_val = str(field_val)
+                    # check if any of embedded uuids is in the field value
+                    for a_uuid in ES_item['embedded_uuids']:
+                        if a_uuid in field_val:
+                            uuids_to_check.append(a_uuid)
+        # get uniques
+        uuids_to_check = list(set(uuids_to_check))
+        uuids_to_pass = []
+        for an_uuid in uuids_to_check:
+            if an_uuid not in item_uuids:
+                uuids_to_pass.append(an_uuid)
+        if uuids_to_pass:
+            print(len(uuids_to_pass))
+            store, item_uuids = record_object_es2(uuids_to_pass, con_key, schema_name, store_frame, add_pc_wfr, store, item_uuids)
     return store, item_uuids
 
 
