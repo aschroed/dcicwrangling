@@ -146,5 +146,4 @@ def step_settings(step_name, my_organism, attribution):
         for a_file in template['custom_pf_fields']:
             template['custom_pf_fields'][a_file].update(attribution)
     template['wfr_meta'] = attribution
-    print(template)
     return template

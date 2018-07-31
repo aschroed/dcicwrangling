@@ -239,9 +239,12 @@ def get_wfr_out(file_id, wfr_name, auth, md_qc=False, run=100):
     # add run time to wfr
     if workflows:
         for a_wfr in workflows:
-            wfr_time = datetime.strptime(a_wfr['display_title'].split(' run ')[1], '%Y-%m-%d %H:%M:%S.%f')
+            wfr_name, time_info = a_wfr['display_title'].split(' run ')
+            # user submitted ones use run on insteand of run
+            time_info = time_info.strip('on').strip()
+            wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S.%f')
             a_wfr['run_hours'] = (datetime.utcnow() - wfr_time).total_seconds() / 3600
-            a_wfr['run_type'] = a_wfr['display_title'].split(' run ')[0].strip()
+            a_wfr['run_type'] = wfr_name.strip()
     # sort wfrs
         workflows = sorted(workflows, key=lambda k: (k['run_type'], -k['run_hours']))
     try:
