@@ -362,7 +362,8 @@ def record_object_es2(uuid_list, con_key, schema_name, store_frame='raw', add_pc
                 uuids_to_pass.append(an_uuid)
         if uuids_to_pass:
             print(len(uuids_to_pass))
-            store, item_uuids = record_object_es2(uuids_to_pass, con_key, schema_name, store_frame, add_pc_wfr, store, item_uuids)
+            store, item_uuids = record_object_es2(uuids_to_pass, con_key, schema_name, store_frame,
+                                                  add_pc_wfr, store, item_uuids)
     return store, item_uuids
 
 
