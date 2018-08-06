@@ -59,8 +59,11 @@ def main():  # pragma: no cover
                 val = res.get(f)
                 if isinstance(val, list):
                     vs = ''
-                    for v in sorted(val):
-                        v = str(v)
+                    for v in val:
+                        if isinstance(v, dict):
+                            v = v.get('uuid')
+                        else:
+                            v = str(v)
                         vs = vs + v + ', '
                     val = vs
                     if val.endswith(', '):
