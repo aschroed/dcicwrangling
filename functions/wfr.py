@@ -145,7 +145,7 @@ def find_pairs(my_rep_set, my_env, lookfor='pairs', exclude_miseq=True):
         report[exp['accession']] = []
         if not organisms:
             biosample = exp['biosample']
-            organisms = list(set([bs['individual']['organism']['display_title'] for bs in biosample['biosource']]))
+            organisms = list(set([bs['individual']['organism']['name'] for bs in biosample['biosource']]))
             if len(organisms) != 1:
                 print('multiple organisms in set', my_rep_set['accession'])
                 break
@@ -238,14 +238,15 @@ def get_wfr_out(file_id, wfr_name, auth, md_qc=False, run=100):
     # add run time to wfr
     if workflows:
         for a_wfr in workflows:
-            wfr_name, time_info = a_wfr['display_title'].split(' run ')
+            wfr_type, time_info = a_wfr['display_title'].split(' run ')
             # user submitted ones use run on insteand of run
             time_info = time_info.strip('on').strip()
             wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S.%f')
             a_wfr['run_hours'] = (datetime.utcnow() - wfr_time).total_seconds() / 3600
-            a_wfr['run_type'] = wfr_name.strip()
+            a_wfr['run_type'] = wfr_type.strip()
     # sort wfrs
         workflows = sorted(workflows, key=lambda k: (k['run_type'], -k['run_hours']))
+
     try:
         last_wfr = [i for i in workflows if i['run_type'] == wfr_name][-1]
     except (KeyError, IndexError, TypeError):
@@ -359,7 +360,7 @@ def extract_nz_file(acc, auth):
         return (None, None)
     # get organism
     biosample = exp_resp['biosample']
-    organisms = list(set([bs['individual']['organism']['display_title'] for bs in biosample['biosource']]))
+    organisms = list(set([bs['individual']['organism']['name'] for bs in biosample['biosource']]))
     chrsize = ''
     if len(organisms) == 1:
         chrsize = chr_size.get(organisms[0])
