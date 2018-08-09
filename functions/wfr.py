@@ -291,7 +291,7 @@ def add_preliminary_processed_files(item_id, list_pc, auth, run_type="hic"):
     titles = {"hic": "HiC Processing Pipeline - Preliminary Files",
               "repliseq": "Repli-Seq Pipeline - Preliminary Files"}
     pc_set_title = titles[run_type]
-    patch_data = ff_utils.get_metadata(item_id, key=auth).get('other_processed_files')
+    patch_data = ff_utils.get_metadata(item_id, key=auth, add_on='frame=raw').get('other_processed_files')
     if patch_data:
         # does the same title exist
         if pc_set_title in [i['title'] for i in patch_data]:
