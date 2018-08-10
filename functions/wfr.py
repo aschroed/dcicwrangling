@@ -291,6 +291,32 @@ def add_preliminary_processed_files(item_id, list_pc, auth, run_type="hic"):
     titles = {"hic": "HiC Processing Pipeline - Preliminary Files",
               "repliseq": "Repli-Seq Pipeline - Preliminary Files"}
     pc_set_title = titles[run_type]
+    resp = ff_utils.get_metadata(item_id, key=auth)
+
+    # check if this items are in processed files field
+    # extract essential for comparison, unfold all possible ids into a list, and compare list_pc to that one
+    ex_pc = resp.get('processed_files')
+    if ex_pc:
+        ex_pc_ids = [[a['@id'], a['uuid'], a['@id'].split('/')[2]] for a in ex_pc]
+        ex_pc_ids = [a for i in ex_pc_ids for a in i]
+        for i in list_pc:
+            if i in ex_pc_ids:
+                print('Error - Cannot add files to opc')
+                print(i, 'is already in other processed files')
+                return
+
+    # extract essential for comparison, unfold all possible ids into a list, and compare list_pc to that one
+    ex_opc = resp.get('other_processed_files')
+    if ex_opc:
+        ex_opc_ids = [[a['@id'], a['uuid'], a['@id'].split('/')[2]] for i in ex_opc for a in i['files']]
+        ex_opc_ids = [a for i in ex_opc_ids for a in i]
+        for i in list_pc:
+            if i in ex_opc_ids:
+                print('Error - Cannot add files to opc')
+                print(i, 'is already in processed files')
+                return
+
+    # we need raw to get the existing piece, to patch back with the new ones
     patch_data = ff_utils.get_metadata(item_id, key=auth, add_on='frame=raw').get('other_processed_files')
     if patch_data:
         # does the same title exist
