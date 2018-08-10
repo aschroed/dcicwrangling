@@ -179,7 +179,8 @@ def get_schema_names(con_key):
     return schema_name
 
 
-def record_object(uuid, con_key, schema_name, store_frame='raw', add_pc_wfr=False, store={}, item_uuids=[]):
+def record_object(uuid, con_key, schema_name, store_frame='raw',
+                  add_pc_wfr=False, store={}, item_uuids=[], ignore_field=[]):
     """starting from a single uuid, tracks all linked items,
     keeps a list of uuids, and dictionary of items for each schema in the given store_frame"""
     #keep list of fields that only exist in frame embedded (revlinks) that you want connected
@@ -192,6 +193,11 @@ def record_object(uuid, con_key, schema_name, store_frame='raw', add_pc_wfr=Fals
 
     #find schema name, store as obj_key, create empty list if missing in store
     object_resp = ff_utils.get_metadata(uuid, key=con_key, add_on='frame=object')
+    if ignore_field:
+        for a_ig_f in ignore_field:
+            if a_ig_f in object_resp.keys():
+                del object_resp[a_ig_f]
+
     obj_type = object_resp['@type'][0]
     try:
         obj_key = schema_name[obj_type]
@@ -202,6 +208,10 @@ def record_object(uuid, con_key, schema_name, store_frame='raw', add_pc_wfr=Fals
         store[obj_key] = []
 
     raw_resp = ff_utils.get_metadata(uuid, key=con_key, add_on='frame=raw')
+    if ignore_field:
+        for a_ig_f in ignore_field:
+            if a_ig_f in raw_resp.keys():
+                del raw_resp[a_ig_f]
 
     # if resp['status'] not in ['current', 'released']:
     #     print(obj_key, uuid, resp['status'])
