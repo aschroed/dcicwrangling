@@ -49,7 +49,7 @@ def get_query_or_linked(con_key, query="", linked=""):
                 store[obj_key] = []
             store[obj_key].append(an_item)
     elif linked:
-        store, uuids = record_object(linked, con_key, schema_name, store_frame='object')
+        store, uuids = record_object_es(linked, con_key, schema_name, store_frame='object')
     return store
 
 
