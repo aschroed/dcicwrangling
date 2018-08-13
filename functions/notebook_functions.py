@@ -383,6 +383,7 @@ def printTable(myDict, colList=None):
     for item in myList:
         print(formatStr.format(*item))
 
+
 # get order from loadxl.py in fourfront
 ORDER = ['user', 'award', 'lab', 'static_section', 'page', 'ontology', 'ontology_term', 'badge', 'organism',
          'genomic_region', 'target', 'imaging_path', 'publication', 'publication_tracking', 'document',
