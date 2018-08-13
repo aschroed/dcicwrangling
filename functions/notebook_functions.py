@@ -250,7 +250,7 @@ def record_object(uuid, con_key, schema_name, store_frame='raw',
     return store, item_uuids
 
 
-def record_object_es(uuid_list, con_key, schema_name, store_frame='raw', add_pc_wfr=False):
+def record_object_es(uuid_list, con_key, schema_name, store_frame='raw', add_pc_wfr=False, ignore_field=[]):
     """starting from a single uuid, tracks all linked items,
     keeps a list of uuids, and dictionary of items for each schema in the given store_frame"""
     #keep list of fields that only exist in frame embedded (revlinks) that you want connected
@@ -274,11 +274,21 @@ def record_object_es(uuid_list, con_key, schema_name, store_frame='raw', add_pc_
         for ES_item in all_responses:
             uuid = ES_item['uuid']
             object_resp = ES_item['object']
+            if ignore_field:
+                for a_ig_f in ignore_field:
+                    if a_ig_f in object_resp.keys():
+                        del object_resp[a_ig_f]
+
             obj_type = object_resp['@type'][0]
             obj_key = schema_name[obj_type]
             if obj_key not in store:
                 store[obj_key] = []
             raw_resp = ES_item['properties']
+            # remove ignored fields from the frame
+            if ignore_field:
+                for a_ig_f in ignore_field:
+                    if a_ig_f in raw_resp.keys():
+                        del object_resp[a_ig_f]
             raw_resp['uuid'] = uuid
             # add raw frame to store and uuid to list
             if uuid not in item_uuids:
@@ -294,6 +304,9 @@ def record_object_es(uuid_list, con_key, schema_name, store_frame='raw', add_pc_
 
             #get linked items from es
             for key in ES_item['links']:
+                # if link is from ignored_field, skip
+                if key in ignore_field:
+                    continue
                 uuids_to_check.extend(ES_item['links'][key])
 
             # check if any field from the embedded frame is required
