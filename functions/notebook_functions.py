@@ -179,6 +179,14 @@ def get_schema_names(con_key):
     return schema_name
 
 
+def remove_keys(my_dict, remove_list):
+    if remove_list:
+        for a_ig_f in remove_list:
+            if a_ig_f in my_dict.keys():
+                del my_dict[a_ig_f]
+    return my_dict
+
+
 def record_object(uuid, con_key, schema_name, store_frame='raw',
                   add_pc_wfr=False, store={}, item_uuids=[], ignore_field=[]):
     """starting from a single uuid, tracks all linked items,
@@ -193,10 +201,7 @@ def record_object(uuid, con_key, schema_name, store_frame='raw',
 
     #find schema name, store as obj_key, create empty list if missing in store
     object_resp = ff_utils.get_metadata(uuid, key=con_key, add_on='frame=object')
-    if ignore_field:
-        for a_ig_f in ignore_field:
-            if a_ig_f in object_resp.keys():
-                del object_resp[a_ig_f]
+    object_resp = remove_keys(object_resp, ignore_field)
 
     obj_type = object_resp['@type'][0]
     try:
@@ -208,10 +213,7 @@ def record_object(uuid, con_key, schema_name, store_frame='raw',
         store[obj_key] = []
 
     raw_resp = ff_utils.get_metadata(uuid, key=con_key, add_on='frame=raw')
-    if ignore_field:
-        for a_ig_f in ignore_field:
-            if a_ig_f in raw_resp.keys():
-                del raw_resp[a_ig_f]
+    raw_resp = remove_keys(raw_resp, ignore_field)
 
     # if resp['status'] not in ['current', 'released']:
     #     print(obj_key, uuid, resp['status'])
@@ -274,21 +276,14 @@ def record_object_es(uuid_list, con_key, schema_name, store_frame='raw', add_pc_
         for ES_item in all_responses:
             uuid = ES_item['uuid']
             object_resp = ES_item['object']
-            if ignore_field:
-                for a_ig_f in ignore_field:
-                    if a_ig_f in object_resp.keys():
-                        del object_resp[a_ig_f]
+            object_resp = remove_keys(object_resp, ignore_field)
 
             obj_type = object_resp['@type'][0]
             obj_key = schema_name[obj_type]
             if obj_key not in store:
                 store[obj_key] = []
             raw_resp = ES_item['properties']
-            # remove ignored fields from the frame
-            if ignore_field:
-                for a_ig_f in ignore_field:
-                    if a_ig_f in raw_resp.keys():
-                        del object_resp[a_ig_f]
+            raw_resp = remove_keys(raw_resp, ignore_field)
             raw_resp['uuid'] = uuid
             # add raw frame to store and uuid to list
             if uuid not in item_uuids:
