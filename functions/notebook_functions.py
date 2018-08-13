@@ -49,7 +49,7 @@ def get_query_or_linked(con_key, query="", linked=""):
                 store[obj_key] = []
             store[obj_key].append(an_item)
     elif linked:
-        store, uuids = record_object(linked, con_key, schema_name, store_frame='object')
+        store, uuids = record_object_es(linked, con_key, schema_name, store_frame='object')
     return store
 
 
@@ -179,7 +179,8 @@ def get_schema_names(con_key):
     return schema_name
 
 
-def record_object(uuid, con_key, schema_name, store_frame='raw', add_pc_wfr=False, store={}, item_uuids=[]):
+def record_object(uuid, con_key, schema_name, store_frame='raw',
+                  add_pc_wfr=False, store={}, item_uuids=[], ignore_field=[]):
     """starting from a single uuid, tracks all linked items,
     keeps a list of uuids, and dictionary of items for each schema in the given store_frame"""
     #keep list of fields that only exist in frame embedded (revlinks) that you want connected
@@ -192,6 +193,11 @@ def record_object(uuid, con_key, schema_name, store_frame='raw', add_pc_wfr=Fals
 
     #find schema name, store as obj_key, create empty list if missing in store
     object_resp = ff_utils.get_metadata(uuid, key=con_key, add_on='frame=object')
+    if ignore_field:
+        for a_ig_f in ignore_field:
+            if a_ig_f in object_resp.keys():
+                del object_resp[a_ig_f]
+
     obj_type = object_resp['@type'][0]
     try:
         obj_key = schema_name[obj_type]
@@ -202,6 +208,10 @@ def record_object(uuid, con_key, schema_name, store_frame='raw', add_pc_wfr=Fals
         store[obj_key] = []
 
     raw_resp = ff_utils.get_metadata(uuid, key=con_key, add_on='frame=raw')
+    if ignore_field:
+        for a_ig_f in ignore_field:
+            if a_ig_f in raw_resp.keys():
+                del raw_resp[a_ig_f]
 
     # if resp['status'] not in ['current', 'released']:
     #     print(obj_key, uuid, resp['status'])
@@ -372,3 +382,20 @@ def printTable(myDict, colList=None):
     myList.insert(1, ['-' * i for i in colSize]) # Seperating line
     for item in myList:
         print(formatStr.format(*item))
+
+
+# get order from loadxl.py in fourfront
+ORDER = ['user', 'award', 'lab', 'static_section', 'page', 'ontology', 'ontology_term', 'badge', 'organism',
+         'genomic_region', 'target', 'imaging_path', 'publication', 'publication_tracking', 'document',
+         'image', 'vendor', 'construct', 'modification', 'protocol', 'sop_map', 'biosample_cell_culture',
+         'individual_human', 'individual_mouse', 'individual_fly', 'biosource', 'antibody', 'enzyme', 'treatment_rnai',
+         'treatment_agent', 'biosample',
+         'quality_metric_fastqc', 'quality_metric_bamqc', 'quality_metric_pairsqc', 'quality_metric_dedupqc_repliseq',
+         'microscope_setting_d1', 'microscope_setting_d2', 'microscope_setting_a1', 'microscope_setting_a2',
+         'file_fastq', 'file_fasta', 'file_processed', 'file_reference', 'file_calibration',
+         'file_microscopy', 'file_set', 'file_set_calibration', 'file_set_microscope_qc',
+         'experiment_hi_c', 'experiment_capture_c', 'experiment_repliseq', 'experiment_atacseq', 'experiment_chiapet',
+         'experiment_damid', 'experiment_seq', 'experiment_tsaseq', 'experiment_mic',
+         'experiment_set', 'experiment_set_replicate',
+         'data_release_update', 'software', 'analysis_step',
+         'workflow', 'workflow_mapping', 'workflow_run_sbg', 'workflow_run_awsem']

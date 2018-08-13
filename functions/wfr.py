@@ -145,7 +145,7 @@ def find_pairs(my_rep_set, my_env, lookfor='pairs', exclude_miseq=True):
         report[exp['accession']] = []
         if not organisms:
             biosample = exp['biosample']
-            organisms = list(set([bs['individual']['organism']['display_title'] for bs in biosample['biosource']]))
+            organisms = list(set([bs['individual']['organism']['name'] for bs in biosample['biosource']]))
             if len(organisms) != 1:
                 print('multiple organisms in set', my_rep_set['accession'])
                 break
@@ -238,14 +238,15 @@ def get_wfr_out(file_id, wfr_name, auth, md_qc=False, run=100):
     # add run time to wfr
     if workflows:
         for a_wfr in workflows:
-            wfr_name, time_info = a_wfr['display_title'].split(' run ')
+            wfr_type, time_info = a_wfr['display_title'].split(' run ')
             # user submitted ones use run on insteand of run
             time_info = time_info.strip('on').strip()
             wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S.%f')
             a_wfr['run_hours'] = (datetime.utcnow() - wfr_time).total_seconds() / 3600
-            a_wfr['run_type'] = wfr_name.strip()
+            a_wfr['run_type'] = wfr_type.strip()
     # sort wfrs
         workflows = sorted(workflows, key=lambda k: (k['run_type'], -k['run_hours']))
+
     try:
         last_wfr = [i for i in workflows if i['run_type'] == wfr_name][-1]
     except (KeyError, IndexError, TypeError):
@@ -290,7 +291,33 @@ def add_preliminary_processed_files(item_id, list_pc, auth, run_type="hic"):
     titles = {"hic": "HiC Processing Pipeline - Preliminary Files",
               "repliseq": "Repli-Seq Pipeline - Preliminary Files"}
     pc_set_title = titles[run_type]
-    patch_data = ff_utils.get_metadata(item_id, key=auth).get('other_processed_files')
+    resp = ff_utils.get_metadata(item_id, key=auth)
+
+    # check if this items are in processed files field
+    # extract essential for comparison, unfold all possible ids into a list, and compare list_pc to that one
+    ex_pc = resp.get('processed_files')
+    if ex_pc:
+        ex_pc_ids = [[a['@id'], a['uuid'], a['@id'].split('/')[2]] for a in ex_pc]
+        ex_pc_ids = [a for i in ex_pc_ids for a in i]
+        for i in list_pc:
+            if i in ex_pc_ids:
+                print('Error - Cannot add files to opc')
+                print(i, 'is already in other processed files')
+                return
+
+    # extract essential for comparison, unfold all possible ids into a list, and compare list_pc to that one
+    ex_opc = resp.get('other_processed_files')
+    if ex_opc:
+        ex_opc_ids = [[a['@id'], a['uuid'], a['@id'].split('/')[2]] for i in ex_opc for a in i['files']]
+        ex_opc_ids = [a for i in ex_opc_ids for a in i]
+        for i in list_pc:
+            if i in ex_opc_ids:
+                print('Error - Cannot add files to opc')
+                print(i, 'is already in processed files')
+                return
+
+    # we need raw to get the existing piece, to patch back with the new ones
+    patch_data = ff_utils.get_metadata(item_id, key=auth, add_on='frame=raw').get('other_processed_files')
     if patch_data:
         # does the same title exist
         if pc_set_title in [i['title'] for i in patch_data]:
@@ -359,7 +386,7 @@ def extract_nz_file(acc, auth):
         return (None, None)
     # get organism
     biosample = exp_resp['biosample']
-    organisms = list(set([bs['individual']['organism']['display_title'] for bs in biosample['biosource']]))
+    organisms = list(set([bs['individual']['organism']['name'] for bs in biosample['biosource']]))
     chrsize = ''
     if len(organisms) == 1:
         chrsize = chr_size.get(organisms[0])
