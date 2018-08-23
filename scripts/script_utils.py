@@ -3,7 +3,7 @@ import copy
 import argparse
 import sys
 import ast
-from dcicutils.ff_utils import search_metadata, get_metadata
+from dcicutils.ff_utils import search_metadata, get_metadata, get_es_metadata
 
 
 def create_ff_arg_parser():
@@ -216,3 +216,13 @@ def get_linked_items(auth, itemid, found_items={},
                     for uid in id_list:
                         found_items.update(get_linked_items(auth, uid, found_items))  # pragma: no cover
     return found_items
+
+
+def new_get_linked_items(auth, itemid, found_items={},
+                         no_children=['Publication', 'Lab', 'User', 'Award']):
+    import pdb; pdb.set_trace()
+    es_data = get_es_metadata([itemid], ff_env=auth)
+    embedded_uuids = es_data[0].get('embedded_uuids')
+    linked_uuids = es_data[0].get('linked_uuids')
+    print(len(embedded_uuids))
+    print(len(linked_uuids))

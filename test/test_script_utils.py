@@ -287,6 +287,12 @@ def test_convert_key_arg_to_dict_bad_key(capsys):
         assert out == "You included a key argument but it appears to be malformed or missing required info - see --help"
 
 
+def test_new_get_linked_item():
+    env = 'data'
+    itemid = 'a6b5bf0d-1ee3-4f3b-b8c8-75fd834b083e'
+    res = scu.new_get_linked_items(env, itemid)
+
+
 def test_get_linked_items_w_item_in_found(auth):
     itemid = 'itemid'
     found_items = {itemid: 1}
