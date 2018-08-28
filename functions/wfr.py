@@ -301,31 +301,31 @@ def add_preliminary_processed_files(item_id, list_pc, auth, run_type="hic"):
         ex_pc_ids = [a for i in ex_pc_ids for a in i]
         for i in list_pc:
             if i in ex_pc_ids:
-                print('Error - Cannot add files to opc')
-                print(i, 'is already in other processed files')
+                print('Error - Cannot add files to pc')
+                print(i, 'is already in processed files')
                 return
 
     # extract essential for comparison, unfold all possible ids into a list, and compare list_pc to that one
     ex_opc = resp.get('other_processed_files')
     if ex_opc:
+        # check the titles
+        all_existing_titles = [a['title'] for a in ex_opc]
+        if pc_set_title in all_existing_titles:
+            print('Error - Cannot add files to opc')
+            print('The same title already in other processed files')
+            return
+        # check  the individual files
         ex_opc_ids = [[a['@id'], a['uuid'], a['@id'].split('/')[2]] for i in ex_opc for a in i['files']]
         ex_opc_ids = [a for i in ex_opc_ids for a in i]
         for i in list_pc:
             if i in ex_opc_ids:
                 print('Error - Cannot add files to opc')
-                print(i, 'is already in processed files')
+                print(i, 'is already in other processed files')
                 return
 
     # we need raw to get the existing piece, to patch back with the new ones
     patch_data = ff_utils.get_metadata(item_id, key=auth, add_on='frame=raw').get('other_processed_files')
-    if patch_data:
-        # does the same title exist
-        if pc_set_title in [i['title'] for i in patch_data]:
-            print(item_id, 'already has preliminary results')
-            return
-        else:
-            pass
-    else:
+    if not patch_data:
         patch_data = []
 
     new_data = {'title': pc_set_title,

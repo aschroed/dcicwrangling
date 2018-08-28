@@ -314,7 +314,7 @@ def record_object_es(uuid_list, con_key, schema_name, store_frame='raw', add_pc_
                         #turn it into string
                         field_val = str(field_val)
                         # check if any of embedded uuids is in the field value
-                        for a_uuid in ES_item['embedded_uuids']:
+                        for a_uuid in ES_item['linked_uuids']:
                             if a_uuid in field_val:
                                 uuids_to_check.append(a_uuid)
         # get uniques
