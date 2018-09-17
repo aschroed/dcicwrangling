@@ -393,7 +393,7 @@ def printTable(myDict, colList=None):
 
 
 # get order from loadxl.py in fourfront
-ORDER = ['user', 'award', 'lab', 'static_section', 'page', 'ontology', 'ontology_term', 'badge', 'organism',
+ORDER = ['user', 'award', 'lab', 'static_section', 'page', 'ontology', 'ontology_term', 'badge', 'organism', 'file_format',
          'genomic_region', 'target', 'imaging_path', 'publication', 'publication_tracking', 'document',
          'image', 'vendor', 'construct', 'modification', 'protocol', 'sop_map', 'biosample_cell_culture',
          'individual_human', 'individual_mouse', 'individual_fly', 'biosource', 'antibody', 'enzyme', 'treatment_rnai',
