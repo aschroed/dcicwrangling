@@ -17,6 +17,8 @@ def get_key(keyname=None, keyfile='keypairs.json'):
     if keyfile != 'keypairs.json':
         if not keyname:
             raise Exception('please provide keyname')
+        if keyfile.startswith('~'):
+            keyfile = os.path.expanduser("~") + keyfile[1:]
         with open(keyfile, 'r') as key_file:
             keys = key_file.read()
         my_key = json.loads(keys)[keyname]
