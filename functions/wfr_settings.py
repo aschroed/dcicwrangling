@@ -13,7 +13,7 @@ def step_settings(step_name, my_organism, attribution):
 
     wf_dict = [{
         'wf_name': 'md5',
-        'wf_uuid': 'd3f25cd3-e726-4b3c-a022-48f844474b41',
+        'wf_uuid': 'c77a117b-9a58-477e-aaa5-291a109a99f6',
         'parameters': {}
     },
         {

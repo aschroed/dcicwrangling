@@ -39,7 +39,7 @@ def get_key(keyname=None, keyfile='keypairs.json'):
     return my_key
 
 
-def get_query_or_linked(con_key, query="", linked=""):
+def get_query_or_linked(con_key, query="", linked="", linked_frame="object"):
     schema_name = get_schema_names(con_key)
     if query:
         items = ff_utils.search_metadata(query, key=con_key)
@@ -52,7 +52,7 @@ def get_query_or_linked(con_key, query="", linked=""):
                 store[obj_key] = []
             store[obj_key].append(an_item)
     elif linked:
-        store, uuids = record_object_es(linked, con_key, schema_name, store_frame='object')
+        store, uuids = record_object_es(linked, con_key, schema_name, store_frame=linked_frame)
     return store
 
 
