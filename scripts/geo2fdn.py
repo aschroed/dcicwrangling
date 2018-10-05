@@ -460,6 +460,8 @@ def main(types=valid_types, descr=description, epilog=epilog):  # pragma: no cov
                         default='', action="store")
     parser.add_argument('-a', '--alias', help="Alias prefix, default is '4dn-dcic-lab'",
                         action="store", default="4dn-dcic-lab")
+    parser.add_argument('-e', '--email', help="Email address to use NCBI Entrez",
+                        action="store", default="")
     parser.add_argument('-t', '--type', help="Optional: type of experiment in series. \
                         By default experiment type is parsed from SRA records, but \
                         this option is useful when parsing isn't straightforward. \
@@ -473,7 +475,10 @@ def main(types=valid_types, descr=description, epilog=epilog):  # pragma: no cov
         print("\nError: %s not a recognized type\n" % args.type)
         parser.print_help()
         sys.exit()
-    Entrez.email = input('Enter email address to use NCBI Entrez: ')
+    if not args.email:
+        Entrez.email = input('Enter email address to use NCBI Entrez: ')
+    else:
+        Entrez.email = args.email
     modify_xls(args.geo_accession, args.infile, out_file, args.alias, experiment_type=args.type)
 
 
