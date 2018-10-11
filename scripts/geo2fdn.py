@@ -459,7 +459,7 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
                                               alias_prefix, file_dict, book, outbook)
 
         other = [exp for exp in gds.experiments if exp.exptype not in types]
-        skip = ['bisulfiteseq', 'groseq']
+        skip = ['bisulfiteseq', 'groseq', 'smartseq', '4cseq']
         skipped = [e for e in other if e.exptype in skip]
         if skipped:
             print('\nThe following accessions had non-4DN experiment types and were not written to file:')
