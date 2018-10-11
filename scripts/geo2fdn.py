@@ -54,9 +54,26 @@ class Experiment:
     def get_sra(self):
         # look up SRA record to fill out more attributes
         handle = handle_timeout(Entrez.efetch(db="sra", id=self.link))
-        record = ET.fromstring(handle.readlines()[2])
+        try:
+            record = ET.fromstring(handle.readlines()[2])
+        except Exception:
+            try:
+                handle = handle_timeout(Entrez.efetch(db="sra", id=self.link))
+                text = handle.read()
+                record = ET.fromstring(text[text.index('<EXPERIMENT_PACKAGE>'):text.index('\n</EXPERIMENT_PACKAGE_SET>')])
+            except Exception:
+                print("Couldn't parse {} from {}".format(self.link, self.geo))
+                return
+        if record.tag == 'ERROR':
+            if 'is not public' in record.text:
+                print(record.text)
+            else:
+                print('Could not get SRA record {}'.format(self.link))
+            return
         self.length = int(mean([int(float(item.get('average'))) for item in record.iter('Read') if
                                 item.get('count') != '0']))
+        # except Exception:
+        #     print("{} from {} - can't get read length".format(self.link, self.geo))
         self.st = record.find('STUDY').find('DESCRIPTOR').find('STUDY_TITLE').text
         for item in record.find('EXPERIMENT').find('DESIGN').find('LIBRARY_DESCRIPTOR').find('LIBRARY_LAYOUT'):
             self.layout = item.tag.lower()
@@ -122,8 +139,13 @@ def parse_gsm(gsm, experiment_type=None):
     exp_type = experiment_type if experiment_type else gsm.metadata['library_strategy'][0]
     if not exp_type or exp_type.lower() == 'other':
         for item in gsm.metadata['data_processing']:
-            if item.startswith('Library strategy'):
+            if item.lower().startswith('library strategy'):
                 exp_type = item[item.index(':') + 2:]
+    if not exp_type or exp_type.lower() == 'other':
+        title = re.sub('-', '', ', '.join(gsm.metadata['title']).lower())
+        types = [item for item in valid_types if item in title]
+        if len(types) == 1 or (types and all('hic' in t for t in types)):
+            exp_type = types[-1]
     link = None
     for item in gsm.metadata['relation']:
         # get biosample relation
@@ -198,7 +220,11 @@ def parse_bs_record(bs_acc):
     atts = {}
     descr = ''
     acc = bs_xml.find('./BioSample').attrib['accession']
-    org = [item.text for item in bs_xml.iter("OrganismName")][0]
+    org = [item.text for item in bs_xml.iter("OrganismName")]
+    if not org:
+        org = [item.attrib['taxonomy_name'] for item in bs_xml.iter("Organism")]
+    # except IndexError:
+    #     print("{} - can't get OrganismName".format(bs_acc))
     for item in bs_xml.iter("Attribute"):
         atts[item.attrib['attribute_name']] = item.text
     for name in ['source_name', 'sample_name', 'gender', 'strain', 'genotype', 'cross',
@@ -213,7 +239,7 @@ def parse_bs_record(bs_acc):
                     print("BioSample accession %s has treatment attribute" % acc,
                           "but treatment not written to file")
     descr = descr.rstrip('; ')
-    bs = Biosample(acc, org, descr)
+    bs = Biosample(acc, org[0], descr)
     return bs
 
 
@@ -433,8 +459,14 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
                                               alias_prefix, file_dict, book, outbook)
 
         other = [exp for exp in gds.experiments if exp.exptype not in types]
+        skip = ['bisulfiteseq', 'groseq']
+        skipped = [e for e in other if e.exptype in skip]
+        if skipped:
+            print('\nThe following accessions had non-4DN experiment types and were not written to file:')
+            print('\n'.join([item.geo for item in skipped]))
+            other = [e for e in other if e.exptype not in skip]
         if other:
-            if len(other) == len(gds.experiments):
+            if len(other) + len(skipped) == len(gds.experiments):
                 print("\nExperiment types of dataset could not be parsed. %s sheet not written" %
                       ', '.join(exp_sheets))
             else:
@@ -471,7 +503,7 @@ def main(types=valid_types, descr=description, epilog=epilog):  # pragma: no cov
                         action="store", default=None)
     args = parser.parse_args()
     out_file = args.outfile if args.outfile else args.geo_accession + '.xls'
-    if args.type and args.type not in types:
+    if args.type and args.type.lower() not in types:
         print("\nError: %s not a recognized type\n" % args.type)
         parser.print_help()
         sys.exit()
