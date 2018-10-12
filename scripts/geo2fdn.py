@@ -300,16 +300,17 @@ def write_experiments(sheet_name, experiments, alias_prefix, file_dict, inbook, 
     print("Writing %s sheet..." % sheet_name)
     for entry in experiments:
         # if entry.exptype in ['chipseq', 'rnaseq', 'tsaseq']:
-        sheet.write(row, sheet_dict['aliases'], alias_prefix + ':' + entry.geo)
-        sheet.write(row, sheet_dict['description'], entry.title)
-        if 'Biosample' in inbook.sheet_names():
-            sheet.write(row, sheet_dict['*biosample'], alias_prefix + ':' + entry.bs)
-        if 'FileFastq' in inbook.sheet_names():
-            sheet.write(row, sheet_dict['files'], ','.join(file_dict[entry.geo]))
-        sheet.write(row, sheet_dict['dbxrefs'], 'GEO:' + entry.geo)
-        if entry.exptype in type_dict.keys():
-            sheet.write(row, sheet_dict['*experiment_type'], types[entry.exptype])
-        row += 1
+        if entry.bs.org in ['Mus musculus', 'Homo sapiens', 'Drosophila melanogaster']:
+            sheet.write(row, sheet_dict['aliases'], alias_prefix + ':' + entry.geo)
+            sheet.write(row, sheet_dict['description'], entry.title)
+            if 'Biosample' in inbook.sheet_names():
+                sheet.write(row, sheet_dict['*biosample'], alias_prefix + ':' + entry.bs)
+            if 'FileFastq' in inbook.sheet_names():
+                sheet.write(row, sheet_dict['files'], ','.join(file_dict[entry.geo]))
+            sheet.write(row, sheet_dict['dbxrefs'], 'GEO:' + entry.geo)
+            if entry.exptype in type_dict.keys():
+                sheet.write(row, sheet_dict['*experiment_type'], types[entry.exptype])
+            row += 1
     return outbook
 
 
