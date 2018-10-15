@@ -33,6 +33,7 @@ def hidden_sra(mocker):
             gsm = GEOparse.get_GEO(filepath='./test/data_files/GSM2715320.txt')
             return geo.parse_gsm(gsm)
 
+
 # edit to use above fixture?
 def test_parse_gsm_with_sra(mocker, srx_file):
     with open(srx_file, 'r') as srx:
