@@ -105,9 +105,9 @@ valid_types = ['hic', 'hicseq', 'dnase hic', 'rnaseq', 'tsaseq', 'chipseq',
                'repliseq', 'atacseq', 'damid', 'damidseq', 'chiapet']
 
 
-type_dict = {'chipseq': 'CHIP-seq', 'tsaseq': 'TSA-seq', 'rnaseq': 'RNA-seq',
+type_dict = {'chipseq': 'ChIP-seq', 'tsaseq': 'TSA-seq', 'rnaseq': 'RNA-seq',
              'atacseq': 'ATAC-seq', 'capturec': 'capture Hi-C', 'damid': 'DAM-ID seq',
-             'damidseq': 'DAM-ID seq', 'chiapet': 'CHIA-pet', 'placseq': 'PLAC-seq',
+             'damidseq': 'DAM-ID seq', 'chiapet': 'ChIA-PET', 'placseq': 'PLAC-seq',
              'dnase hic': 'DNase Hi-C', 'dna sprite': 'DNA SPRITE',
              'dnarna sprite': 'RNA-DNA SPRITE', 'rnadna sprite': 'RNA-DNA SPRITE'}
 
@@ -352,17 +352,12 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
     gds = get_geo_metadata(geo, experiment_type)
     if not gds:
         return
-    for exp in gds.experiments:
-        print(exp.bs)
-        print(exp.link)
-        print(exp.layout)
     book = xlrd.open_workbook(infile)
     outbook = copy(book)
 
     get_organisms = requests.get('https://data.4dnucleome.org/search/?type=Organism&frame=object&format=json')
     organisms = [d['scientific_name'] for d in get_organisms.json()['@graph'] if d.get('scientific_name')]
     bs_to_write = [bs.acc for bs in gds.biosamples if bs.organism in organisms]
-    print('bs: {}'.format(organisms))
     exp_to_write = [exp for exp in gds.experiments if exp.public and exp.bs in bs_to_write]
 
     if 'Biosample' in book.sheet_names():
