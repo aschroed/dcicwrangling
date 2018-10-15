@@ -2,8 +2,10 @@
 # -*- coding: latin-1 -*-
 
 import argparse
+import json
 import os
 import re
+import requests
 import sys
 import time
 from statistics import mean
@@ -50,6 +52,7 @@ class Experiment:
         # self.study_title = study_title
         self.bs = biosample
         self.link = link
+        self.public = True
 
     def get_sra(self):
         # look up SRA record to fill out more attributes
@@ -66,14 +69,13 @@ class Experiment:
                 return
         if record.tag == 'ERROR':
             if 'is not public' in record.text:
-                print(record.text)
+                print(record.text + ' - will not be written to file!')
+                self.public = False
             else:
                 print('Could not get SRA record {}'.format(self.link))
             return
         self.length = int(mean([int(float(item.get('average'))) for item in record.iter('Read') if
                                 item.get('count') != '0']))
-        # except Exception:
-        #     print("{} from {} - can't get read length".format(self.link, self.geo))
         self.st = record.find('STUDY').find('DESCRIPTOR').find('STUDY_TITLE').text
         for item in record.find('EXPERIMENT').find('DESIGN').find('LIBRARY_DESCRIPTOR').find('LIBRARY_LAYOUT'):
             self.layout = item.tag.lower()
@@ -111,7 +113,7 @@ type_dict = {'chipseq': 'CHIP-seq', 'tsaseq': 'TSA-seq', 'rnaseq': 'RNA-seq',
              'dnarna sprite': 'RNA-DNA SPRITE', 'rnadna sprite': 'RNA-DNA SPRITE'}
 
 
-def handle_timeout(command):
+def handle_timeout(command): # pragma: no cover
     '''
     To retry commands if the server connection times out.
     '''
@@ -177,9 +179,10 @@ def get_geo_metadata(acc, experiment_type=None):
         else:
             gse = GEOparse.get_GEO(geo=acc)  # pragma: no cover
         # create Experiment objects from each GSM file
-        experiments = [obj for obj in [parse_gsm(gsm, experiment_type) for gsm in gse.gsms.values()] if obj]
+        experiments = [obj for obj in [parse_gsm(gsm, experiment_type) for gsm in gse.gsms.values()] if
+                       obj and obj.public]
         # delete file after GSMs are parsed
-        if '/' not in acc:
+        if '/' not in acc:  # pragma: no cover
             print('GEO parsing done. Removing downloaded soft file.')
             os.remove('{}_family.soft.gz'.format(acc))
         if not experiments:
@@ -300,17 +303,16 @@ def write_experiments(sheet_name, experiments, alias_prefix, file_dict, inbook, 
     print("Writing %s sheet..." % sheet_name)
     for entry in experiments:
         # if entry.exptype in ['chipseq', 'rnaseq', 'tsaseq']:
-        if entry.bs.org in ['Mus musculus', 'Homo sapiens', 'Drosophila melanogaster']:
-            sheet.write(row, sheet_dict['aliases'], alias_prefix + ':' + entry.geo)
-            sheet.write(row, sheet_dict['description'], entry.title)
-            if 'Biosample' in inbook.sheet_names():
-                sheet.write(row, sheet_dict['*biosample'], alias_prefix + ':' + entry.bs)
-            if 'FileFastq' in inbook.sheet_names():
-                sheet.write(row, sheet_dict['files'], ','.join(file_dict[entry.geo]))
-            sheet.write(row, sheet_dict['dbxrefs'], 'GEO:' + entry.geo)
-            if entry.exptype in type_dict.keys():
-                sheet.write(row, sheet_dict['*experiment_type'], types[entry.exptype])
-            row += 1
+        sheet.write(row, sheet_dict['aliases'], alias_prefix + ':' + entry.geo)
+        sheet.write(row, sheet_dict['description'], entry.title)
+        if 'Biosample' in inbook.sheet_names():
+            sheet.write(row, sheet_dict['*biosample'], alias_prefix + ':' + entry.bs)
+        if 'FileFastq' in inbook.sheet_names():
+            sheet.write(row, sheet_dict['files'], ','.join(file_dict[entry.geo]))
+        sheet.write(row, sheet_dict['dbxrefs'], 'GEO:' + entry.geo)
+        if entry.exptype in type_dict.keys():
+            sheet.write(row, sheet_dict['*experiment_type'], types[entry.exptype])
+        row += 1
     return outbook
 
 
@@ -351,8 +353,18 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
     gds = get_geo_metadata(geo, experiment_type)
     if not gds:
         return
+    for exp in gds.experiments:
+        print(exp.bs)
+        print(exp.link)
+        print(exp.layout)
     book = xlrd.open_workbook(infile)
     outbook = copy(book)
+
+    get_organisms = requests.get('https://data.4dnucleome.org/search/?type=Organism&frame=object&format=json')
+    organisms = [d['scientific_name'] for d in get_organisms.json()['@graph'] if d.get('scientific_name')]
+    bs_to_write = [bs.acc for bs in gds.biosamples if bs.organism in organisms]
+    print('bs: {}'.format(organisms))
+    exp_to_write = [exp for exp in gds.experiments if exp.public and exp.bs in bs_to_write]
 
     if 'Biosample' in book.sheet_names():
         sheet_dict_bs = {}
@@ -363,15 +375,16 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
         row = book.sheet_by_name('Biosample').nrows
         print("Writing Biosample sheet...")
         for entry in gds.biosamples:
-            # write each Biosample object to file
-            alias = alias_prefix + ':' + entry.acc
-            bs.write(row, sheet_dict_bs['aliases'], alias)
-            bs.write(row, sheet_dict_bs['description'], entry.description)
-            if 'BiosampleCellCulture' in book.sheet_names():
-                bs.write(row, sheet_dict_bs['cell_culture_details'], alias + '-cellculture')
-            # bs.write(row, sheet_dict_bs['treatments'], entry.treatments)
-            bs.write(row, sheet_dict_bs['dbxrefs'], 'BioSample:' + entry.acc)
-            row += 1
+            if entry.acc in bs_to_write:
+                # write each Biosample object to file
+                alias = alias_prefix + ':' + entry.acc
+                bs.write(row, sheet_dict_bs['aliases'], alias)
+                bs.write(row, sheet_dict_bs['description'], entry.description)
+                if 'BiosampleCellCulture' in book.sheet_names():
+                    bs.write(row, sheet_dict_bs['cell_culture_details'], alias + '-cellculture')
+                # bs.write(row, sheet_dict_bs['treatments'], entry.treatments)
+                bs.write(row, sheet_dict_bs['dbxrefs'], 'BioSample:' + entry.acc)
+                row += 1
 
     if 'BiosampleCellCulture' in book.sheet_names():
         sheet_dict_bcc = {}
@@ -382,9 +395,10 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
         row = book.sheet_by_name('BiosampleCellCulture').nrows
         print("Writing BiosampleCellCulture sheet...")
         for entry in gds.biosamples:
-            # generate aliases for BiosampleCellCulture sheet
-            bcc.write(row, sheet_dict_bcc['aliases'], alias_prefix + ':' + entry.acc + '-cellculture')
-            row += 1
+            if entry.acc in bs_to_write:
+                # generate aliases for BiosampleCellCulture sheet
+                bcc.write(row, sheet_dict_bcc['aliases'], alias_prefix + ':' + entry.acc + '-cellculture')
+                row += 1
 
     file_dict = {}
     if 'FileFastq' in book.sheet_names():
@@ -396,60 +410,61 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
         row = book.sheet_by_name('FileFastq').nrows
         print("Writing FileFastq sheet...")
         for entry in gds.experiments:
-            file_dict[entry.geo] = []
-            for run in entry.runs:
-                # write information about SRA runs to file -
-                # assumes they will be downloaded as fastq files
-                if entry.layout.lower() == 'paired':
-                    fq1 = alias_prefix + ':' + run + '_1_fq'
-                    fq2 = alias_prefix + ':' + run + '_2_fq'
-                    file_dict[entry.geo] += [fq1, fq2]
-                    fq.write(row, sheet_dict_fq['aliases'], fq1)
-                    # fq.write(row, sheet_dict_fq['description'], entry.description)
-                    fq.write(row, sheet_dict_fq['*file_format'], 'fastq')
-                    fq.write(row, sheet_dict_fq['paired_end'], '1')
-                    fq.write(row, sheet_dict_fq['related_files.relationship_type'], 'paired with')
-                    fq.write(row, sheet_dict_fq['related_files.file'], fq2)
-                    fq.write(row, sheet_dict_fq['read_length'], entry.length)
-                    fq.write(row, sheet_dict_fq['instrument'], entry.instr)
-                    fq.write(row, sheet_dict_fq['dbxrefs'], 'SRA:' + run)
-                    fq.write(row + 1, sheet_dict_fq['aliases'], fq2)
-                    # fq.write(row + 1, sheet_dict_fq['description'], entry.description)
-                    fq.write(row + 1, sheet_dict_fq['*file_format'], 'fastq')
-                    fq.write(row + 1, sheet_dict_fq['paired_end'], '2')
-                    # fq.write(row + 1, sheet_dict_fq['related_files.relationship_type'], 'paired with')
-                    # fq.write(row + 1, sheet_dict_fq['related_files.file'], fq1)
-                    fq.write(row + 1, sheet_dict_fq['read_length'], entry.length)
-                    fq.write(row + 1, sheet_dict_fq['instrument'], entry.instr)
-                    fq.write(row + 1, sheet_dict_fq['dbxrefs'], 'SRA:' + run)
-                    row += 2
-                elif entry.layout.lower() == 'single':
-                    fq_0 = alias_prefix + ':' + run + '_fq'
-                    file_dict[entry.geo] += [fq_0]
-                    fq.write(row, sheet_dict_fq['aliases'], fq_0)
-                    # fq.write(row, sheet_dict_fq['description'], entry.description)
-                    fq.write(row, sheet_dict_fq['*file_format'], 'fastq')
-                    fq.write(row, sheet_dict_fq['read_length'], entry.length)
-                    fq.write(row, sheet_dict_fq['instrument'], entry.instr)
-                    fq.write(row, sheet_dict_fq['dbxrefs'], 'SRA:' + run)
-                    row += 1
-                else:
-                    raise ValueError("Invalid value for layout. Layout must be 'single' or 'paired'.")
+            if entry.bs in bs_to_write:
+                file_dict[entry.geo] = []
+                for run in entry.runs:
+                    # write information about SRA runs to file -
+                    # assumes they will be downloaded as fastq files
+                    if entry.layout.lower() == 'paired':
+                        fq1 = alias_prefix + ':' + run + '_1_fq'
+                        fq2 = alias_prefix + ':' + run + '_2_fq'
+                        file_dict[entry.geo] += [fq1, fq2]
+                        fq.write(row, sheet_dict_fq['aliases'], fq1)
+                        # fq.write(row, sheet_dict_fq['description'], entry.description)
+                        fq.write(row, sheet_dict_fq['*file_format'], 'fastq')
+                        fq.write(row, sheet_dict_fq['paired_end'], '1')
+                        fq.write(row, sheet_dict_fq['related_files.relationship_type'], 'paired with')
+                        fq.write(row, sheet_dict_fq['related_files.file'], fq2)
+                        fq.write(row, sheet_dict_fq['read_length'], entry.length)
+                        fq.write(row, sheet_dict_fq['instrument'], entry.instr)
+                        fq.write(row, sheet_dict_fq['dbxrefs'], 'SRA:' + run)
+                        fq.write(row + 1, sheet_dict_fq['aliases'], fq2)
+                        # fq.write(row + 1, sheet_dict_fq['description'], entry.description)
+                        fq.write(row + 1, sheet_dict_fq['*file_format'], 'fastq')
+                        fq.write(row + 1, sheet_dict_fq['paired_end'], '2')
+                        # fq.write(row + 1, sheet_dict_fq['related_files.relationship_type'], 'paired with')
+                        # fq.write(row + 1, sheet_dict_fq['related_files.file'], fq1)
+                        fq.write(row + 1, sheet_dict_fq['read_length'], entry.length)
+                        fq.write(row + 1, sheet_dict_fq['instrument'], entry.instr)
+                        fq.write(row + 1, sheet_dict_fq['dbxrefs'], 'SRA:' + run)
+                        row += 2
+                    elif entry.layout.lower() == 'single':
+                        fq_0 = alias_prefix + ':' + run + '_fq'
+                        file_dict[entry.geo] += [fq_0]
+                        fq.write(row, sheet_dict_fq['aliases'], fq_0)
+                        # fq.write(row, sheet_dict_fq['description'], entry.description)
+                        fq.write(row, sheet_dict_fq['*file_format'], 'fastq')
+                        fq.write(row, sheet_dict_fq['read_length'], entry.length)
+                        fq.write(row, sheet_dict_fq['instrument'], entry.instr)
+                        fq.write(row, sheet_dict_fq['dbxrefs'], 'SRA:' + run)
+                        row += 1
+                    else:
+                        raise ValueError("Invalid value for layout. Layout must be 'single' or 'paired'.")
 
     exp_sheets = [name for name in book.sheet_names() if name.startswith('Experiment')]
     if len(exp_sheets) > 0:
         # looks for each experiment type in parsed data
         # then looks for relevant worksheet in excel template
         # writes experiments to file if both present
-        hic_expts = [exp for exp in gds.experiments if exp.exptype.startswith('hic') or
+        hic_expts = [exp for exp in exp_to_write if exp.exptype.startswith('hic') or
                      exp.exptype.startswith('dnase hic')]
-        seq_expts = [exp for exp in gds.experiments if exp.exptype in
+        seq_expts = [exp for exp in exp_to_write if exp.exptype in
                      ['chipseq', 'rnaseq', 'tsaseq'] or 'sprite' in exp.exptype]
-        atac_expts = [exp for exp in gds.experiments if exp.exptype == 'atacseq']
-        rep_expts = [exp for exp in gds.experiments if exp.exptype == 'repliseq']
-        dam_expts = [exp for exp in gds.experiments if exp.exptype.startswith('damid')]
-        cap_expts = [exp for exp in gds.experiments if exp.exptype == 'capturec']
-        chia_expts = [exp for exp in gds.experiments if exp.exptype in ['chiapet', 'placseq']]
+        atac_expts = [exp for exp in exp_to_write if exp.exptype == 'atacseq']
+        rep_expts = [exp for exp in exp_to_write if exp.exptype == 'repliseq']
+        dam_expts = [exp for exp in exp_to_write if exp.exptype.startswith('damid')]
+        cap_expts = [exp for exp in exp_to_write if exp.exptype == 'capturec']
+        chia_expts = [exp for exp in exp_to_write if exp.exptype in ['chiapet', 'placseq']]
 
         sheet_types = {'HiC': hic_expts, 'Seq': seq_expts, 'Damid': dam_expts,
                        'Atacseq': atac_expts, 'Repliseq': rep_expts,
@@ -459,6 +474,10 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
             outbook = experiment_type_compare('Experiment' + key, sheet_types[key], geo,
                                               alias_prefix, file_dict, book, outbook)
 
+        other_organisms = [exp.geo for exp in gds.experiments if exp.bs not in bs_to_write]
+        if other_organisms:
+            print('\nThe following accessions were from non-4DN organisms and were not written to file:')
+            print('\n'.join(other_organisms))
         other = [exp for exp in gds.experiments if exp.exptype not in types]
         skip = ['bisulfiteseq', 'groseq', 'smartseq', '4cseq']
         skipped = [e for e in other if e.exptype in skip]
