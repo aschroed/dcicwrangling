@@ -1,7 +1,8 @@
 from dcicutils import ff_utils
 from dcicutils import s3Utils
 from datetime import datetime
-import time
+import json
+from IPython.core.display import display, HTML
 
 
 # Reference Files
@@ -359,9 +360,10 @@ def run_missing_wfr(wf_info, input_files, run_name, auth, env, tag='0.2.5'):
     if wf_info.get("custom_pf_fields"):
         input_json["custom_pf_fields"] = wf_info['custom_pf_fields']
     e = ff_utils.post_metadata(input_json, 'WorkflowRun/run', key=auth)
-    print(e)
-    # TODO: format e to display the url and important info
-    time.sleep(30)
+
+    url = json.loads(e['input'])['_tibanna']['url']
+    display(HTML("<a href='{}' target='_blank'>{}</a>".format(url, e['status'])))
+    #time.sleep(30)
 
 
 def extract_nz_file(acc, auth):
