@@ -137,7 +137,7 @@ def test_modify_xls(mocker, bs_obj, exp_with_sra):
     mocker.patch('scripts.geo2fdn.parse_gsm', return_value=exp_with_sra)
     mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
     # gds = geo.get_geo_metadata('GSM2715320', filepath='./test/data_files/GSM2715320.txt')
-    geo.modify_xls('GSM2715320', './test/data_files/repliseq_template.xls', 'out.xls', 'abc')
+    geo.modify_xls('./test/data_files/GSM2715320.txt', './test/data_files/repliseq_template.xls', 'out.xls', 'abc')
     book = xlrd.open_workbook('out.xls')
     outfile_dict = create_xls_dict(book)
     os.remove('out.xls')
