@@ -29,7 +29,7 @@ def exp_with_sra(mocker, srx_file):
 @pytest.fixture
 def hidden_sra(mocker):
     with open('./test/data_files/SRX4191023.xml', 'r') as srx:
-        with mocker.patch('scripts.geo2fdn.handle_timeout', return_value=srx):
+        with mocker.patch('Bio.Entrez.efetch', return_value=srx):
             gsm = GEOparse.get_GEO(filepath='./test/data_files/GSM2715320.txt')
             return geo.parse_gsm(gsm)
 
