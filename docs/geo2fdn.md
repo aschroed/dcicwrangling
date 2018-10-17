@@ -43,6 +43,16 @@ from experiment records. DO NOT specify if GEO series ßhas multiple experiment 
 
 ### Running
 
+Input: \
+First, make sure you have an input 4DN workbook to use as the template. You can generate
+your own from Submit4DN, or you can use one of the example workbooks in the example_files/
+folder. If your target GEO series only has experiment records of a single type, and no
+treatments or modifications to the cell lines used, you may want to use one of the
+single-experiment templates (hic_template.xls, chipseq_template.xls, damid_template.xls, or
+rnaseq_template.xls), but if your dataset has treatments or modifications or has multiple
+experiment types, you can make a copy of the file named complex.xls, which has many more
+sheets, and delete the sheets you won't need.
+
 Run the script: \
 `python3 path/to/scripts/geo2fdn.py GSEXXXXX -i <infile.xls> -o <outfile.xls> -e <email_address>`
 
