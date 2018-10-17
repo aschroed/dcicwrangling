@@ -41,7 +41,7 @@
 !Sample_library_selection = other
 !Sample_library_source = genomic
 !Sample_library_strategy = OTHER
-!Sample_relation = BioSample: https://www.ncbi.nlm.nih.gov/biosample/SAMN07405769
+!Sample_relation = BioSample: https://www.ncbi.nlm.nih.gov/biosample/SAMN06219555
 !Sample_relation = SRA: https://www.ncbi.nlm.nih.gov/sra?term=SRX3028942
 !Sample_supplementary_file_1 = NONE
 !Sample_series_id = GSE101775
