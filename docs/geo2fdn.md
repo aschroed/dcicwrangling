@@ -122,7 +122,12 @@ the SRA record, it could indicate that the xml was malformed.
 
 The next portion of the script's console output will be a series of lines that read
 `Fetching Biosample record...`. The information about each sample in the NCBI BioSample
-db is not part of the SOFT family file and must be requested separately.
+db is not part of the SOFT family file and must be requested separately. There might be
+some warning messages about `BioSample accession SAMNXXXXXXXXX has treatment attribute
+but treatment not written to file` - this indicates that there was a treatment field
+in the BioSample record, but because the treatment field in GEO is free text it is not
+simple to parse into 4DN format and thus must be manually curated. You may want to keep
+track of these accessions for subsequent curation.
 
 #### Writing sheets
 
