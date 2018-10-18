@@ -7,10 +7,12 @@ from IPython.core.display import display, HTML
 
 # Reference Files
 bwa_index = {"human": "4DNFIZQZ39L9",
-             "mouse": "4DNFI823LSI8"}
+             "mouse": "4DNFI823LSI8",
+             "fruit-fly": '4DNFIO5MGY32'}
 
 chr_size = {"human": "4DNFI823LSII",
-            "mouse": "4DNFI3UBJ3HZ"}
+            "mouse": "4DNFI3UBJ3HZ",
+            "fruit-fly": '4DNFIBEEN92C'}
 
 re_nz = {"human": {'MboI': '/files-reference/4DNFI823L812/',
                    'DpnII': '/files-reference/4DNFIBNAPW30/',
@@ -18,7 +20,10 @@ re_nz = {"human": {'MboI': '/files-reference/4DNFI823L812/',
                    'NcoI': '/files-reference/4DNFI3HVU20D/'
                    },
          "mouse": {'MboI': '/files-reference/4DNFI0NK4G14/',
-                   'DpnII': '/files-reference/4DNFI3HVC1SE/'}
+                   'DpnII': '/files-reference/4DNFI3HVC1SE/',
+                   "HindIII": '/files-reference/4DNFI6V32T9J/'
+                   },
+         "fruit-fly": {'MboI': '/files-reference/4DNFIS1ZVUWO/'}
          }
 
 
@@ -220,7 +225,11 @@ def find_pairs(my_rep_set, my_env, lookfor='pairs', exclude_miseq=True):
 
     bwa = bwa_index.get(organism)
     chrsize = chr_size.get(organism)
-    enz_file = re_nz.get(organism).get(enz)
+    if re_nz.get(organism):
+        enz_file = re_nz[organism].get(enz)
+    else:
+        print('no enzyme information for the organism {}'.format(organism))
+        enz_file = None
 
     return report, organism, enz, bwa, chrsize, enz_file, int(total_f_size / (1024 * 1024 * 1024)), lab
 
@@ -267,7 +276,9 @@ def get_wfr_out(file_id, wfr_name, auth, md_qc=False, run=100):
             out_files = {}
             for output in outputs:
                 if output.get('format'):
-                    out_files[output['format']] = output['value']['@id']
+                    # with new file format objects, we need to parse the name
+                    f_format = output['format'].split('/')[2]
+                    out_files[f_format] = output['value']['@id']
             if out_files:
                 out_files['status'] = 'complete'
                 return out_files

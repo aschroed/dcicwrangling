@@ -3,7 +3,7 @@ def step_settings(step_name, my_organism, attribution):
     """Return a setting dict for given step, and modify variables in
     output files; genome assembly, file_type, desc, contributing lab."""
     genome = ""
-    mapper = {'human': 'GRCh38', 'mouse': 'GRCm38'}
+    mapper = {'human': 'GRCh38', 'mouse': 'GRCm38', 'fruit-fly': 'dm6'}
     genome = mapper.get(my_organism)
 
     out_n = "This is an output file of the Hi-C processing pipeline"
@@ -137,7 +137,7 @@ def step_settings(step_name, my_organism, attribution):
             'count_bg': {
                 'genome_assembly': genome,
                 'file_type': 'counts',
-                'description': 'read counts per 50kb bin, unfiltered, unnormalized'}
+                'description': 'read counts per 5 kb bin, unfiltered, unnormalized'}
         }}]
 
     template = [i for i in wf_dict if i['wf_name'] == step_name][0]
