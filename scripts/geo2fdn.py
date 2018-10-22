@@ -235,8 +235,6 @@ def parse_bs_record(bs_acc):
     for item in bs_xml.iter("Attribute"):
         atts[item.attrib['attribute_name']] = item.text
 
-    print(atts.keys())
-        
     for name in ['source_name', 'sample_name', 'gender', 'strain', 'genotype', 'cross',
                  'cell_line', 'cell line', 'cell lines', 'tissue', 'sirna transfected', 'treatment', 'activation time']:
         if name in atts.keys() and atts[name].lower() != 'none':
