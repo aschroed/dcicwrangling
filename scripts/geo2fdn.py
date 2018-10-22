@@ -239,14 +239,14 @@ def parse_bs_record(bs_acc):
                  'cell_line', 'cell line', 'cell lines', 'tissue', 'sirna transfected', 'treatment', 'activation time']:
         if name in atts.keys() and atts[name].lower() != 'none':
             if atts[name] not in descr:
-                descr += name + ":" + atts[name] + '| '
+                descr += name + ": " + atts[name] + ' | '
             if name == 'treatment':
                 treatments = atts[name]
                 if not sum([term in treatments.lower() for term in ['blank', 'none', 'n/a']]):
                     # print message to indicate that Treatment tab will need to be filled
                     print("BioSample accession %s has treatment attribute" % acc,
                           "but treatment not written to file")
-    descr = descr.rstrip('| ')
+    descr = descr.rstrip(' | ')
     bs = Biosample(acc, org[0], descr)
     return bs
 
