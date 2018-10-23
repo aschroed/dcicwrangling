@@ -119,12 +119,17 @@ def handle_timeout(command): # pragma: no cover
     try:
         result = command
     except _HTTPError:
-        time.sleep(1)
+        time.sleep(3)
         try:
             result = command
         except _HTTPError:
-            time.sleep(5)
+            time.sleep(10)
             result = command
+            try:
+                result = command
+            except _HTTPError:
+                time.sleep(10)
+                result = command
     return result
 
 
@@ -229,18 +234,19 @@ def parse_bs_record(bs_acc):
     #     print("{} - can't get OrganismName".format(bs_acc))
     for item in bs_xml.iter("Attribute"):
         atts[item.attrib['attribute_name']] = item.text
+
     for name in ['source_name', 'sample_name', 'gender', 'strain', 'genotype', 'cross',
-                 'cell_line', 'cell line', 'cell lines', 'tissue', 'sirna transfected', 'treatment']:
+                 'cell_line', 'cell line', 'cell lines', 'tissue', 'sirna transfected', 'treatment', 'activation time']:
         if name in atts.keys() and atts[name].lower() != 'none':
             if atts[name] not in descr:
-                descr += atts[name] + '; '
+                descr += name + ": " + atts[name] + ' | '
             if name == 'treatment':
                 treatments = atts[name]
                 if not sum([term in treatments.lower() for term in ['blank', 'none', 'n/a']]):
                     # print message to indicate that Treatment tab will need to be filled
                     print("BioSample accession %s has treatment attribute" % acc,
                           "but treatment not written to file")
-    descr = descr.rstrip('; ')
+    descr = descr.rstrip(' | ')
     bs = Biosample(acc, org[0], descr)
     return bs
 
