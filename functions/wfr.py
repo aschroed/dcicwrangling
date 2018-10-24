@@ -8,11 +8,13 @@ from IPython.core.display import display, HTML
 # Reference Files
 bwa_index = {"human": "4DNFIZQZ39L9",
              "mouse": "4DNFI823LSI8",
-             "fruit-fly": '4DNFIO5MGY32'}
+             "fruit-fly": '4DNFIO5MGY32',
+             "chicken": "4DNFIVGRYVQF"}
 
 chr_size = {"human": "4DNFI823LSII",
             "mouse": "4DNFI3UBJ3HZ",
-            "fruit-fly": '4DNFIBEEN92C'}
+            "fruit-fly": '4DNFIBEEN92C',
+            "chicken": "4DNFI8MHOUP6"}
 
 re_nz = {"human": {'MboI': '/files-reference/4DNFI823L812/',
                    'DpnII': '/files-reference/4DNFIBNAPW30/',
@@ -23,7 +25,10 @@ re_nz = {"human": {'MboI': '/files-reference/4DNFI823L812/',
                    'DpnII': '/files-reference/4DNFI3HVC1SE/',
                    "HindIII": '/files-reference/4DNFI6V32T9J/'
                    },
-         "fruit-fly": {'MboI': '/files-reference/4DNFIS1ZVUWO/'}
+         "fruit-fly": {'MboI': '/files-reference/4DNFIS1ZVUWO/'
+                       },
+         "chicken": {"HindIII": '/files-reference/4DNFITPCJFWJ/'
+                     }
          }
 
 
@@ -277,7 +282,10 @@ def get_wfr_out(file_id, wfr_name, auth, md_qc=False, run=100):
             for output in outputs:
                 if output.get('format'):
                     # with new file format objects, we need to parse the name
-                    f_format = output['format'].split('/')[2]
+                    try:  # the new expected file format
+                        f_format = output['format'].split('/')[2]
+                    except IndexError:  # the old format
+                        f_format = output['format']
                     out_files[f_format] = output['value']['@id']
             if out_files:
                 out_files['status'] = 'complete'
@@ -379,9 +387,6 @@ def run_missing_wfr(wf_info, input_files, run_name, auth, env, tag='0.2.5'):
 
 def extract_nz_file(acc, auth):
     mapping = {"HindIII": "6", "DpnII": "4", "MboI": "4", "NcoI": "6"}
-    chr_size = {"human": "4DNFI823LSII",
-                "mouse": "4DNFI3UBJ3HZ"
-                }
     exp_resp = ff_utils.get_metadata(acc, key=auth)
     exp_type = exp_resp.get('experiment_type')
     # get enzyme
