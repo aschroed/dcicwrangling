@@ -20,7 +20,10 @@ Parameters:
 
 Optional:
 
--e / --email      &nbsp; : &nbsp;  email address - \
+-a / --alias      &nbsp; : &nbsp;  alias prefix - \
+Specifies a prefix to use for all item aliases in the output workbook.
+Default is 4dn-dcic-lab.\
+ -e / --email      &nbsp; : &nbsp;  email address - \
 Use of NCBI Entrez requires an email address to be specified. If not specified,
 there will be a prompt to input email address, but in this case console output
 cannot be redirected to a log file.\
