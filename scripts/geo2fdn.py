@@ -365,7 +365,13 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
     organisms = [d['scientific_name'] for d in get_organisms.json()['@graph'] if d.get('scientific_name')]
     bs_to_write = [bs.acc for bs in gds.biosamples if bs.organism in organisms]
     exp_to_write = [exp for exp in gds.experiments if exp.public and exp.bs in bs_to_write]
+    other_organisms = [exp.geo for exp in gds.experiments if exp.bs not in bs_to_write]
+    other = [exp for exp in gds.experiments if exp.exptype not in types]
+    skip = ['bisulfiteseq', 'groseq', 'smartseq', '4cseq']
+    skipped = [e for e in other if e.exptype in skip]
 
+    bs_w_exp = [bs for bs in bs_to_write if bs not in [e.bs for e in other] and
+                bs in [e.bs for e in exp_to_write]]
     if 'Biosample' in book.sheet_names():
         sheet_dict_bs = {}
         bs_sheets = book.sheet_by_name('Biosample').row_values(0)
@@ -375,7 +381,7 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
         row = book.sheet_by_name('Biosample').nrows
         print("Writing Biosample sheet...")
         for entry in gds.biosamples:
-            if entry.acc in bs_to_write:
+            if entry.acc in bs_w_exp:
                 # write each Biosample object to file
                 alias = alias_prefix + ':' + entry.acc
                 bs.write(row, sheet_dict_bs['aliases'], alias)
@@ -474,13 +480,13 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
             outbook = experiment_type_compare('Experiment' + key, sheet_types[key], geo,
                                               alias_prefix, file_dict, book, outbook)
 
-        other_organisms = [exp.geo for exp in gds.experiments if exp.bs not in bs_to_write]
+        # other_organisms = [exp.geo for exp in gds.experiments if exp.bs not in bs_to_write]
         if other_organisms:
             print('\nThe following accessions were from non-4DN organisms and were not written to file:')
             print('\n'.join(other_organisms))
         other = [exp for exp in gds.experiments if exp.exptype not in types]
-        skip = ['bisulfiteseq', 'groseq', 'smartseq', '4cseq']
-        skipped = [e for e in other if e.exptype in skip]
+        # skip = ['bisulfiteseq', 'groseq', 'smartseq', '4cseq']
+        # skipped = [e for e in other if e.exptype in skip]
         if skipped:
             print('\nThe following accessions had non-4DN experiment types and were not written to file:')
             print('\n'.join([item.geo for item in skipped]))
