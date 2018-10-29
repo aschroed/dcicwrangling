@@ -144,16 +144,16 @@ def test_modify_xls(mocker, bs_obj, exp_with_sra):
     assert outfile_dict['Biosample']['aliases'][0].startswith('abc:')
     assert outfile_dict['Biosample']['dbxrefs'][0].startswith('BioSample:SAMN')
     # assert BiosampleCellCulture has alias
-    assert (outfile_dict['BiosampleCellCulture']['aliases'][0].startswith('abc:') and
-            outfile_dict['BiosampleCellCulture']['aliases'][0].endswith('-cellculture'))
+    assert (outfile_dict['BiosampleCellCulture']['aliases'][0].startswith('abc:')
+            and outfile_dict['BiosampleCellCulture']['aliases'][0].endswith('-cellculture'))
     # assert BiosampleCellCulture alias is in Biosample sheet
-    assert (outfile_dict['Biosample']['cell_culture_details'][0].startswith('abc:') and
-            outfile_dict['Biosample']['cell_culture_details'][0].endswith('-cellculture'))
+    assert (outfile_dict['Biosample']['cell_culture_details'][0].startswith('abc:')
+            and outfile_dict['Biosample']['cell_culture_details'][0].endswith('-cellculture'))
     # FileFastq assert(s)
     assert outfile_dict['FileFastq']['*file_format'][0] == 'fastq'
     assert not outfile_dict['FileFastq']['paired_end'][0]
-    assert not (outfile_dict['FileFastq']['related_files.relationship_type'][0] or
-                outfile_dict['FileFastq']['related_files.file'][0])
+    assert not (outfile_dict['FileFastq']['related_files.relationship_type'][0]
+                or outfile_dict['FileFastq']['related_files.file'][0])
     assert outfile_dict['FileFastq']['read_length'][0]
     assert outfile_dict['FileFastq']['instrument'][0]
     assert outfile_dict['FileFastq']['dbxrefs'][0].startswith('SRA:SRR')
