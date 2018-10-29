@@ -370,8 +370,8 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
     skip = ['bisulfiteseq', 'groseq', 'smartseq', '4cseq']
     skipped = [e for e in other if e.exptype in skip]
 
-    bs_w_exp = [bs for bs in bs_to_write if bs not in [e.bs for e in other] and
-                bs in [e.bs for e in exp_to_write]]
+    bs_w_exp = [bs for bs in bs_to_write if bs not in [e.bs for e in other]
+                and bs in [e.bs for e in exp_to_write]]
     if 'Biosample' in book.sheet_names():
         sheet_dict_bs = {}
         bs_sheets = book.sheet_by_name('Biosample').row_values(0)
@@ -462,8 +462,8 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
         # looks for each experiment type in parsed data
         # then looks for relevant worksheet in excel template
         # writes experiments to file if both present
-        hic_expts = [exp for exp in exp_to_write if exp.exptype.startswith('hic') or
-                     exp.exptype.startswith('dnase hic')]
+        hic_expts = [exp for exp in exp_to_write if exp.exptype.startswith('hic')
+                     or exp.exptype.startswith('dnase hic')]
         seq_expts = [exp for exp in exp_to_write if exp.exptype in
                      ['chipseq', 'rnaseq', 'tsaseq'] or 'sprite' in exp.exptype]
         atac_expts = [exp for exp in exp_to_write if exp.exptype == 'atacseq']
