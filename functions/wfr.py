@@ -135,6 +135,10 @@ def run_json(input_files, env, wf_info, run_name, tag):
                                "run_id": run_name},
                   "tag": tag
                   }
+    # overwrite or add custom fields
+    for a_key in ['config', 'custom_pf_fields', 'overwrite_input_extra']:
+        if a_key in wf_info:
+            input_json[a_key] = wf_info[a_key]
     return input_json
 
 
@@ -256,7 +260,10 @@ def get_wfr_out(file_id, wfr_name, auth, md_qc=False, run=100):
             wfr_type, time_info = a_wfr['display_title'].split(' run ')
             # user submitted ones use run on insteand of run
             time_info = time_info.strip('on').strip()
-            wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S.%f')
+            try:
+                wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S.%f')
+            except ValueError:
+                wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S')
             a_wfr['run_hours'] = (datetime.utcnow() - wfr_time).total_seconds() / 3600
             a_wfr['run_type'] = wfr_type.strip()
     # sort wfrs
@@ -376,8 +383,6 @@ def run_missing_wfr(wf_info, input_files, run_name, auth, env, tag='0.2.5'):
         all_inputs.append(inp)
 
     input_json = run_json(all_inputs, env, wf_info, run_name, tag)
-    if wf_info.get("custom_pf_fields"):
-        input_json["custom_pf_fields"] = wf_info['custom_pf_fields']
     e = ff_utils.post_metadata(input_json, 'WorkflowRun/run', key=auth)
 
     url = json.loads(e['input'])['_tibanna']['url']

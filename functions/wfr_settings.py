@@ -138,7 +138,25 @@ def step_settings(step_name, my_organism, attribution):
                 'genome_assembly': genome,
                 'file_type': 'counts',
                 'description': 'read counts per 5 kb bin, unfiltered, unnormalized'}
-        }}]
+        }},
+        {
+        "wf_name": "bedGraphToBigWig",
+        "wf_uuid": "667b14a7-a47e-4857-adf1-12a6393c4b8e",
+        "parameters": {},
+        "config": {
+            "instance_type": "t2.micro",
+            "EBS_optimized": False,
+            "ebs_size": 10,
+            "ebs_type": "gp2",
+            "json_bucket": "4dn-aws-pipeline-run-json",
+            "ebs_iops": "",
+            "shutdown_min": "now",
+            "password": "whatever",
+            "log_bucket": "tibanna-output",
+            "key_name": "4dn-encode"
+        },
+        "overwrite_input_extra": False
+    }]
 
     template = [i for i in wf_dict if i['wf_name'] == step_name][0]
 

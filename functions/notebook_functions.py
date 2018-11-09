@@ -353,7 +353,11 @@ def get_wfr_report(wfrs, con_key):
             print('ProblematicCase')
             print(wfr_data['uuid'], wfr_data.get('display_title', 'no title'))
             continue
-        wfr_time = datetime.strptime(wfr_data['date_created'], '%Y-%m-%dT%H:%M:%S.%f+00:00')
+        try:
+            wfr_time = datetime.strptime(wfr_data['date_created'], '%Y-%m-%dT%H:%M:%S.%f+00:00')
+        except ValueError:  # if it was exact second, no fraction is in value
+            print("wfr time bingo", wfr_uuid)
+            wfr_time = datetime.strptime(wfr_data['date_created'], '%Y-%m-%dT%H:%M:%S+00:00')
         run_hours = (datetime.utcnow() - wfr_time).total_seconds() / 3600
         wfr_name_list = wfr_data['title'].split(' run ')[0].split('/')
         wfr_name = wfr_name_list[0].strip()
