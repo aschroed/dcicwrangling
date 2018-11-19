@@ -302,8 +302,15 @@ def record_object_es(uuid_list, con_key, schema_name, store_frame='raw', add_pc_
 
             #get linked items from es
             for key in ES_item['links']:
+                skip = False
                 # if link is from ignored_field, skip
                 if key in ignore_field:
+                    skip = True
+                # sub embedded objects have a different naming str:
+                for ignored in ignore_field:
+                    if key.startswith(ignored + '~'):
+                        skip = True
+                if skip:
                     continue
                 uuids_to_check.extend(ES_item['links'][key])
 
@@ -398,6 +405,27 @@ def printTable(myDict, colList=None):
     for item in myList:
         print(formatStr.format(*item))
 
+
+def clean_for_reupload(file_acc, key, clean_release_dates=False, delete_runs=True):
+    """Rare cases we want to reupload the file, and this needs some cleanupself.
+    If you want to delete release dates too, set 'clean_release_dates' to True"""
+    resp = ff_utils.get_metadata(file_acc, key=key)
+    clean_fields = ['extra_files', 'md5sum', 'content_md5sum', 'file_size', 'filename', 'quality_metric']
+    if clean_release_dates:
+        clean_fields.extend(['public_release', 'project_release'])
+    if delete_runs:
+        runs = resp.get('workflow_run_inputs', [])
+        if runs:
+            for a_run in runs:
+                ff_utils.patch_metadata({'status': 'deleted'}, obj_id=a_run['uuid'], key=key)
+    if resp.get('quality_metric'):
+        ff_utils.patch_metadata({'status': 'deleted'}, obj_id=resp['quality_metric']['uuid'], key=key)
+    del_f = []
+    for field in clean_fields:
+        if field in resp:
+            del_f.append(field)
+    del_add_on = 'delete_fields=' + ','.join(del_f)
+    ff_utils.patch_metadata({'status': 'uploading'}, obj_id=resp['uuid'], key=key, add_on=del_add_on)
 
 # get order from loadxl.py in fourfront
 ORDER = ['user', 'award', 'lab', 'static_section', 'page', 'ontology', 'ontology_term', 'badge', 'organism', 'file_format',
