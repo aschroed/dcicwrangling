@@ -3,6 +3,10 @@ import argparse
 from datetime import datetime
 from dcicutils.ff_utils import get_authentication_with_server, get_metadata, post_metadata
 from dcicwrangling.scripts import script_utils as scu
+'''Generate provenance workflow_runs for processed files using the
+    information in the 'produced_from' field.
+    input is a list of file ids or a search for the files.
+'''
 
 
 def get_args(args):
@@ -98,7 +102,7 @@ def create_wfr_meta_only_json(auth, workflow, inputs, outputs, alias=None, descr
                         {
                             'workflow_argument_name': argname,
                             'value': outf.get('uuid'),
-                            'workflow_argument_format': outf.get('file_format'),
+                            'workflow_argument_format': outf.get('file_format').get('uuid'),
                             'type': 'Output processed file'
                         }
                     )
@@ -119,7 +123,7 @@ def main():
         sys.exit(1)
     dryrun = not args.dbupdate
 
-    file_list = scu.get_item_ids_from_args(args.input, auth)
+    file_list = scu.get_item_ids_from_args(args.input, auth, args.search)
     wf_data = get_metadata(args.workflow, auth)
     for f in file_list:
         file_info = get_metadata(f, auth)
