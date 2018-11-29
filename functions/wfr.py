@@ -3,7 +3,7 @@ from dcicutils import s3Utils
 from datetime import datetime
 import json
 from IPython.core.display import display, HTML
-
+from operator import itemgetter
 
 # Reference Files
 bwa_index = {"human": "4DNFIZQZ39L9",
@@ -17,11 +17,11 @@ chr_size = {"human": "4DNFI823LSII",
             "chicken": "4DNFI8MHOUP6"}
 
 re_nz = {"human": {'MboI': '/files-reference/4DNFI823L812/',
-                   'DpnII': '/files-reference/4DNFIBNAPW30/',
+                   'DpnII': '/files-reference/4DNFIBNAPW3O/',
                    'HindIII': '/files-reference/4DNFI823MBKE/',
-                   'NcoI': '/files-reference/4DNFI3HVU20D/'
+                   'NcoI': '/files-reference/4DNFI3HVU2OD/'
                    },
-         "mouse": {'MboI': '/files-reference/4DNFI0NK4G14/',
+         "mouse": {'MboI': '/files-reference/4DNFIONK4G14/',
                    'DpnII': '/files-reference/4DNFI3HVC1SE/',
                    "HindIII": '/files-reference/4DNFI6V32T9J/'
                    },
@@ -377,10 +377,13 @@ def release_files(set_id, list_items, auth):
 
 
 def run_missing_wfr(wf_info, input_files, run_name, auth, env, tag='0.2.5'):
+
     all_inputs = []
     for arg, files in input_files.items():
         inp = extract_file_info(files, arg, env)
         all_inputs.append(inp)
+    # small tweak to get bg2bw working
+    all_inputs = sorted(all_inputs, key=itemgetter('workflow_argument_name'))
 
     input_json = run_json(all_inputs, env, wf_info, run_name, tag)
     e = ff_utils.post_metadata(input_json, 'WorkflowRun/run', key=auth)
