@@ -56,7 +56,7 @@ def get_query_or_linked(con_key, query="", linked="", linked_frame="object", ign
     return store
 
 
-def append_items_to_xls(input_xls, add_items, schema_name):
+def append_items_to_xls(input_xls, add_items, schema_name, comment=True):
     output_file_name = "_with_items.".join(input_xls.split('.'))
     bookread = xlrd.open_workbook(input_xls)
     book_w = xlwt.Workbook()
@@ -81,7 +81,7 @@ def append_items_to_xls(input_xls, add_items, schema_name):
         # get items to add
         items_to_add = add_items.get(schema_name[sheet])
         if items_to_add:
-            formatted_items = format_items(items_to_add, first_row_values)
+            formatted_items = format_items(items_to_add, first_row_values, comment)
             for i, item in enumerate(formatted_items):
                 for ix in range(len(first_row_values)):
                     write_column_index_II = write_column_index + 1 + i
@@ -99,7 +99,7 @@ def append_items_to_xls(input_xls, add_items, schema_name):
     return
 
 
-def format_items(items_list, field_list):
+def format_items(items_list, field_list, comment):
     """For a given sheet, get all released items"""
     all_items = []
     # filter for fields that exist on the excel sheet
@@ -110,7 +110,10 @@ def format_items(items_list, field_list):
             field = field.strip('*')
             # add # to skip existing items during submission
             if field == "#Field Name:":
-                item_info.append("#")
+                if comment:
+                    item_info.append("#")
+                else:
+                    item_info.append("")
             # the attachment field returns a dictionary
             elif field == "attachment":
                     item_info.append("")
