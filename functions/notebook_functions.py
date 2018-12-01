@@ -49,7 +49,7 @@ def get_query_or_linked(con_key, query="", linked="", linked_frame="object", ign
             add_on_s = 'frame=' + linked_frame
             an_item = ff_utils.get_metadata(an_it['uuid'], key=con_key, add_on=add_on_s)
 
-            obj_type = an_item['@type'][0]
+            obj_type = an_it['@type'][0]
             obj_key = schema_name[obj_type]
             if obj_key not in store:
                 store[obj_key] = []
