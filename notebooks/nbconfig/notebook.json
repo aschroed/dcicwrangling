@@ -1,10 +1,14 @@
 {
-  "load_extensions": {
-    "jupyter-js-widgets/extension": true
-  },
   "Cell": {
     "cm_config": {
       "lineNumbers": true
     }
+  },
+  "Notebook": {
+    "Header": true,
+    "Toolbar": true
+  },
+  "load_extensions": {
+    "jupyter-js-widgets/extension": true
   }
 }
