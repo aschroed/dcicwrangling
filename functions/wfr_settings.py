@@ -127,7 +127,7 @@ def step_settings(step_name, my_organism, attribution, at=True):
         }},
         {
         'wf_name': 'repliseq-parta',
-        'wf_uuid': '146da22a-502d-4500-bf57-a7cf0b4b2364',
+        'wf_uuid': '4459a4d8-1bd8-4b6a-b2cc-2506f4270a34',
         "parameters": {"nthreads": 4, "memperthread": "2G"},
         'custom_pf_fields': {
             'filtered_sorted_deduped_bam': {

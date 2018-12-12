@@ -14,7 +14,7 @@ bwa_index = {"human": "4DNFIZQZ39L9",
 chr_size = {"human": "4DNFI823LSII",
             "mouse": "4DNFI3UBJ3HZ",
             "fruit-fly": '4DNFIBEEN92C',
-            "chicken": "4DNFI8MHOUP6"}
+            "chicken": "4DNFIQFZW4DX"}
 
 re_nz = {"human": {'MboI': '/files-reference/4DNFI823L812/',
                    'DpnII': '/files-reference/4DNFIBNAPW3O/',
@@ -366,7 +366,7 @@ def add_preliminary_processed_files(item_id, list_pc, auth, run_type="hic"):
 def release_files(set_id, list_items, auth):
     item_status = ff_utils.get_metadata(set_id, key=auth)['status']
     # bring files to same status as experiments and sets
-    if item_status in ['released', 'released to project']:
+    if item_status in ['released', 'released to project', 'pre-release']:
         for a_file in list_items:
             it_resp = ff_utils.get_metadata(a_file, key=auth)
             workflow = it_resp.get('workflow_run_outputs')

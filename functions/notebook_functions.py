@@ -441,7 +441,7 @@ ORDER = ['user', 'award', 'lab', 'static_section', 'page', 'ontology', 'ontology
          'treatment_agent', 'biosample',
          'quality_metric_fastqc', 'quality_metric_bamqc', 'quality_metric_pairsqc', 'quality_metric_dedupqc_repliseq',
          'microscope_setting_d1', 'microscope_setting_d2', 'microscope_setting_a1', 'microscope_setting_a2',
-         'file_fastq', 'file_fasta', 'file_processed', 'file_reference', 'file_calibration',
+         'file_fastq', 'file_fasta', 'file_vistrack', 'file_processed', 'file_reference', 'file_calibration',
          'file_microscopy', 'file_set', 'file_set_calibration', 'file_set_microscope_qc',
          'experiment_hi_c', 'experiment_capture_c', 'experiment_repliseq', 'experiment_atacseq', 'experiment_chiapet',
          'experiment_damid', 'experiment_seq', 'experiment_tsaseq', 'experiment_mic',
