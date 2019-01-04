@@ -4,11 +4,11 @@
       "lineNumbers": true
     }
   },
-  "Notebook": {
-    "Header": true,
-    "Toolbar": true
-  },
   "load_extensions": {
     "jupyter-js-widgets/extension": true
+  },
+  "Notebook": {
+    "Toolbar": true,
+    "Header": true
   }
 }
