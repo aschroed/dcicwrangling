@@ -13,6 +13,7 @@ import xlrd
 from xlutils.copy import copy
 from Bio import Entrez
 from Bio._py3k import HTTPError as _HTTPError
+from urllib.error import HTTPError
 import GEOparse
 
 
@@ -116,18 +117,19 @@ def handle_timeout(command): # pragma: no cover
     '''
     To retry commands if the server connection times out.
     '''
+    time.sleep(5)
     try:
         result = command
-    except _HTTPError:
+    except HTTPError:
         time.sleep(3)
         try:
             result = command
-        except _HTTPError:
+        except HTTPError:
             time.sleep(10)
             result = command
             try:
                 result = command
-            except _HTTPError:
+            except HTTPError:
                 time.sleep(10)
                 result = command
     return result
@@ -321,7 +323,7 @@ def write_experiments(sheet_name, experiments, alias_prefix, file_dict, inbook, 
     return outbook
 
 
-def experiment_type_compare(sheetname, expt_list, geo, alias_prefix, file_dict, inbook, outbook):
+def experiment_type_compare(sheetname, expt_list, geo, inbook):
     '''
     For a given experiment type, looks for that type in workbook sheets and compares
     to experiment types of GEO record/dataset. If present in both, will write
@@ -332,19 +334,17 @@ def experiment_type_compare(sheetname, expt_list, geo, alias_prefix, file_dict, 
     expt_name = sheetname[10:] if sheetname[10:] not in expt_dict.keys() else expt_dict[sheetname[10:]]
     type_name = sheetname[10:] if sheetname != 'ExperimentSeq' else '<experiment_type>'
     if sheetname in inbook.sheet_names() and expt_list:
-        outbook = write_experiments(sheetname, expt_list, alias_prefix, file_dict, inbook, outbook)
-        return outbook
+        # outbook = write_experiments(sheetname, expt_list, alias_prefix, file_dict, inbook, outbook)
+        return True
     elif sheetname in inbook.sheet_names() and not expt_list:
         print("\nNo {} experiments parsed from {}.".format(expt_name, geo))
         print("If all samples are known to be {} experiments,".format(expt_name))
         print("this script can be rerun using -t {}".format(type_name))
-        return outbook
     elif sheetname not in inbook.sheet_names() and expt_list:
         print("\n{} experiments found in {} but no {} sheet".format(expt_name, geo, sheetname))
         print("present in workbook. {} experiments will not be written to file.".format(
               expt_name if sheetname != 'ExperimentSeq' else 'These'))
-        return outbook
-    return outbook
+    return False
 
 
 def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=valid_types):
@@ -365,13 +365,54 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
     organisms = [d['scientific_name'] for d in get_organisms.json()['@graph'] if d.get('scientific_name')]
     bs_to_write = [bs.acc for bs in gds.biosamples if bs.organism in organisms]
     exp_to_write = [exp for exp in gds.experiments if exp.public and exp.bs in bs_to_write]
-    other_organisms = [exp.geo for exp in gds.experiments if exp.bs not in bs_to_write]
-    other = [exp for exp in gds.experiments if exp.exptype not in types]
-    skip = ['bisulfiteseq', 'groseq', 'smartseq', '4cseq']
-    skipped = [e for e in other if e.exptype in skip]
 
-    bs_w_exp = [bs for bs in bs_to_write if bs not in [e.bs for e in other]
-                and bs in [e.bs for e in exp_to_write]]
+    exp_sheets = [name for name in book.sheet_names() if name.startswith('Experiment')]
+    if len(exp_sheets) > 0:
+        # looks for each experiment type in parsed data
+        # then looks for relevant worksheet in excel template
+        # writes experiments to file if both present
+        hic_expts = [exp for exp in exp_to_write if exp.exptype.startswith('hic') or
+                     exp.exptype.startswith('dnase hic')]
+        seq_expts = [exp for exp in exp_to_write if exp.exptype in
+                     ['chipseq', 'rnaseq', 'tsaseq'] or 'sprite' in exp.exptype]
+        atac_expts = [exp for exp in exp_to_write if exp.exptype == 'atacseq']
+        rep_expts = [exp for exp in exp_to_write if exp.exptype == 'repliseq']
+        dam_expts = [exp for exp in exp_to_write if exp.exptype.startswith('damid')]
+        cap_expts = [exp for exp in exp_to_write if exp.exptype == 'capturec']
+        chia_expts = [exp for exp in exp_to_write if exp.exptype in ['chiapet', 'placseq']]
+        sheet_types = {'HiC': hic_expts, 'Seq': seq_expts, 'Damid': dam_expts,
+                       'Atacseq': atac_expts, 'Repliseq': rep_expts,
+                       'CaptureC': cap_expts, 'Chiapet': chia_expts}
+
+        keep = []
+        for key in sheet_types.keys():
+            if experiment_type_compare('Experiment' + key, sheet_types[key], geo, book):
+                keep += sheet_types[key]
+                outbook = write_experiments('Experiment' + key, sheet_types[key],
+                                            alias_prefix, file_dict, inbook, outbook)
+
+        other_organisms = [exp.geo for exp in gds.experiments if exp.bs not in bs_to_write]
+        if other_organisms:
+            print('\nThe following accessions were from non-4DN organisms and were not written to file:')
+            print('\n'.join(other_organisms))
+        other = [exp for exp in gds.experiments if exp.exptype not in types]
+        skip = ['bisulfiteseq', 'groseq', 'smartseq', '4cseq']
+        skipped = [e for e in other if e.exptype in skip]
+        if skipped:
+            print('\nThe following accessions had non-4DN experiment types and were not written to file:')
+            print('\n'.join([item.geo for item in skipped]))
+            other = [e for e in other if e.exptype not in skip]
+        if other:
+            if len(other) + len(skipped) == len(gds.experiments):
+                print("\nExperiment types of dataset could not be parsed. %s sheet not written" %
+                      ', '.join(exp_sheets))
+            else:
+                print("\nThe following accessions had experiment types that could not be parsed:")
+                for item in other:
+                    print(item.geo)
+            print("If these samples are of a single known experiment type,",
+                  "this script can be rerun using -t <experiment_type>")
+
     if 'Biosample' in book.sheet_names():
         sheet_dict_bs = {}
         bs_sheets = book.sheet_by_name('Biosample').row_values(0)
@@ -381,7 +422,7 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
         row = book.sheet_by_name('Biosample').nrows
         print("Writing Biosample sheet...")
         for entry in gds.biosamples:
-            if entry.acc in bs_w_exp:
+            if entry.acc in bs_to_write and entry.acc in [item.bs for item in keep]:
                 # write each Biosample object to file
                 alias = alias_prefix + ':' + entry.acc
                 bs.write(row, sheet_dict_bs['aliases'], alias)
@@ -401,7 +442,7 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
         row = book.sheet_by_name('BiosampleCellCulture').nrows
         print("Writing BiosampleCellCulture sheet...")
         for entry in gds.biosamples:
-            if entry.acc in bs_to_write:
+            if entry.acc in bs_to_write and entry.acc in [item.bs for item in keep]:
                 # generate aliases for BiosampleCellCulture sheet
                 bcc.write(row, sheet_dict_bcc['aliases'], alias_prefix + ':' + entry.acc + '-cellculture')
                 row += 1
@@ -416,7 +457,7 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
         row = book.sheet_by_name('FileFastq').nrows
         print("Writing FileFastq sheet...")
         for entry in gds.experiments:
-            if entry.bs in bs_to_write:
+            if entry.bs in bs_to_write and entry in keep:
                 file_dict[entry.geo] = []
                 for run in entry.runs:
                     # write information about SRA runs to file -
@@ -457,47 +498,50 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
                     else:
                         raise ValueError("Invalid value for layout. Layout must be 'single' or 'paired'.")
 
-    exp_sheets = [name for name in book.sheet_names() if name.startswith('Experiment')]
-    if len(exp_sheets) > 0:
-        # looks for each experiment type in parsed data
-        # then looks for relevant worksheet in excel template
-        # writes experiments to file if both present
-        hic_expts = [exp for exp in exp_to_write if exp.exptype.startswith('hic')
-                     or exp.exptype.startswith('dnase hic')]
-        seq_expts = [exp for exp in exp_to_write if exp.exptype in
-                     ['chipseq', 'rnaseq', 'tsaseq'] or 'sprite' in exp.exptype]
-        atac_expts = [exp for exp in exp_to_write if exp.exptype == 'atacseq']
-        rep_expts = [exp for exp in exp_to_write if exp.exptype == 'repliseq']
-        dam_expts = [exp for exp in exp_to_write if exp.exptype.startswith('damid')]
-        cap_expts = [exp for exp in exp_to_write if exp.exptype == 'capturec']
-        chia_expts = [exp for exp in exp_to_write if exp.exptype in ['chiapet', 'placseq']]
-
-        sheet_types = {'HiC': hic_expts, 'Seq': seq_expts, 'Damid': dam_expts,
-                       'Atacseq': atac_expts, 'Repliseq': rep_expts,
-                       'CaptureC': cap_expts, 'Chiapet': chia_expts}
-
-        for key in sheet_types.keys():
-            outbook = experiment_type_compare('Experiment' + key, sheet_types[key], geo,
-                                              alias_prefix, file_dict, book, outbook)
-
-        if other_organisms:
-            print('\nThe following accessions were from non-4DN organisms and were not written to file:')
-            print('\n'.join(other_organisms))
-        other = [exp for exp in gds.experiments if exp.exptype not in types]
-        if skipped:
-            print('\nThe following accessions had non-4DN experiment types and were not written to file:')
-            print('\n'.join([item.geo for item in skipped]))
-            other = [e for e in other if e.exptype not in skip]
-        if other:
-            if len(other) + len(skipped) == len(gds.experiments):
-                print("\nExperiment types of dataset could not be parsed. %s sheet not written" %
-                      ', '.join(exp_sheets))
-            else:
-                print("\nThe following accessions had experiment types that could not be parsed:")
-                for item in other:
-                    print(item.geo)
-            print("If these samples are of a single known experiment type,",
-                  "this script can be rerun using -t <experiment_type>")
+    # exp_sheets = [name for name in book.sheet_names() if name.startswith('Experiment')]
+    # if len(exp_sheets) > 0:
+    #     # looks for each experiment type in parsed data
+    #     # then looks for relevant worksheet in excel template
+    #     # writes experiments to file if both present
+    #     hic_expts = [exp for exp in exp_to_write if exp.exptype.startswith('hic') or
+    #                  exp.exptype.startswith('dnase hic')]
+    #     seq_expts = [exp for exp in exp_to_write if exp.exptype in
+    #                  ['chipseq', 'rnaseq', 'tsaseq'] or 'sprite' in exp.exptype]
+    #     atac_expts = [exp for exp in exp_to_write if exp.exptype == 'atacseq']
+    #     rep_expts = [exp for exp in exp_to_write if exp.exptype == 'repliseq']
+    #     dam_expts = [exp for exp in exp_to_write if exp.exptype.startswith('damid')]
+    #     cap_expts = [exp for exp in exp_to_write if exp.exptype == 'capturec']
+    #     chia_expts = [exp for exp in exp_to_write if exp.exptype in ['chiapet', 'placseq']]
+    #
+    #     sheet_types = {'HiC': hic_expts, 'Seq': seq_expts, 'Damid': dam_expts,
+    #                    'Atacseq': atac_expts, 'Repliseq': rep_expts,
+    #                    'CaptureC': cap_expts, 'Chiapet': chia_expts}
+    #
+    #     for key in sheet_types.keys():
+    #         outbook = experiment_type_compare('Experiment' + key, sheet_types[key], geo,
+    #                                           alias_prefix, file_dict, book, outbook)
+    #
+    #     other_organisms = [exp.geo for exp in gds.experiments if exp.bs not in bs_to_write]
+    #     if other_organisms:
+    #         print('\nThe following accessions were from non-4DN organisms and were not written to file:')
+    #         print('\n'.join(other_organisms))
+    #     other = [exp for exp in gds.experiments if exp.exptype not in types]
+    #     skip = ['bisulfiteseq', 'groseq', 'smartseq', '4cseq']
+    #     skipped = [e for e in other if e.exptype in skip]
+    #     if skipped:
+    #         print('\nThe following accessions had non-4DN experiment types and were not written to file:')
+    #         print('\n'.join([item.geo for item in skipped]))
+    #         other = [e for e in other if e.exptype not in skip]
+    #     if other:
+    #         if len(other) + len(skipped) == len(gds.experiments):
+    #             print("\nExperiment types of dataset could not be parsed. %s sheet not written" %
+    #                   ', '.join(exp_sheets))
+    #         else:
+    #             print("\nThe following accessions had experiment types that could not be parsed:")
+    #             for item in other:
+    #                 print(item.geo)
+    #         print("If these samples are of a single known experiment type,",
+    #               "this script can be rerun using -t <experiment_type>")
 
     outbook.save(outfile)
     print("\nWrote file to %s." % outfile)
