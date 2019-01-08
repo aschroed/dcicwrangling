@@ -202,7 +202,7 @@ def run_compare(capfd, exp_with_sra, template, exp_type, sheet):
     book = copy(inbook)
     exp_list = [exp for exp in [exp_with_sra] if exp.exptype == exp_type]
     acc = exp_with_sra.geo
-    geo.experiment_type_compare(sheet, exp_list, acc, 'abc', {acc: ['file.fq']}, inbook, book)
+    geo.experiment_type_compare(sheet, exp_list, acc, inbook)
     out, err = capfd.readouterr()
     return out.split('\n'), acc
 
@@ -222,6 +222,5 @@ def test_experiment_type_compare_sheet_noexp(capfd, exp_with_sra):
 def test_experiment_type_compare_sheet_exp(capfd, exp_with_sra):
     out, acc = run_compare(capfd, exp_with_sra, './test/data_files/repliseq_template.xls',
                            'repliseq', 'ExperimentRepliseq')
-    assert 'Writing ExperimentRepliseq sheet...' in out
     assert 'No Repliseq experiments parsed from {}.'.format(acc) not in out
     assert 'Repliseq experiments found in {} but no ExperimentRepliseq sheet'.format(acc) not in out
