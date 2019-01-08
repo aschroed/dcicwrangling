@@ -126,10 +126,10 @@ def handle_timeout(command): # pragma: no cover
             result = command
         except HTTPError:
             time.sleep(10)
-            result = command
             try:
                 result = command
-            except HTTPError:
+            except HTTPError as e:
+                print(e)
                 time.sleep(10)
                 result = command
     return result
@@ -166,7 +166,10 @@ def parse_gsm(gsm, experiment_type=None):
                      gsm.name, gsm.metadata['title'], bs, link)
     if link:
         # if no SRA relation is in GSM metadata, sequencing data might be in dbgap
-        exp.get_sra()  # get more metadata about sequencing runs
+        try:
+            exp.get_sra()  # get more metadata about sequencing runs
+        except Exception:
+            print(link)
     return exp
 
 
@@ -385,33 +388,35 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
                        'CaptureC': cap_expts, 'Chiapet': chia_expts}
 
         keep = []
+        keep_keys = []
         for key in sheet_types.keys():
             if experiment_type_compare('Experiment' + key, sheet_types[key], geo, book):
                 keep += sheet_types[key]
-                outbook = write_experiments('Experiment' + key, sheet_types[key],
-                                            alias_prefix, file_dict, inbook, outbook)
+                keep_keys.append(key)
+                # outbook = write_experiments('Experiment' + key, sheet_types[key],
+                #                             alias_prefix, file_dict, inbook, outbook)
 
-        other_organisms = [exp.geo for exp in gds.experiments if exp.bs not in bs_to_write]
-        if other_organisms:
-            print('\nThe following accessions were from non-4DN organisms and were not written to file:')
-            print('\n'.join(other_organisms))
-        other = [exp for exp in gds.experiments if exp.exptype not in types]
-        skip = ['bisulfiteseq', 'groseq', 'smartseq', '4cseq']
-        skipped = [e for e in other if e.exptype in skip]
-        if skipped:
-            print('\nThe following accessions had non-4DN experiment types and were not written to file:')
-            print('\n'.join([item.geo for item in skipped]))
-            other = [e for e in other if e.exptype not in skip]
-        if other:
-            if len(other) + len(skipped) == len(gds.experiments):
-                print("\nExperiment types of dataset could not be parsed. %s sheet not written" %
-                      ', '.join(exp_sheets))
-            else:
-                print("\nThe following accessions had experiment types that could not be parsed:")
-                for item in other:
-                    print(item.geo)
-            print("If these samples are of a single known experiment type,",
-                  "this script can be rerun using -t <experiment_type>")
+        # other_organisms = [exp.geo for exp in gds.experiments if exp.bs not in bs_to_write]
+        # if other_organisms:
+        #     print('\nThe following accessions were from non-4DN organisms and were not written to file:')
+        #     print('\n'.join(other_organisms))
+        # other = [exp for exp in gds.experiments if exp.exptype not in types]
+        # skip = ['bisulfiteseq', 'groseq', 'smartseq', '4cseq']
+        # skipped = [e for e in other if e.exptype in skip]
+        # if skipped:
+        #     print('\nThe following accessions had non-4DN experiment types and were not written to file:')
+        #     print('\n'.join([item.geo for item in skipped]))
+        #     other = [e for e in other if e.exptype not in skip]
+        # if other:
+        #     if len(other) + len(skipped) == len(gds.experiments):
+        #         print("\nExperiment types of dataset could not be parsed. %s sheet not written" %
+        #               ', '.join(exp_sheets))
+        #     else:
+        #         print("\nThe following accessions had experiment types that could not be parsed:")
+        #         for item in other:
+        #             print(item.geo)
+        #     print("If these samples are of a single known experiment type,",
+        #           "this script can be rerun using -t <experiment_type>")
 
     if 'Biosample' in book.sheet_names():
         sheet_dict_bs = {}
@@ -498,6 +503,11 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
                     else:
                         raise ValueError("Invalid value for layout. Layout must be 'single' or 'paired'.")
 
+    if len(exp_sheets) > 0:
+        for key in keep_keys:
+            outbook = write_experiments('Experiment' + key, sheet_types[key],
+                                        alias_prefix, file_dict, book, outbook)
+
     # exp_sheets = [name for name in book.sheet_names() if name.startswith('Experiment')]
     # if len(exp_sheets) > 0:
     #     # looks for each experiment type in parsed data
@@ -521,27 +531,27 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
     #         outbook = experiment_type_compare('Experiment' + key, sheet_types[key], geo,
     #                                           alias_prefix, file_dict, book, outbook)
     #
-    #     other_organisms = [exp.geo for exp in gds.experiments if exp.bs not in bs_to_write]
-    #     if other_organisms:
-    #         print('\nThe following accessions were from non-4DN organisms and were not written to file:')
-    #         print('\n'.join(other_organisms))
-    #     other = [exp for exp in gds.experiments if exp.exptype not in types]
-    #     skip = ['bisulfiteseq', 'groseq', 'smartseq', '4cseq']
-    #     skipped = [e for e in other if e.exptype in skip]
-    #     if skipped:
-    #         print('\nThe following accessions had non-4DN experiment types and were not written to file:')
-    #         print('\n'.join([item.geo for item in skipped]))
-    #         other = [e for e in other if e.exptype not in skip]
-    #     if other:
-    #         if len(other) + len(skipped) == len(gds.experiments):
-    #             print("\nExperiment types of dataset could not be parsed. %s sheet not written" %
-    #                   ', '.join(exp_sheets))
-    #         else:
-    #             print("\nThe following accessions had experiment types that could not be parsed:")
-    #             for item in other:
-    #                 print(item.geo)
-    #         print("If these samples are of a single known experiment type,",
-    #               "this script can be rerun using -t <experiment_type>")
+        other_organisms = [exp.geo for exp in gds.experiments if exp.bs not in bs_to_write]
+        if other_organisms:
+            print('\nThe following accessions were from non-4DN organisms and were not written to file:')
+            print('\n'.join(other_organisms))
+        other = [exp for exp in gds.experiments if exp.exptype not in types]
+        skip = ['bisulfiteseq', 'groseq', 'smartseq', '4cseq']
+        skipped = [e for e in other if e.exptype in skip]
+        if skipped:
+            print('\nThe following accessions had non-4DN experiment types and were not written to file:')
+            print('\n'.join([item.geo for item in skipped]))
+            other = [e for e in other if e.exptype not in skip]
+        if other:
+            if len(other) + len(skipped) == len(gds.experiments):
+                print("\nExperiment types of dataset could not be parsed. %s sheet not written" %
+                      ', '.join(exp_sheets))
+            else:
+                print("\nThe following accessions had experiment types that could not be parsed:")
+                for item in other:
+                    print(item.geo)
+            print("If these samples are of a single known experiment type,",
+                  "this script can be rerun using -t <experiment_type>")
 
     outbook.save(outfile)
     print("\nWrote file to %s." % outfile)
