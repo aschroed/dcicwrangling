@@ -63,6 +63,16 @@ def test_parse_gsm_dbgap(mocker):
     assert not exp.length
 
 
+def test_experiment_bad_sra(mocker, capfd):
+    with open('./test/data_files/SRX0000000.xml', 'r') as srx:
+        with mocker.patch('Bio.Entrez.efetch', return_value=srx):
+            exp = geo.Experiment('hic', 'Illumina HiSeq 2500', 'GSM1234567', 'title',
+                             'SAMN05449633', 'SRX0000000')
+            exp.get_sra()
+    out, err = capfd.readouterr()
+    assert "Couldn't parse" in out
+
+
 def gsm_soft_to_exp_obj(mocker, gsm_file, exp_type=None):
     with mocker.patch('scripts.geo2fdn.Experiment.get_sra'):
         gsm = GEOparse.get_GEO(filepath=gsm_file)
