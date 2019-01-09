@@ -12,7 +12,7 @@ import xml.etree.ElementTree as ET
 import xlrd
 from xlutils.copy import copy
 from Bio import Entrez
-from Bio._py3k import HTTPError as _HTTPError
+# from Bio._py3k import HTTPError as _HTTPError
 from urllib.error import HTTPError
 import GEOparse
 
@@ -56,6 +56,7 @@ class Experiment:
 
     def get_sra(self):
         # look up SRA record to fill out more attributes
+        print('Fetching SRA Record...')
         handle = handle_timeout(Entrez.efetch(db="sra", id=self.link))
         try:
             record = ET.fromstring(handle.readlines()[2])
@@ -122,11 +123,11 @@ def handle_timeout(command): # pragma: no cover
     try:
         result = command
     except HTTPError:
-        time.sleep(1)
+        time.sleep(3)
         try:
             result = command
         except HTTPError:
-            time.sleep(5)
+            time.sleep(10)
             try:
                 result = command
             except HTTPError as e:
@@ -539,6 +540,7 @@ def main(types=valid_types, descr=description, epilog=epilog):  # pragma: no cov
         Entrez.email = args.email
     if args.apikey:
         Entrez.api_key = args.apikey
+    print(Entrez.api_key)
     modify_xls(args.geo_accession, args.infile, out_file, args.alias, experiment_type=args.type)
 
 
