@@ -3,7 +3,7 @@ from dcicutils import s3Utils
 from datetime import datetime
 import json
 from IPython.core.display import display, HTML
-
+from operator import itemgetter
 
 # Reference Files
 bwa_index = {"human": "4DNFIZQZ39L9",
@@ -14,14 +14,14 @@ bwa_index = {"human": "4DNFIZQZ39L9",
 chr_size = {"human": "4DNFI823LSII",
             "mouse": "4DNFI3UBJ3HZ",
             "fruit-fly": '4DNFIBEEN92C',
-            "chicken": "4DNFI8MHOUP6"}
+            "chicken": "4DNFIQFZW4DX"}
 
 re_nz = {"human": {'MboI': '/files-reference/4DNFI823L812/',
-                   'DpnII': '/files-reference/4DNFIBNAPW30/',
+                   'DpnII': '/files-reference/4DNFIBNAPW3O/',
                    'HindIII': '/files-reference/4DNFI823MBKE/',
-                   'NcoI': '/files-reference/4DNFI3HVU20D/'
+                   'NcoI': '/files-reference/4DNFI3HVU2OD/'
                    },
-         "mouse": {'MboI': '/files-reference/4DNFI0NK4G14/',
+         "mouse": {'MboI': '/files-reference/4DNFIONK4G14/',
                    'DpnII': '/files-reference/4DNFI3HVC1SE/',
                    "HindIII": '/files-reference/4DNFI6V32T9J/'
                    },
@@ -120,13 +120,13 @@ def run_json(input_files, env, wf_info, run_name, tag):
                   "app_name": wf_info['wf_name'],
                   "wfr_meta": wf_info['wfr_meta'],
                   "parameters": wf_info['parameters'],
-                  "config": {"ebs_type": "io1",
+                  "config": {"ebs_type": "gp2",
                              "json_bucket": "4dn-aws-pipeline-run-json",
-                             "ebs_iops": 500,
-                             "shutdown_min": 30,
+                             "ebs_iops": "",
+                             "shutdown_min": "now",
                              "copy_to_s3": True,
                              "launch_instance": True,
-                             "password": "dragonfly",
+                             "password": "",
                              "log_bucket": "tibanna-output",
                              "key_name": "4dn-encode"
                              },
@@ -135,6 +135,10 @@ def run_json(input_files, env, wf_info, run_name, tag):
                                "run_id": run_name},
                   "tag": tag
                   }
+    # overwrite or add custom fields
+    for a_key in ['config', 'custom_pf_fields', 'overwrite_input_extra']:
+        if a_key in wf_info:
+            input_json[a_key] = wf_info[a_key]
     return input_json
 
 
@@ -256,7 +260,10 @@ def get_wfr_out(file_id, wfr_name, auth, md_qc=False, run=100):
             wfr_type, time_info = a_wfr['display_title'].split(' run ')
             # user submitted ones use run on insteand of run
             time_info = time_info.strip('on').strip()
-            wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S.%f')
+            try:
+                wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S.%f')
+            except ValueError:
+                wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S')
             a_wfr['run_hours'] = (datetime.utcnow() - wfr_time).total_seconds() / 3600
             a_wfr['run_type'] = wfr_type.strip()
     # sort wfrs
@@ -359,7 +366,7 @@ def add_preliminary_processed_files(item_id, list_pc, auth, run_type="hic"):
 def release_files(set_id, list_items, auth):
     item_status = ff_utils.get_metadata(set_id, key=auth)['status']
     # bring files to same status as experiments and sets
-    if item_status in ['released', 'released to project']:
+    if item_status in ['released', 'released to project', 'pre-release']:
         for a_file in list_items:
             it_resp = ff_utils.get_metadata(a_file, key=auth)
             workflow = it_resp.get('workflow_run_outputs')
@@ -370,14 +377,15 @@ def release_files(set_id, list_items, auth):
 
 
 def run_missing_wfr(wf_info, input_files, run_name, auth, env, tag='0.2.5'):
+
     all_inputs = []
     for arg, files in input_files.items():
         inp = extract_file_info(files, arg, env)
         all_inputs.append(inp)
+    # small tweak to get bg2bw working
+    all_inputs = sorted(all_inputs, key=itemgetter('workflow_argument_name'))
 
     input_json = run_json(all_inputs, env, wf_info, run_name, tag)
-    if wf_info.get("custom_pf_fields"):
-        input_json["custom_pf_fields"] = wf_info['custom_pf_fields']
     e = ff_utils.post_metadata(input_json, 'WorkflowRun/run', key=auth)
 
     url = json.loads(e['input'])['_tibanna']['url']

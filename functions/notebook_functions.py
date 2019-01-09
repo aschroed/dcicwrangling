@@ -39,24 +39,27 @@ def get_key(keyname=None, keyfile='keypairs.json'):
     return my_key
 
 
-def get_query_or_linked(con_key, query="", linked="", linked_frame="object"):
+def get_query_or_linked(con_key, query="", linked="", linked_frame="object", ignore_field=[]):
     schema_name = get_schema_names(con_key)
     if query:
         items = ff_utils.search_metadata(query, key=con_key)
         store = {}
         # make a object type dictionary with raw jsons
-        for an_item in items:
-            obj_type = an_item['@type'][0]
+        for an_it in items:
+            add_on_s = 'frame=' + linked_frame
+            an_item = ff_utils.get_metadata(an_it['uuid'], key=con_key, add_on=add_on_s)
+
+            obj_type = an_it['@type'][0]
             obj_key = schema_name[obj_type]
             if obj_key not in store:
                 store[obj_key] = []
             store[obj_key].append(an_item)
     elif linked:
-        store, uuids = record_object_es(linked, con_key, schema_name, store_frame=linked_frame)
+        store, uuids = record_object_es(linked, con_key, schema_name, store_frame=linked_frame, ignore_field=ignore_field)
     return store
 
 
-def append_items_to_xls(input_xls, add_items, schema_name):
+def append_items_to_xls(input_xls, add_items, schema_name, comment=True):
     output_file_name = "_with_items.".join(input_xls.split('.'))
     bookread = xlrd.open_workbook(input_xls)
     book_w = xlwt.Workbook()
@@ -81,7 +84,7 @@ def append_items_to_xls(input_xls, add_items, schema_name):
         # get items to add
         items_to_add = add_items.get(schema_name[sheet])
         if items_to_add:
-            formatted_items = format_items(items_to_add, first_row_values)
+            formatted_items = format_items(items_to_add, first_row_values, comment)
             for i, item in enumerate(formatted_items):
                 for ix in range(len(first_row_values)):
                     write_column_index_II = write_column_index + 1 + i
@@ -99,7 +102,7 @@ def append_items_to_xls(input_xls, add_items, schema_name):
     return
 
 
-def format_items(items_list, field_list):
+def format_items(items_list, field_list, comment):
     """For a given sheet, get all released items"""
     all_items = []
     # filter for fields that exist on the excel sheet
@@ -110,7 +113,10 @@ def format_items(items_list, field_list):
             field = field.strip('*')
             # add # to skip existing items during submission
             if field == "#Field Name:":
-                item_info.append("#")
+                if comment:
+                    item_info.append("#")
+                else:
+                    item_info.append("")
             # the attachment field returns a dictionary
             elif field == "attachment":
                     item_info.append("")
@@ -302,8 +308,15 @@ def record_object_es(uuid_list, con_key, schema_name, store_frame='raw', add_pc_
 
             #get linked items from es
             for key in ES_item['links']:
+                skip = False
                 # if link is from ignored_field, skip
                 if key in ignore_field:
+                    skip = True
+                # sub embedded objects have a different naming str:
+                for ignored in ignore_field:
+                    if key.startswith(ignored + '~'):
+                        skip = True
+                if skip:
                     continue
                 uuids_to_check.extend(ES_item['links'][key])
 
@@ -353,7 +366,11 @@ def get_wfr_report(wfrs, con_key):
             print('ProblematicCase')
             print(wfr_data['uuid'], wfr_data.get('display_title', 'no title'))
             continue
-        wfr_time = datetime.strptime(wfr_data['date_created'], '%Y-%m-%dT%H:%M:%S.%f+00:00')
+        try:
+            wfr_time = datetime.strptime(wfr_data['date_created'], '%Y-%m-%dT%H:%M:%S.%f+00:00')
+        except ValueError:  # if it was exact second, no fraction is in value
+            print("wfr time bingo", wfr_uuid)
+            wfr_time = datetime.strptime(wfr_data['date_created'], '%Y-%m-%dT%H:%M:%S+00:00')
         run_hours = (datetime.utcnow() - wfr_time).total_seconds() / 3600
         wfr_name_list = wfr_data['title'].split(' run ')[0].split('/')
         wfr_name = wfr_name_list[0].strip()
@@ -395,6 +412,27 @@ def printTable(myDict, colList=None):
         print(formatStr.format(*item))
 
 
+def clean_for_reupload(file_acc, key, clean_release_dates=False, delete_runs=True):
+    """Rare cases we want to reupload the file, and this needs some cleanupself.
+    If you want to delete release dates too, set 'clean_release_dates' to True"""
+    resp = ff_utils.get_metadata(file_acc, key=key)
+    clean_fields = ['extra_files', 'md5sum', 'content_md5sum', 'file_size', 'filename', 'quality_metric']
+    if clean_release_dates:
+        clean_fields.extend(['public_release', 'project_release'])
+    if delete_runs:
+        runs = resp.get('workflow_run_inputs', [])
+        if runs:
+            for a_run in runs:
+                ff_utils.patch_metadata({'status': 'deleted'}, obj_id=a_run['uuid'], key=key)
+    if resp.get('quality_metric'):
+        ff_utils.patch_metadata({'status': 'deleted'}, obj_id=resp['quality_metric']['uuid'], key=key)
+    del_f = []
+    for field in clean_fields:
+        if field in resp:
+            del_f.append(field)
+    del_add_on = 'delete_fields=' + ','.join(del_f)
+    ff_utils.patch_metadata({'status': 'uploading'}, obj_id=resp['uuid'], key=key, add_on=del_add_on)
+
 # get order from loadxl.py in fourfront
 ORDER = ['user', 'award', 'lab', 'static_section', 'page', 'ontology', 'ontology_term', 'badge', 'organism', 'file_format',
          'genomic_region', 'target', 'imaging_path', 'publication', 'publication_tracking', 'document',
@@ -403,7 +441,7 @@ ORDER = ['user', 'award', 'lab', 'static_section', 'page', 'ontology', 'ontology
          'treatment_agent', 'biosample',
          'quality_metric_fastqc', 'quality_metric_bamqc', 'quality_metric_pairsqc', 'quality_metric_dedupqc_repliseq',
          'microscope_setting_d1', 'microscope_setting_d2', 'microscope_setting_a1', 'microscope_setting_a2',
-         'file_fastq', 'file_fasta', 'file_processed', 'file_reference', 'file_calibration',
+         'file_fastq', 'file_fasta', 'file_vistrack', 'file_processed', 'file_reference', 'file_calibration',
          'file_microscopy', 'file_set', 'file_set_calibration', 'file_set_microscope_qc',
          'experiment_hi_c', 'experiment_capture_c', 'experiment_repliseq', 'experiment_atacseq', 'experiment_chiapet',
          'experiment_damid', 'experiment_seq', 'experiment_tsaseq', 'experiment_mic',

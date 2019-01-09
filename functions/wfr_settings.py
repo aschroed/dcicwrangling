@@ -1,9 +1,9 @@
 # Step Settings
-def step_settings(step_name, my_organism, attribution):
+def step_settings(step_name, my_organism, attribution, at=True):
     """Return a setting dict for given step, and modify variables in
     output files; genome assembly, file_type, desc, contributing lab."""
     genome = ""
-    mapper = {'human': 'GRCh38', 'mouse': 'GRCm38', 'fruit-fly': 'dm6'}
+    mapper = {'human': 'GRCh38', 'mouse': 'GRCm38', 'fruit-fly': 'dm6', 'chicken': 'galGal5'}
     genome = mapper.get(my_organism)
 
     out_n = "This is an output file of the Hi-C processing pipeline"
@@ -127,7 +127,7 @@ def step_settings(step_name, my_organism, attribution):
         }},
         {
         'wf_name': 'repliseq-parta',
-        'wf_uuid': '146da22a-502d-4500-bf57-a7cf0b4b2364',
+        'wf_uuid': '4459a4d8-1bd8-4b6a-b2cc-2506f4270a34',
         "parameters": {"nthreads": 4, "memperthread": "2G"},
         'custom_pf_fields': {
             'filtered_sorted_deduped_bam': {
@@ -138,7 +138,86 @@ def step_settings(step_name, my_organism, attribution):
                 'genome_assembly': genome,
                 'file_type': 'counts',
                 'description': 'read counts per 5 kb bin, unfiltered, unnormalized'}
-        }}]
+        }},
+        {
+        "wf_name": "bedGraphToBigWig",
+        "wf_uuid": "667b14a7-a47e-4857-adf1-12a6393c4b8e",
+        "parameters": {},
+        "config": {
+            "instance_type": "t2.micro",
+            "EBS_optimized": False,
+            "ebs_size": 10,
+            "ebs_type": "gp2",
+            "json_bucket": "4dn-aws-pipeline-run-json",
+            "ebs_iops": "",
+            "shutdown_min": "now",
+            "password": "",
+            "log_bucket": "tibanna-output",
+            "key_name": "4dn-encode"
+        },
+        "overwrite_input_extra": False
+    },
+        {"wf_name": "encode-chipseq",
+         "wf_uuid": "5b44ce1b-0347-40a6-bc9c-f39fb5d7bce3",
+         "parameters": {},
+         "config": {
+             "ebs_size": 0,
+             "ebs_type": "gp2",
+             "json_bucket": "4dn-aws-pipeline-run-json",
+             "EBS_optimized": False,
+             "ebs_iops": "",
+             "shutdown_min": "now",
+             "instance_type": "",
+             "key_name": "4dn-encode",
+             "password": "",
+             "log_bucket": "tibanna-output"
+         },
+         'custom_pf_fields': {
+             'chip.sig_fc': {
+                 'genome_assembly': genome,
+                 'file_type': 'intensity values',
+                 'description': 'ChIP-seq signal fold change over control input'},
+             'chip.peak_calls': {
+                 'genome_assembly': genome,
+                 'file_type': 'peaks',
+                 'description': 'ChIP-seq peak calls'},
+             'chip.qc_json': {
+                 'genome_assembly': genome,
+                 'file_type': 'qc',
+                 'description': 'ChIP-seq QC json'}
+         }
+         },
+        {"wf_name": "encode-atacseq",
+         "wf_uuid": "6fb021e9-858c-4561-8ce1-e0adc673e0b5",
+         "parameters": {},
+         "config": {
+             "ebs_size": 0,
+             "ebs_type": "gp2",
+             "json_bucket": "4dn-aws-pipeline-run-json",
+             "EBS_optimized": True,
+             "ebs_iops": "",
+             "shutdown_min": "now",
+             "instance_type": "c4.4xlarge",
+             "key_name": "4dn-encode",
+             "password": "",
+             "log_bucket": "tibanna-output"
+         },
+         'custom_pf_fields': {
+             'atac.sig_fc': {
+                 'genome_assembly': genome,
+                 'file_type': 'intensity values',
+                 'description': 'ATAC-seq signal fold change over control input'},
+             'atac.peak_calls': {
+                 'genome_assembly': genome,
+                 'file_type': 'peaks',
+                 'description': 'ATAC-seq peak calls'},
+             'atac.qc_json': {
+                 'genome_assembly': genome,
+                 'file_type': 'qc',
+                 'description': 'ATAC-seq QC json'}
+         }
+         }
+    ]
 
     template = [i for i in wf_dict if i['wf_name'] == step_name][0]
 
