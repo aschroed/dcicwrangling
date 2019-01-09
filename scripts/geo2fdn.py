@@ -338,7 +338,6 @@ def experiment_type_compare(sheetname, expt_list, geo, inbook):
     expt_name = sheetname[10:] if sheetname[10:] not in expt_dict.keys() else expt_dict[sheetname[10:]]
     type_name = sheetname[10:] if sheetname != 'ExperimentSeq' else '<experiment_type>'
     if sheetname in inbook.sheet_names() and expt_list:
-        # outbook = write_experiments(sheetname, expt_list, alias_prefix, file_dict, inbook, outbook)
         return True
     elif sheetname in inbook.sheet_names() and not expt_list:
         print("\nNo {} experiments parsed from {}.".format(expt_name, geo))
@@ -394,30 +393,6 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
             if experiment_type_compare('Experiment' + key, sheet_types[key], geo, book):
                 keep += sheet_types[key]
                 keep_keys.append(key)
-                # outbook = write_experiments('Experiment' + key, sheet_types[key],
-                #                             alias_prefix, file_dict, inbook, outbook)
-
-        # other_organisms = [exp.geo for exp in gds.experiments if exp.bs not in bs_to_write]
-        # if other_organisms:
-        #     print('\nThe following accessions were from non-4DN organisms and were not written to file:')
-        #     print('\n'.join(other_organisms))
-        # other = [exp for exp in gds.experiments if exp.exptype not in types]
-        # skip = ['bisulfiteseq', 'groseq', 'smartseq', '4cseq']
-        # skipped = [e for e in other if e.exptype in skip]
-        # if skipped:
-        #     print('\nThe following accessions had non-4DN experiment types and were not written to file:')
-        #     print('\n'.join([item.geo for item in skipped]))
-        #     other = [e for e in other if e.exptype not in skip]
-        # if other:
-        #     if len(other) + len(skipped) == len(gds.experiments):
-        #         print("\nExperiment types of dataset could not be parsed. %s sheet not written" %
-        #               ', '.join(exp_sheets))
-        #     else:
-        #         print("\nThe following accessions had experiment types that could not be parsed:")
-        #         for item in other:
-        #             print(item.geo)
-        #     print("If these samples are of a single known experiment type,",
-        #           "this script can be rerun using -t <experiment_type>")
 
     if 'Biosample' in book.sheet_names():
         sheet_dict_bs = {}
@@ -435,7 +410,6 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
                 bs.write(row, sheet_dict_bs['description'], entry.description)
                 if 'BiosampleCellCulture' in book.sheet_names():
                     bs.write(row, sheet_dict_bs['cell_culture_details'], alias + '-cellculture')
-                # bs.write(row, sheet_dict_bs['treatments'], entry.treatments)
                 bs.write(row, sheet_dict_bs['dbxrefs'], 'BioSample:' + entry.acc)
                 row += 1
 
@@ -473,7 +447,6 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
                         fq2 = alias_prefix + ':' + run + '_2_fq'
                         file_dict[entry.geo] += [fq1, fq2]
                         fq.write(row, sheet_dict_fq['aliases'], fq1)
-                        # fq.write(row, sheet_dict_fq['description'], entry.description)
                         fq.write(row, sheet_dict_fq['*file_format'], 'fastq')
                         fq.write(row, sheet_dict_fq['paired_end'], '1')
                         fq.write(row, sheet_dict_fq['related_files.relationship_type'], 'paired with')
@@ -482,11 +455,8 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
                         fq.write(row, sheet_dict_fq['instrument'], entry.instr)
                         fq.write(row, sheet_dict_fq['dbxrefs'], 'SRA:' + run)
                         fq.write(row + 1, sheet_dict_fq['aliases'], fq2)
-                        # fq.write(row + 1, sheet_dict_fq['description'], entry.description)
                         fq.write(row + 1, sheet_dict_fq['*file_format'], 'fastq')
                         fq.write(row + 1, sheet_dict_fq['paired_end'], '2')
-                        # fq.write(row + 1, sheet_dict_fq['related_files.relationship_type'], 'paired with')
-                        # fq.write(row + 1, sheet_dict_fq['related_files.file'], fq1)
                         fq.write(row + 1, sheet_dict_fq['read_length'], entry.length)
                         fq.write(row + 1, sheet_dict_fq['instrument'], entry.instr)
                         fq.write(row + 1, sheet_dict_fq['dbxrefs'], 'SRA:' + run)
@@ -495,7 +465,6 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
                         fq_0 = alias_prefix + ':' + run + '_fq'
                         file_dict[entry.geo] += [fq_0]
                         fq.write(row, sheet_dict_fq['aliases'], fq_0)
-                        # fq.write(row, sheet_dict_fq['description'], entry.description)
                         fq.write(row, sheet_dict_fq['*file_format'], 'fastq')
                         fq.write(row, sheet_dict_fq['read_length'], entry.length)
                         fq.write(row, sheet_dict_fq['instrument'], entry.instr)
@@ -509,29 +478,6 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
             outbook = write_experiments('Experiment' + key, sheet_types[key],
                                         alias_prefix, file_dict, book, outbook)
 
-    # exp_sheets = [name for name in book.sheet_names() if name.startswith('Experiment')]
-    # if len(exp_sheets) > 0:
-    #     # looks for each experiment type in parsed data
-    #     # then looks for relevant worksheet in excel template
-    #     # writes experiments to file if both present
-    #     hic_expts = [exp for exp in exp_to_write if exp.exptype.startswith('hic') or
-    #                  exp.exptype.startswith('dnase hic')]
-    #     seq_expts = [exp for exp in exp_to_write if exp.exptype in
-    #                  ['chipseq', 'rnaseq', 'tsaseq'] or 'sprite' in exp.exptype]
-    #     atac_expts = [exp for exp in exp_to_write if exp.exptype == 'atacseq']
-    #     rep_expts = [exp for exp in exp_to_write if exp.exptype == 'repliseq']
-    #     dam_expts = [exp for exp in exp_to_write if exp.exptype.startswith('damid')]
-    #     cap_expts = [exp for exp in exp_to_write if exp.exptype == 'capturec']
-    #     chia_expts = [exp for exp in exp_to_write if exp.exptype in ['chiapet', 'placseq']]
-    #
-    #     sheet_types = {'HiC': hic_expts, 'Seq': seq_expts, 'Damid': dam_expts,
-    #                    'Atacseq': atac_expts, 'Repliseq': rep_expts,
-    #                    'CaptureC': cap_expts, 'Chiapet': chia_expts}
-    #
-    #     for key in sheet_types.keys():
-    #         outbook = experiment_type_compare('Experiment' + key, sheet_types[key], geo,
-    #                                           alias_prefix, file_dict, book, outbook)
-    #
         other_organisms = [exp.geo for exp in gds.experiments if exp.bs not in bs_to_write]
         if other_organisms:
             print('\nThe following accessions were from non-4DN organisms and were not written to file:')
@@ -592,5 +538,5 @@ def main(types=valid_types, descr=description, epilog=epilog):  # pragma: no cov
     modify_xls(args.geo_accession, args.infile, out_file, args.alias, experiment_type=args.type)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     main()
