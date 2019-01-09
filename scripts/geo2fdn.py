@@ -118,15 +118,15 @@ def handle_timeout(command): # pragma: no cover
     '''
     To retry commands if the server connection times out.
     '''
-    time.sleep(5)
+    time.sleep(0.5)
     try:
         result = command
     except HTTPError:
-        time.sleep(3)
+        time.sleep(1)
         try:
             result = command
         except HTTPError:
-            time.sleep(10)
+            time.sleep(5)
             try:
                 result = command
             except HTTPError as e:
@@ -518,6 +518,8 @@ def main(types=valid_types, descr=description, epilog=epilog):  # pragma: no cov
                         action="store", default="4dn-dcic-lab")
     parser.add_argument('-e', '--email', help="Email address to use NCBI Entrez",
                         action="store", default="")
+    parser.add_argument('-k', '--apikey', help="API Key for NCBI Entrez",
+                        action="store", default="")
     parser.add_argument('-t', '--type', help="Optional: type of experiment in series. \
                         By default experiment type is parsed from SRA records, but \
                         this option is useful when parsing isn't straightforward. \
@@ -535,6 +537,8 @@ def main(types=valid_types, descr=description, epilog=epilog):  # pragma: no cov
         Entrez.email = input('Enter email address to use NCBI Entrez: ')
     else:
         Entrez.email = args.email
+    if args.apikey:
+        Entrez.api_key = args.apikey
     modify_xls(args.geo_accession, args.infile, out_file, args.alias, experiment_type=args.type)
 
 
