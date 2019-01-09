@@ -110,7 +110,8 @@ type_dict = {'chipseq': 'ChIP-seq', 'tsaseq': 'TSA-seq', 'rnaseq': 'RNA-seq',
              'atacseq': 'ATAC-seq', 'capturec': 'capture Hi-C', 'damid': 'DAM-ID seq',
              'damidseq': 'DAM-ID seq', 'chiapet': 'ChIA-PET', 'placseq': 'PLAC-seq',
              'dnase hic': 'DNase Hi-C', 'dna sprite': 'DNA SPRITE',
-             'dnarna sprite': 'RNA-DNA SPRITE', 'rnadna sprite': 'RNA-DNA SPRITE'}
+             'dnarna sprite': 'RNA-DNA SPRITE', 'rnadna sprite': 'RNA-DNA SPRITE',
+             'repliseq': 'Repli-seq'}
 
 
 def handle_timeout(command): # pragma: no cover
