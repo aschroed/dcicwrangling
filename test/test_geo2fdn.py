@@ -27,6 +27,14 @@ def exp_with_sra(mocker, srx_file):
 
 
 @pytest.fixture
+def exp_with_sra_pe(mocker):
+    with open('./test/data_files/SRX1839065.xml', 'r') as srx:
+        with mocker.patch('Bio.Entrez.efetch', return_value=srx):
+            gsm = GEOparse.get_GEO(filepath='./test/data_files/GSM2198225.txt')
+            return geo.parse_gsm(gsm)
+
+
+@pytest.fixture
 def hidden_sra(mocker):
     with open('./test/data_files/SRX4191023.xml', 'r') as srx:
         with mocker.patch('Bio.Entrez.efetch', return_value=srx):
@@ -180,6 +188,39 @@ def test_modify_xls(mocker, bs_obj, exp_with_sra):
     assert outfile_dict['ExperimentRepliseq']['description'][0]
     assert outfile_dict['ExperimentRepliseq']['files'][0]
     assert outfile_dict['ExperimentRepliseq']['*biosample'][0]
+
+
+def test_modify_xls_pe(mocker, bs_obj, exp_with_sra_pe):
+    mocker.patch('scripts.geo2fdn.parse_gsm', return_value=exp_with_sra_pe)
+    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
+    # gds = geo.get_geo_metadata('GSM2715320', filepath='./test/data_files/GSM2715320.txt')
+    geo.modify_xls('./test/data_files/GSM2198225.txt',
+                   './test/data_files/capturec_seq_template.xls',
+                   'out_pe.xls', 'abc')
+    book = xlrd.open_workbook('out_pe.xls')
+    outfile_dict = create_xls_dict(book)
+    os.remove('out_pe.xls')
+    # assert outfile_dict['Biosample']['aliases'][0].startswith('abc:')
+    # assert outfile_dict['Biosample']['dbxrefs'][0].startswith('BioSample:SAMN')
+    # # assert BiosampleCellCulture has alias
+    # assert (outfile_dict['BiosampleCellCulture']['aliases'][0].startswith('abc:')
+    #         and outfile_dict['BiosampleCellCulture']['aliases'][0].endswith('-cellculture'))
+    # # assert BiosampleCellCulture alias is in Biosample sheet
+    # assert (outfile_dict['Biosample']['cell_culture_details'][0].startswith('abc:')
+    #         and outfile_dict['Biosample']['cell_culture_details'][0].endswith('-cellculture'))
+    # FileFastq assert(s)
+    assert outfile_dict['FileFastq']['*file_format'][0] == 'fastq'
+    assert outfile_dict['FileFastq']['paired_end'][0]
+    assert (outfile_dict['FileFastq']['related_files.relationship_type'][0]
+            and outfile_dict['FileFastq']['related_files.file'][0])
+    assert outfile_dict['FileFastq']['read_length'][0]
+    assert outfile_dict['FileFastq']['instrument'][0]
+    assert outfile_dict['FileFastq']['dbxrefs'][0].startswith('SRA:SRR')
+    # ExperimentRepliseq assert(s)
+    # assert outfile_dict['ExperimentRepliseq']['dbxrefs'][0].startswith('GEO:GSM')
+    # assert outfile_dict['ExperimentRepliseq']['description'][0]
+    # assert outfile_dict['ExperimentRepliseq']['files'][0]
+    # assert outfile_dict['ExperimentRepliseq']['*biosample'][0]
 
 
 def test_modify_xls_some_unparsable_types(mocker, capfd, bs_obj):
