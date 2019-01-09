@@ -73,8 +73,8 @@ def test_parse_gsm_dbgap(mocker):
 def test_experiment_bad_sra(mocker, capfd):
     with open('./test/data_files/SRX0000000.xml', 'r') as srx:
         with mocker.patch('Bio.Entrez.efetch', return_value=srx):
-            exp = geo.Experiment('hic', 'Illumina HiSeq 2500', 'GSM1234567', 'title',
-                             'SAMN05449633', 'SRX0000000')
+            exp = geo.Experiment('hic', 'Illumina HiSeq 2500', 'GSM1234567',
+                                 'title', 'SAMN05449633', 'SRX0000000')
             exp.get_sra()
     out, err = capfd.readouterr()
     assert "Couldn't parse" in out
@@ -240,9 +240,9 @@ def test_modify_xls_some_unparsable_types(mocker, capfd, bs_obj):
     assert 'HiC experiments found in ./test/data_files/GSE87585_family.soft.gz but no ExperimentHiC sheet' in lines
 
 
-def test_modify_xls_set_experiment_type(mocker, capfd):
+def test_modify_xls_set_experiment_type(mocker, capfd, bs_obj):
     mocker.patch('scripts.geo2fdn.Experiment.get_sra')
-    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj(mocker))
+    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
     geo.modify_xls('./test/data_files/GSE87585_family.soft.gz',
                    './test/data_files/capturec_seq_template.xls', 'out3.xls', 'abc',
                    experiment_type='CaptureC')
@@ -255,9 +255,9 @@ def test_modify_xls_set_experiment_type(mocker, capfd):
     assert 'The following accessions had experiment types that could not be parsed:' not in out.split('\n')
 
 
-def test_modify_xls_no_sheets(mocker):
+def test_modify_xls_no_sheets(mocker, bs_obj):
     mocker.patch('scripts.geo2fdn.Experiment.get_sra')
-    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj(mocker))
+    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
     geo.modify_xls('./test/data_files/GSE87585_family.soft.gz',
                    './test/data_files/no_template.xls', 'out4.xls', 'abc',
                    experiment_type='CaptureC')
@@ -269,7 +269,6 @@ def test_modify_xls_no_sheets(mocker):
 
 def run_compare(capfd, exp_with_sra, template, exp_type, sheet):
     inbook = xlrd.open_workbook(template)
-    book = copy(inbook)
     exp_list = [exp for exp in [exp_with_sra] if exp.exptype == exp_type]
     acc = exp_with_sra.geo
     geo.experiment_type_compare(sheet, exp_list, acc, inbook)

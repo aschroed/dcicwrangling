@@ -375,8 +375,8 @@ def modify_xls(geo, infile, outfile, alias_prefix, experiment_type=None, types=v
         # looks for each experiment type in parsed data
         # then looks for relevant worksheet in excel template
         # writes experiments to file if both present
-        hic_expts = [exp for exp in exp_to_write if exp.exptype.startswith('hic') or
-                     exp.exptype.startswith('dnase hic')]
+        hic_expts = [exp for exp in exp_to_write if exp.exptype.startswith('hic')
+                     or exp.exptype.startswith('dnase hic')]
         seq_expts = [exp for exp in exp_to_write if exp.exptype in
                      ['chipseq', 'rnaseq', 'tsaseq'] or 'sprite' in exp.exptype]
         atac_expts = [exp for exp in exp_to_write if exp.exptype == 'atacseq']
