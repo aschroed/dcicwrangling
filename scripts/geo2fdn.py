@@ -10,6 +10,7 @@ import time
 from statistics import mean
 import xml.etree.ElementTree as ET
 import xlrd
+from xlutils.copy import copy
 from Bio import Entrez
 from urllib.error import HTTPError
 import GEOparse

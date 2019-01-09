@@ -3,7 +3,6 @@ import GEOparse
 import xlrd
 import pytest
 import os
-from xlutils.copy import copy
 
 
 @pytest.fixture
