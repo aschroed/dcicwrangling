@@ -83,7 +83,7 @@ def delete_wfrs(file_resp, my_key, delete=False):
             wfr_report = nb.get_wfr_report(wfrs, my_key)
             # printTable(wfr_report, ['wfr_name', 'run_time', 'wfr_rev', 'run_time', 'wfr_status'])
             # check if any unlisted wfr in report
-            my_wfr_names = [i['wfr_name'] for i in wfr_report]
+            # my_wfr_names = [i['wfr_name'] for i in wfr_report]
             # unlisted = [x for x in my_wfr_names if x not in workflow_names]
             # report the unlisted ones
             #if unlisted:
@@ -96,8 +96,10 @@ def delete_wfrs(file_resp, my_key, delete=False):
                     old_wfrs = sub_wfrs[:-1]
                     # check the status of the most recent workflow
                     if active_wfr['wfr_status'] != 'complete':
-                        if (active_wfr['wfr_status'] in ['running', 'started']
-                            and active_wfr['run_time'] < accepted_run_time):
+                        if (
+                            active_wfr['wfr_status'] in ['running', 'started']
+                            and active_wfr['run_time'] < accepted_run_time
+                        ):
                             print(wf_name, 'still running for', file_resp['accession'])
                         else:
                             old_wfrs.append(active_wfr)
@@ -118,7 +120,8 @@ def delete_wfrs(file_resp, my_key, delete=False):
                                     continue
                                 ####################################################
 
-                                print(wfr_to_del['wfr_name'], 'old style or dub', wfr_to_del['wfr_uuid'], file_resp['accession'])
+                                print(wfr_to_del['wfr_name'], 'old style or dub',
+                                      wfr_to_del['wfr_uuid'], file_resp['accession'])
                                 if delete:
                                     patch_data = {'description': "This workflow run is deleted", 'status': "deleted"}
                                     deleted_wfrs.append(wfr_to_del['wfr_uuid'])
@@ -128,4 +131,3 @@ def delete_wfrs(file_resp, my_key, delete=False):
                                         for out_file in wfr_to_del['outputs']:
                                             ff_utils.patch_metadata({'status': "deleted"}, obj_id=out_file, key=my_key)
     return deleted_wfrs
-    
