@@ -42,7 +42,6 @@ def hidden_sra(mocker):
             return geo.parse_gsm(gsm)
 
 
-# edit to use above fixture?
 def test_parse_gsm_with_sra(mocker, srx_file):
     with open(srx_file, 'r') as srx:
         with mocker.patch('Bio.Entrez.efetch', return_value=srx):
@@ -155,6 +154,20 @@ def test_get_geo_tables(mocker, bs_obj, exp_with_sra):
     mocker.patch('scripts.geo2fdn.parse_gsm', return_value=exp_with_sra)
     mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
     geo.get_geo_tables('GSM2715320', './test/data_files/test_table', email='test@email.com')
+    with open('./test/data_files/test_table_fqs.tsv', 'r') as fq_file:
+        fq_out = fq_file.readlines()
+    assert not any('paired with' in line for line in fq_out)
+    for item in ['expts', 'fqs', 'bs']:
+        os.remove('./test/data_files/test_table_{}.tsv'.format(item))
+
+
+def test_get_geo_tables_pe(mocker, bs_obj, exp_with_sra_pe):
+    mocker.patch('scripts.geo2fdn.parse_gsm', return_value=exp_with_sra_pe)
+    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
+    geo.get_geo_tables('GSM2198225', './test/data_files/test_table', email='test@email.com')
+    with open('./test/data_files/test_table_fqs.tsv', 'r') as fq_file:
+        fq_out = fq_file.readlines()
+    assert all('paired with' in line for line in fq_out)
     for item in ['expts', 'fqs', 'bs']:
         os.remove('./test/data_files/test_table_{}.tsv'.format(item))
 
@@ -193,21 +206,12 @@ def test_modify_xls(mocker, bs_obj, exp_with_sra):
 def test_modify_xls_pe(mocker, bs_obj, exp_with_sra_pe):
     mocker.patch('scripts.geo2fdn.parse_gsm', return_value=exp_with_sra_pe)
     mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
-    # gds = geo.get_geo_metadata('GSM2715320', filepath='./test/data_files/GSM2715320.txt')
     geo.modify_xls('./test/data_files/GSM2198225.txt',
                    './test/data_files/capturec_seq_template.xls',
                    'out_pe.xls', 'abc')
     book = xlrd.open_workbook('out_pe.xls')
     outfile_dict = create_xls_dict(book)
     os.remove('out_pe.xls')
-    # assert outfile_dict['Biosample']['aliases'][0].startswith('abc:')
-    # assert outfile_dict['Biosample']['dbxrefs'][0].startswith('BioSample:SAMN')
-    # # assert BiosampleCellCulture has alias
-    # assert (outfile_dict['BiosampleCellCulture']['aliases'][0].startswith('abc:')
-    #         and outfile_dict['BiosampleCellCulture']['aliases'][0].endswith('-cellculture'))
-    # # assert BiosampleCellCulture alias is in Biosample sheet
-    # assert (outfile_dict['Biosample']['cell_culture_details'][0].startswith('abc:')
-    #         and outfile_dict['Biosample']['cell_culture_details'][0].endswith('-cellculture'))
     # FileFastq assert(s)
     assert outfile_dict['FileFastq']['*file_format'][0] == 'fastq'
     assert outfile_dict['FileFastq']['paired_end'][0]
@@ -216,11 +220,6 @@ def test_modify_xls_pe(mocker, bs_obj, exp_with_sra_pe):
     assert outfile_dict['FileFastq']['read_length'][0]
     assert outfile_dict['FileFastq']['instrument'][0]
     assert outfile_dict['FileFastq']['dbxrefs'][0].startswith('SRA:SRR')
-    # ExperimentRepliseq assert(s)
-    # assert outfile_dict['ExperimentRepliseq']['dbxrefs'][0].startswith('GEO:GSM')
-    # assert outfile_dict['ExperimentRepliseq']['description'][0]
-    # assert outfile_dict['ExperimentRepliseq']['files'][0]
-    # assert outfile_dict['ExperimentRepliseq']['*biosample'][0]
 
 
 def test_modify_xls_some_unparsable_types(mocker, capfd, bs_obj):
@@ -254,6 +253,18 @@ def test_modify_xls_set_experiment_type(mocker, capfd):
     assert 'ExperimentSeq' not in outfile_dict.keys()
     assert len(outfile_dict['ExperimentCaptureC']['aliases']) == 12
     assert 'The following accessions had experiment types that could not be parsed:' not in out.split('\n')
+
+
+def test_modify_xls_no_sheets(mocker):
+    mocker.patch('scripts.geo2fdn.Experiment.get_sra')
+    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj(mocker))
+    geo.modify_xls('./test/data_files/GSE87585_family.soft.gz',
+                   './test/data_files/no_template.xls', 'out4.xls', 'abc',
+                   experiment_type='CaptureC')
+    book = xlrd.open_workbook('out4.xls')
+    outfile_dict = create_xls_dict(book)
+    os.remove('out4.xls')
+    assert not outfile_dict
 
 
 def run_compare(capfd, exp_with_sra, template, exp_type, sheet):
