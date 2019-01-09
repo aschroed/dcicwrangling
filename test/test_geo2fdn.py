@@ -143,6 +143,14 @@ def create_xls_dict(inbook):
     return xls_dict
 
 
+def test_get_geo_tables(mocker, bs_obj, exp_with_sra):
+    mocker.patch('scripts.geo2fdn.parse_gsm', return_value=exp_with_sra)
+    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
+    geo.get_geo_tables('GSM2715320', './test/data_files/test_table', email='test@email.com')
+    for item in ['expts', 'fqs', 'bs']:
+        os.remove('./test/data_files/test_table_{}.tsv'.format(item))
+
+
 def test_modify_xls(mocker, bs_obj, exp_with_sra):
     mocker.patch('scripts.geo2fdn.parse_gsm', return_value=exp_with_sra)
     mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
