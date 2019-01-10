@@ -129,8 +129,7 @@ def handle_timeout(command): # pragma: no cover
             time.sleep(10)
             try:
                 result = command
-            except HTTPError as e:
-                print(e)
+            except HTTPError:
                 time.sleep(10)
                 result = command
     return result
@@ -165,12 +164,8 @@ def parse_gsm(gsm, experiment_type=None):
             link = item[item.index('SRX'):]
     exp = Experiment(re.sub('-', '', exp_type.lower()), gsm.metadata['instrument_model'],
                      gsm.name, gsm.metadata['title'], bs, link)
-    if link:
-        # if no SRA relation is in GSM metadata, sequencing data might be in dbgap
-        try:
-            exp.get_sra()  # get more metadata about sequencing runs
-        except Exception:
-            print(link)
+    if link:  # if no SRA relation is in GSM metadata, sequencing data might be in dbgap
+        exp.get_sra()  # get more metadata about sequencing runs
     return exp
 
 
@@ -539,7 +534,6 @@ def main(types=valid_types, descr=description, epilog=epilog):  # pragma: no cov
         Entrez.email = args.email
     if args.apikey:
         Entrez.api_key = args.apikey
-    print(Entrez.api_key)
     modify_xls(args.geo_accession, args.infile, out_file, args.alias, experiment_type=args.type)
 
 
