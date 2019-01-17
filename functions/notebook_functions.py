@@ -433,6 +433,7 @@ def clean_for_reupload(file_acc, key, clean_release_dates=False, delete_runs=Tru
     del_add_on = 'delete_fields=' + ','.join(del_f)
     ff_utils.patch_metadata({'status': 'uploading'}, obj_id=resp['uuid'], key=key, add_on=del_add_on)
 
+
 # get order from loadxl.py in fourfront
 ORDER = ['user', 'award', 'lab', 'static_section', 'page', 'ontology', 'ontology_term', 'badge', 'organism', 'file_format',
          'genomic_region', 'target', 'imaging_path', 'publication', 'publication_tracking', 'document',
