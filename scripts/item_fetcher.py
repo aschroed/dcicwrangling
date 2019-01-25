@@ -55,9 +55,18 @@ def main():  # pragma: no cover
 
         if args.fields:
             line = ''
+            counts = {}
             for f in fields:
                 val = res.get(f)
+                # if val is not None:  # added in for specific use case
                 if isinstance(val, list):
+                        # counts[f] = len(val)  # added in for specific use case
+                    # if len(counts) > 1:
+                    #     print(iid, '\t', counts)
+                    # else:
+                    #     cnt = list(counts.values())[0]
+                    #     if cnt > 1:
+                    #         print(iid, '\t', cnt)
                     vs = ''
                     for v in val:
                         if isinstance(v, dict):

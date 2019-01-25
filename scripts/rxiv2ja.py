@@ -60,7 +60,17 @@ def create_patch_for_new_from_old(old, new, fields2move, vals2skip=None):
             if jval:
                 skipped[f] = {'old': val, 'new': jval}
                 continue
-            ja_patch_dict[f] = val
+            if isinstance(val, list):
+                litems = []
+                for v in val:
+                    if isinstance(v, dict):
+                        uid = v.get('uuid')
+                        if uid is not None:
+                            litems.append(uid)
+                if litems:
+                    ja_patch_dict[f] = litems
+            else:
+                ja_patch_dict[f] = val
     return ja_patch_dict, skipped
 
 
