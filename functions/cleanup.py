@@ -15,9 +15,15 @@ workflow_details = [['md5', ['0'], 12],
                     ['hi-c-processing-pairs-nonorm 0.2.5', ['0'], 100],
                     ['hi-c-processing-pairs-nore-nonorm 0.2.5', ['0'], 100],
                     ['repliseq-parta 0.2.5', ['0'], 100],
-                    ['bedGraphToBigWig', ['0'], 12],
+                    ['bedGraphToBigWig', ['0'], 24],
+                    ['bedtobeddb', ['0'], 1],
                     ['encode-atacseq 0.2.5', ['0'], 100],
-                    ['encode-chipseq 0.2.5', ['0'], 100]
+                    ['encode-chipseq 0.2.5', ['0'], 100],
+                    ['encode-chipseq-aln-chip 0.2.5', ['0'], 100],
+                    ['encode-chipseq-aln-ctl 0.2.5', ['0'], 100],
+                    ['encode-chipseq-postaln 0.2.5', ['0'], 100],
+                    ['encode-atacseq-aln 0.2.5', ['0'], 100],
+                    ['encode-atacseq-postaln 0.2.5', ['0'], 100]
                     ]
 workflow_names = [i[0] for i in workflow_details]
 
@@ -83,11 +89,11 @@ def delete_wfrs(file_resp, my_key, delete=False):
             wfr_report = nb.get_wfr_report(wfrs, my_key)
             # printTable(wfr_report, ['wfr_name', 'run_time', 'wfr_rev', 'run_time', 'wfr_status'])
             # check if any unlisted wfr in report
-            # my_wfr_names = [i['wfr_name'] for i in wfr_report]
-            # unlisted = [x for x in my_wfr_names if x not in workflow_names]
-            # report the unlisted ones
-            #if unlisted:
-            # print('Unlisted Workflow', unlisted, 'skipped in', file_resp['accession'])
+            my_wfr_names = [i['wfr_name'] for i in wfr_report]
+            unlisted = [x for x in my_wfr_names if x not in workflow_names]
+            #report the unlisted ones
+            if unlisted:
+                print('Unlisted Workflow', unlisted, 'skipped in', file_resp['accession'])
             for wf_name, accepted_rev, accepted_run_time in workflow_details:
                 #for each type of worklow make a list of old ones, and patch status and description
                 sub_wfrs = [i for i in wfr_report if i['wfr_name'] == wf_name]

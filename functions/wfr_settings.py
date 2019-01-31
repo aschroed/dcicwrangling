@@ -170,7 +170,7 @@ def step_settings(step_name, my_organism, attribution, params={}):
             "wf_uuid": "9d575e99-5ffe-4ea4-b74f-ad40f621cd39",
             "parameters": {},
             "config": {
-                "instance_type": "t2.micro",
+                "instance_type": "m3.2xlarge",
                 "EBS_optimized": False,
                 "ebs_size": 10,
                 "ebs_type": "gp2",
@@ -266,7 +266,7 @@ def step_settings(step_name, my_organism, attribution, params={}):
                 'chip.first_ta': {
                     'genome_assembly': genome,
                     'file_type': 'counts',
-                    'description': 'Counts from Chip-seq pipeline'},
+                    'description': 'Counts from ChIP-seq pipeline'},
                 'chip.first_ta_xcor': {
                     'genome_assembly': genome,
                     'file_type': 'intermediate file',
@@ -283,7 +283,7 @@ def step_settings(step_name, my_organism, attribution, params={}):
                 "json_bucket": "4dn-aws-pipeline-run-json",
                 "EBS_optimized": "",
                 "ebs_iops": "",
-                "shutdown_min": "now",
+                "shutdown_min": 'now',
                 "instance_type": "",
                 "password": "",
                 "log_bucket": "tibanna-output",
@@ -294,7 +294,7 @@ def step_settings(step_name, my_organism, attribution, params={}):
                 'chip.first_ta_ctl': {
                     'genome_assembly': genome,
                     'file_type': 'counts',
-                    'description': 'Counts from Chip-seq pipeline'}
+                    'description': 'Counts from ChIP-seq pipeline'}
             }
         },
         {
@@ -328,7 +328,63 @@ def step_settings(step_name, my_organism, attribution, params={}):
                     'file_type': 'intensity values',
                     'description': 'ChIP-seq signal fold change over control input'}
             }
-        }
+        },
+        {
+            "wf_name": "encode-atacseq-aln",
+            "wf_uuid": "4dn-dcic-lab:wf-encode-atacseq-aln",
+            "parameters": {},
+            "config": {
+                "ebs_size": 0,
+                "ebs_type": "gp2",
+                "json_bucket": "4dn-aws-pipeline-run-json",
+                "EBS_optimized": "",
+                "ebs_iops": "",
+                "shutdown_min": 'now',
+                "instance_type": "",
+                "password": "",
+                "log_bucket": "tibanna-output",
+                "key_name": "",
+                "cloudwatch_dashboard": True
+            },
+            'custom_pf_fields': {
+                'atac.first_ta': {
+                    'genome_assembly': genome,
+                    'file_type': 'counts',
+                    'description': 'Counts from ATAC-seq pipeline'}
+            }
+        },
+        {
+            "wf_name": "encode-atacseq-postaln",
+            "wf_uuid": "4dn-dcic-lab:wf-encode-atacseq-postaln",
+            "parameters": {},
+            "config": {
+                "ebs_size": 0,
+                "ebs_type": "gp2",
+                "json_bucket": "4dn-aws-pipeline-run-json",
+                "EBS_optimized": "",
+                "ebs_iops": "",
+                "shutdown_min": "now",
+                "instance_type": "",
+                "password": "",
+                "log_bucket": "tibanna-output",
+                "key_name": "",
+                "cloudwatch_dashboard": True
+            },
+            'custom_pf_fields': {
+                'atac.optimal_peak': {
+                    'genome_assembly': genome,
+                    'file_type': 'peaks',
+                    'description': 'ATAC-seq peak calls'},
+                'atac.conservative_peak': {
+                    'genome_assembly': genome,
+                    'file_type': 'peaks',
+                    'description': 'ATAC-seq peak calls'},
+                'atac.sig_fc': {
+                    'genome_assembly': genome,
+                    'file_type': 'intensity values',
+                    'description': 'ATAC-seq signal fold change over control input'}
+            }
+        },
     ]
     # if params, overwrite parameters
     template = [i for i in wf_dict if i['wf_name'] == step_name][0]
