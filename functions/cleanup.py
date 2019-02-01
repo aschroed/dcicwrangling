@@ -16,14 +16,14 @@ workflow_details = [['md5', ['0'], 12],
                     ['hi-c-processing-pairs-nore-nonorm 0.2.5', ['0'], 100],
                     ['repliseq-parta 0.2.5', ['0'], 100],
                     ['bedGraphToBigWig', ['0'], 24],
-                    ['bedtobeddb', ['0'], 1],
+                    ['bedtobeddb', ['0'], 24],
                     ['encode-atacseq 0.2.5', ['0'], 100],
                     ['encode-chipseq 0.2.5', ['0'], 100],
-                    ['encode-chipseq-aln-chip 0.2.5', ['0'], 100],
-                    ['encode-chipseq-aln-ctl 0.2.5', ['0'], 100],
-                    ['encode-chipseq-postaln 0.2.5', ['0'], 100],
-                    ['encode-atacseq-aln 0.2.5', ['0'], 100],
-                    ['encode-atacseq-postaln 0.2.5', ['0'], 100]
+                    ['encode-chipseq-aln-chip 1.1.1', ['0'], 100],
+                    ['encode-chipseq-aln-ctl 1.1.1', ['0'], 100],
+                    ['encode-chipseq-postaln 1.1.1', ['0'], 100],
+                    ['encode-atacseq-aln 1.1.1', ['0'], 100],
+                    ['encode-atacseq-postaln 1.1.1', ['0'], 100]
                     ]
 workflow_names = [i[0] for i in workflow_details]
 
