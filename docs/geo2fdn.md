@@ -20,14 +20,22 @@ Parameters:
 
 Optional:
 
--e / --email      &nbsp; : &nbsp;  email address - \
+-a / --alias      &nbsp; : &nbsp;  alias prefix - \
+Specifies a prefix to use for all item aliases in the output workbook.
+Default is 4dn-dcic-lab.\
+ -e / --email      &nbsp; : &nbsp;  email address - \
 Use of NCBI Entrez requires an email address to be specified. If not specified,
 there will be a prompt to input email address, but in this case console output
 cannot be redirected to a log file.\
+-k / --apikey     &nbsp; : &nbsp;   NCBI api key - \
+If many requests to the NCBI server will be made, use of an NCBI api key is
+recommended, which enables a rate limit of 10 requests per second rather than 3.
+Instructions for getting keys and further information can be found [here]
+(https://ncbiinsights.ncbi.nlm.nih.gov/2017/11/02/new-api-keys-for-the-e-utilities/).
 -t / --type       &nbsp; : &nbsp;  experiment type - \
 This parameter can be use to force the experiment type of all experiments in the
 given GEO series. If not specified, the script will attempt to parse experiment type
-from experiment records. DO NOT specify if GEO series ßhas multiple experiment types.
+from experiment records. DO NOT specify if GEO series has multiple experiment types.
 
 
 ### Installation

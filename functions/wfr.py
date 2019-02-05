@@ -60,7 +60,7 @@ def get_attribution(file_json):
     return attributions
 
 
-def extract_file_info(obj_id, arg_name, env):
+def extract_file_info(obj_id, arg_name, env, rename=[]):
     auth = ff_utils.get_authentication_with_server({}, ff_env=env)
     my_s3_util = s3Utils(env=env)
 
@@ -70,7 +70,9 @@ def extract_file_info(obj_id, arg_name, env):
     """
     # start a dictionary
     template = {"workflow_argument_name": arg_name}
-
+    if rename:
+        change_from = rename[0]
+        change_to = rename[1]
     # if it is list of items, change the structure
     if isinstance(obj_id, list):
         object_key = []
@@ -95,6 +97,9 @@ def extract_file_info(obj_id, arg_name, env):
         template['object_key'] = object_key
         template['uuid'] = uuid
         template['bucket_name'] = buckets[0]
+        if rename:
+            template['rename'] = [i.replace(change_from, change_to) for i in template['object_key']]
+
     # if obj_id is a string
     else:
         metadata = ff_utils.get_metadata(obj_id, key=auth)
@@ -106,6 +111,8 @@ def extract_file_info(obj_id, arg_name, env):
         else:  # covers cases of FileFastq, FileReference, FileMicroscopy
             my_bucket = raw_bucket
         template['bucket_name'] = my_bucket
+        if rename:
+            template['rename'] = template['object_key'].replace(change_from, change_to)
     return template
 
 
@@ -307,6 +314,67 @@ def get_wfr_out(file_id, wfr_name, auth, md_qc=False, run=100):
         return {'status': "no completed run"}
 
 
+def get_wfr_out_file(file_id, wfr_name, auth, md_qc=False, run=100):
+    """For a given files, fetches the status of last wfr_name
+    If there is a successful run it will return the output files as a dictionary of
+    argument_name:file_id, else, will return the status. Some runs, like qc and md5,
+    does not have any file_format output, so they will simply return 'complete'
+    """
+    emb_file = ff_utils.get_metadata(file_id, key=auth)
+    workflows = emb_file.get('workflow_run_inputs')
+    wfr = {}
+    run_status = 'did not run'
+
+    # add run time to wfr
+    if workflows:
+        for a_wfr in workflows:
+            wfr_type, time_info = a_wfr['display_title'].split(' run ')
+            # user submitted ones use run on insteand of run
+            time_info = time_info.strip('on').strip()
+            try:
+                wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S.%f')
+            except ValueError:
+                wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S')
+            a_wfr['run_hours'] = (datetime.utcnow() - wfr_time).total_seconds() / 3600
+            a_wfr['run_type'] = wfr_type.strip()
+    # sort wfrs
+        workflows = sorted(workflows, key=lambda k: (k['run_type'], -k['run_hours']))
+
+    try:
+        last_wfr = [i for i in workflows if i['run_type'] == wfr_name][-1]
+    except (KeyError, IndexError, TypeError):
+        return {'status': "no workflow in file"}
+
+    wfr = ff_utils.get_metadata(last_wfr['uuid'], key=auth)
+    run_duration = last_wfr['run_hours']
+    run_status = wfr['run_status']
+
+    if run_status == 'complete':
+        outputs = wfr.get('output_files')
+        # some runs, like qc, don't have a real file output
+        if md_qc:
+            return {'status': 'complete'}
+        # if expected output files, return a dictionary of argname:file_id
+        else:
+            out_files = {}
+            for output in outputs:
+                if output.get('format'):
+                    # get the arg name
+                    arg_name = output['workflow_argument_name']
+                    out_files[arg_name] = output['value']['@id']
+            if out_files:
+                out_files['status'] = 'complete'
+                return out_files
+            else:
+                print('no output file was found, maybe this run is a qc?')
+                return {'status': "no file found"}
+    elif run_status != 'error' and run_duration < run:
+        # print(run_duration)
+        return {'status': "running"}
+    else:
+        return {'status': "no completed run"}
+
+
 def add_processed_files(item_id, list_pc, auth):
     # patch the exp or set
     patch_data = {'processed_files': list_pc}
@@ -316,7 +384,8 @@ def add_processed_files(item_id, list_pc, auth):
 
 def add_preliminary_processed_files(item_id, list_pc, auth, run_type="hic"):
     titles = {"hic": "HiC Processing Pipeline - Preliminary Files",
-              "repliseq": "Repli-Seq Pipeline - Preliminary Files"}
+              "repliseq": "Repli-Seq Pipeline - Preliminary Files",
+              'chip': "ENCODE ChIP-Seq Pipeline - Preliminary Files"}
     pc_set_title = titles[run_type]
     resp = ff_utils.get_metadata(item_id, key=auth)
 
@@ -422,3 +491,506 @@ def extract_nz_file(acc, auth):
         return (None, None)
     # return result if both exist
     return nz_num, chrsize
+
+
+def get_chip_info(f_exp_resp, my_key):
+    """Gether the following information from the first experiment in the chip set"""
+    control = ""  # True or False (True if set in scope is control)
+    control_set = ""  # None (if no control exp is set), or the control experiment for the one in scope
+    target_type = "" # Histone or TF (or None for control)
+    # get target
+    target = f_exp_resp.get('targeted_factor')
+    if target:
+        target_type = 'tf' # set to tf default and switch to histone (this part might need some work later)
+        target_dt = target['display_title']
+        if target_dt.startswith('Protein:H2') or target_dt.startswith('Protein:H3'):
+            target_type = 'histone'
+    else:
+        target_type = None
+
+    # get organism
+    biosample = f_exp_resp['biosample']
+    organism = list(set([bs['individual']['organism']['name'] for bs in biosample['biosource']]))[0]
+
+    # get control information
+    exp_relation = f_exp_resp.get('experiment_relation')
+    if exp_relation:
+        rel_type = [i['relationship_type'] for i in exp_relation]
+        if 'control for' in rel_type:
+            control = True
+        if 'controlled by' in rel_type:
+            control = False
+            controls = [i['experiment'] for i in exp_relation if i['relationship_type'] == 'controlled by']
+            if len(controls) != 1:
+                print('multiple control experiments')
+            else:
+                cont_exp_info = ff_utils.get_metadata(controls[0]['uuid'], my_key)['experiment_sets']
+                control_set = [i['accession'] for i in cont_exp_info if i['@id'].startswith('/experiment-set-replicates/')][0]
+    else:
+        # if no relation is present
+        # set it as if control when the target is None
+        if not target_type:
+            control = True
+        # if there is target, but no relation, treat it as an experiment without control
+        else:
+            control = False
+            control_set = None
+    return control, control_set, target_type, organism
+
+
+def get_chip_files(exp_resp, my_auth):
+    files = []
+    obj_key = []
+    paired = ""
+    exp_files = exp_resp['files']
+    for a_file in exp_files:
+        f_t = []
+        o_t = []
+        file_resp = ff_utils.get_metadata(a_file['uuid'], my_auth)
+        # get pair end no
+        pair_end = file_resp.get('paired_end')
+        if pair_end == '2':
+            paired = 'paired'
+            continue
+        # get paired file
+        paired_with = ""
+        relations = file_resp.get('related_files')
+        if not relations:
+            pass
+        else:
+            for relation in relations:
+                if relation['relationship_type'] == 'paired with':
+                    paired = 'paired'
+                    paired_with = relation['file']['uuid']
+        # decide if data is not paired end reads
+        if not paired_with:
+            if not paired:
+                paired = 'single'
+            else:
+                if paired != 'single':
+                    print('inconsistent fastq pair info')
+                    continue
+            f_t.append(file_resp['uuid'])
+            o_t.append(file_resp['display_title'])
+        else:
+            f2 = ff_utils.get_metadata(paired_with, my_auth)
+            f_t.append(file_resp['uuid'])
+            o_t.append(file_resp['display_title'])
+            f_t.append(f2['uuid'])
+            o_t.append(f2['display_title'])
+        files.append(f_t)
+        obj_key.append(o_t)
+    return files, obj_key, paired
+
+
+def run_missing_chip1(control, wf_info, organism, target_type, paired, files, obj_keys, my_env, my_key, run_name):
+    my_s3_util = s3Utils(env=my_env)
+    raw_bucket = my_s3_util.raw_file_bucket
+    out_bucket = my_s3_util.outfile_bucket
+
+    if organism == "human":
+        org = 'hs'
+        input_files = [{
+            "object_key": "4DNFIZQB369V.bwaIndex.tar",
+            "rename": "GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.tar",
+            "bucket_name": raw_bucket,
+            "workflow_argument_name": "chip.bwa_idx_tar",
+            "uuid": "38077b98-3862-45cd-b4be-8e28e9494549"
+        },
+            {
+            "object_key": "4DNFIZ1TGJZR.bed.gz",
+            "bucket_name": raw_bucket,
+            "workflow_argument_name": "chip.blacklist",
+            "uuid": "9562ffbd-9f7a-4bd7-9c10-c335137d8966"
+        },
+            {
+            "object_key": "4DNFIZJB62D1.chrom.sizes",
+            "bucket_name": raw_bucket,
+            "workflow_argument_name": "chip.chrsz",
+            "uuid": "9866d158-da3c-4d9b-96a9-1d59632eabeb"
+        }]
+
+    elif organism == "mouse":
+        org = 'mm'
+        input_files = [{
+            "object_key": "4DNFIZ2PWCC2.bwaIndex.tar",
+            "rename": "mm10_no_alt_analysis_set_ENCODE.fasta.tar",
+            "bucket_name": raw_bucket,
+            "workflow_argument_name": "chip.bwa_idx_tar",
+            "uuid": "f4b63d31-65d8-437f-a76a-6bedbb52ae6f"
+        },
+            {
+            "object_key": "4DNFIZ3FBPK8.bed.gz",
+            "bucket_name": raw_bucket,
+            "workflow_argument_name": "chip.blacklist",
+            "uuid": "a32747a3-8a9e-4a9e-a7a1-4db0e8b65925"
+        },
+            {
+            "object_key": "4DNFIBP173GC.chrom.sizes",
+            "bucket_name": raw_bucket,
+            "workflow_argument_name": "chip.chrsz",
+            "uuid": "be0a9819-d2ce-4422-be4b-234fb1677dd9"
+        }]
+    if control:
+        input_files.append({"object_key": obj_keys,
+                            "bucket_name": raw_bucket,
+                            "workflow_argument_name": "chip.ctl_fastqs",
+                            "uuid": files})
+    else:
+        input_files.append({"object_key": obj_keys,
+                            "bucket_name": raw_bucket,
+                            "workflow_argument_name": "chip.fastqs",
+                            "uuid": files})
+
+    if paired == 'single':
+        chip_p = False
+    elif paired == 'paired':
+        chip_p = True
+    if control:
+        parameters = {
+            "chip.pipeline_type": target_type,
+            "chip.paired_end": chip_p,
+            "chip.choose_ctl.always_use_pooled_ctl": True,
+            "chip.gensz": org,
+            "chip.bam2ta_ctl.regex_grep_v_ta": "chr[MUE]|random|alt",
+            "chip.bwa_ctl.cpu": 8,
+            "chip.merge_fastq_ctl.cpu": 8,
+            "chip.filter_ctl.cpu": 8,
+            "chip.bam2ta_ctl.cpu": 8,
+            "chip.align_only": True
+        }
+    else:
+        parameters = {
+            "chip.pipeline_type": target_type,
+            "chip.paired_end": chip_p,
+            "chip.choose_ctl.always_use_pooled_ctl": True,
+            "chip.gensz": org,
+            "chip.bam2ta.regex_grep_v_ta": "chr[MUE]|random|alt",
+            "chip.bwa.cpu": 8,
+            "chip.merge_fastq.cpu": 8,
+            "chip.filter.cpu": 8,
+            "chip.bam2ta.cpu": 8,
+            "chip.xcor.cpu": 8,
+            "chip.align_only": True
+        }
+    if paired == 'single':
+        frag_temp = [300]
+        fraglist = frag_temp * len(files)
+        parameters['chip.fraglen'] = fraglist
+
+    tag = '1.1.1'
+    """Creates the trigger json that is used by foufront endpoint.
+    """
+    input_json = {'input_files': input_files,
+                  'output_bucket': out_bucket,
+                  'workflow_uuid': wf_info['wf_uuid'],
+                  "app_name": wf_info['wf_name'],
+                  "wfr_meta": wf_info['wfr_meta'],
+                  "parameters": parameters,
+                  "config": wf_info['config'],
+                  "custom_pf_fields": wf_info['custom_pf_fields'],
+                  "_tibanna": {"env": my_env,
+                               "run_type": wf_info['wf_name'],
+                               "run_id": run_name},
+                  "tag": tag
+                  }
+    # r = json.dumps(input_json)
+    # print(r)
+    e = ff_utils.post_metadata(input_json, 'WorkflowRun/run', key=my_key)
+    url = json.loads(e['input'])['_tibanna']['url']
+    display(HTML("<a href='{}' target='_blank'>{}</a>".format(url, e['status'])))
+
+
+def run_missing_chip2(control_set, wf_info, organism, target_type, paired,
+                      ta, ta_xcor, ta_cnt, my_env, my_key, run_ids):
+    my_s3_util = s3Utils(env=my_env)
+    raw_bucket = my_s3_util.raw_file_bucket
+    out_bucket = my_s3_util.outfile_bucket
+
+    if organism == "human":
+        org = 'hs'
+        input_files = [{
+            "object_key": "4DNFIZ1TGJZR.bed.gz",
+            "bucket_name": raw_bucket,
+            "workflow_argument_name": "chip.blacklist",
+            "uuid": "9562ffbd-9f7a-4bd7-9c10-c335137d8966"
+        },
+            {
+            "object_key": "4DNFIZJB62D1.chrom.sizes",
+            "bucket_name": raw_bucket,
+            "workflow_argument_name": "chip.chrsz",
+            "uuid": "9866d158-da3c-4d9b-96a9-1d59632eabeb"
+        }]
+
+    elif organism == "mouse":
+        org = 'mm'
+        input_files = [{
+            "object_key": "4DNFIZ3FBPK8.bed.gz",
+            "bucket_name": raw_bucket,
+            "workflow_argument_name": "chip.blacklist",
+            "uuid": "a32747a3-8a9e-4a9e-a7a1-4db0e8b65925"
+        },
+            {
+            "object_key": "4DNFIBP173GC.chrom.sizes",
+            "bucket_name": raw_bucket,
+            "workflow_argument_name": "chip.chrsz",
+            "uuid": "be0a9819-d2ce-4422-be4b-234fb1677dd9"
+        }]
+
+    ta_f = extract_file_info(ta, 'chip.tas', my_env, rename=['bed', 'tagAlign'])
+    input_files.append(ta_f)
+    ta_xcor_f = extract_file_info(ta_xcor, 'chip.bam2ta_no_filt_R1.ta', my_env, rename=['bed', 'tagAlign'])
+    input_files.append(ta_xcor_f)
+    if control_set:
+        ta_cnt = extract_file_info(ta_cnt, 'chip.ctl_tas', my_env, rename=['bed', 'tagAlign'])
+        input_files.append(ta_cnt)
+
+    if paired == 'single':
+        chip_p = False
+    elif paired == 'paired':
+        chip_p = True
+    if not control_set:
+        if target_type == 'histone':
+            print('HISTONE WITHOUT CONTROL NEEDS ATTENTION (change to tf), skipping for now')
+            return
+
+    parameters = {
+        "chip.pipeline_type": target_type,
+        "chip.paired_end": chip_p,
+        "chip.choose_ctl.always_use_pooled_ctl": True,
+        "chip.qc_report.name": run_ids['run_name'],
+        "chip.qc_report.desc": run_ids['desc'],
+        "chip.gensz": org,
+        "chip.xcor.cpu": 4,
+        "chip.spp_cpu": 4
+    }
+
+    if paired == 'single':
+        frag_temp = [300]
+        fraglist = frag_temp * len(ta)
+        parameters['chip.fraglen'] = fraglist
+
+    tag = '1.1.1'
+    """Creates the trigger json that is used by foufront endpoint.
+    """
+    input_json = {'input_files': input_files,
+                  'output_bucket': out_bucket,
+                  'workflow_uuid': wf_info['wf_uuid'],
+                  "app_name": wf_info['wf_name'],
+                  "wfr_meta": wf_info['wfr_meta'],
+                  "parameters": parameters,
+                  "config": wf_info['config'],
+                  "custom_pf_fields": wf_info['custom_pf_fields'],
+                  "_tibanna": {"env": my_env,
+                               "run_type": wf_info['wf_name'],
+                               "run_id": run_ids['run_name']},
+                  "tag": tag
+                  }
+    # r = json.dumps(input_json)
+    # print(r)
+    e = ff_utils.post_metadata(input_json, 'WorkflowRun/run', key=my_key)
+    url = json.loads(e['input'])['_tibanna']['url']
+    display(HTML("<a href='{}' target='_blank'>{}</a>".format(url, e['status'])))
+
+
+def run_missing_atac1(wf_info, organism, paired, files, obj_keys, my_env, my_key, run_name):
+    my_s3_util = s3Utils(env=my_env)
+    raw_bucket = my_s3_util.raw_file_bucket
+    out_bucket = my_s3_util.outfile_bucket
+
+    if organism == "human":
+        org = 'hs'
+        input_files = [{
+            "object_key": "4DNFIMQPTYDY.bowtie2Index.tar",
+            "rename": "GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.tar",
+            "bucket_name": raw_bucket,
+            "workflow_argument_name": "atac.bowtie2_idx_tar",
+            "uuid": "28ab6265-f426-4a23-bb8a-f28467ad505b"
+        },
+            {
+            "object_key": "4DNFIZ1TGJZR.bed.gz",
+            "bucket_name": raw_bucket,
+            "workflow_argument_name": "atac.blacklist",
+            "uuid": "9562ffbd-9f7a-4bd7-9c10-c335137d8966"
+        },
+            {
+            "object_key": "4DNFIZJB62D1.chrom.sizes",
+            "bucket_name": raw_bucket,
+            "workflow_argument_name": "atac.chrsz",
+            "uuid": "9866d158-da3c-4d9b-96a9-1d59632eabeb"
+        }]
+
+    elif organism == "mouse":
+        org = 'mm'
+        input_files = [{
+            "object_key": "4DNFI2493SDN.bowtie2Index.tar",
+            "rename": "mm10_no_alt_analysis_set_ENCODE.fasta.tar",
+            "bucket_name": raw_bucket,
+            "workflow_argument_name": "atac.bowtie2_idx_tar",
+            "uuid": "63e22058-79c6-4e24-8231-ca4afac29dda"
+        },
+            {
+            "object_key": "4DNFIZ3FBPK8.bed.gz",
+            "bucket_name": raw_bucket,
+            "workflow_argument_name": "atac.blacklist",
+            "uuid": "a32747a3-8a9e-4a9e-a7a1-4db0e8b65925"
+        },
+            {
+            "object_key": "4DNFIBP173GC.chrom.sizes",
+            "bucket_name": raw_bucket,
+            "workflow_argument_name": "atac.chrsz",
+            "uuid": "be0a9819-d2ce-4422-be4b-234fb1677dd9"
+        }]
+
+    input_files.append({"object_key": obj_keys,
+                        "bucket_name": raw_bucket,
+                        "workflow_argument_name": "atac.fastqs",
+                        "uuid": files})
+
+    if paired == 'single':
+        chip_p = False
+    elif paired == 'paired':
+        chip_p = True
+    parameters = {
+        "atac.pipeline_type": 'atac',
+        "atac.paired_end": chip_p,
+        "atac.gensz": org,
+        "atac.bam2ta.regex_grep_v_ta": "chr[MUE]|random|alt",
+        "atac.disable_ataqc": True,
+        "atac.enable_xcor": False,
+        "atac.trim_adapter.auto_detect_adapter": True,
+        "atac.bowtie2.cpu": 4,
+        "atac.filter.cpu": 4,
+        "atac.bam2ta.cpu": 4,
+        "atac.trim_adapter.cpu": 4,
+        "atac.align_only": True
+    }
+
+    if paired == 'single':
+        frag_temp = [300]
+        fraglist = frag_temp * len(files)
+        parameters['atac.fraglen'] = fraglist
+
+    tag = '1.1.1'
+    """Creates the trigger json that is used by foufront endpoint.
+    """
+    input_json = {'input_files': input_files,
+                  'output_bucket': out_bucket,
+                  'workflow_uuid': wf_info['wf_uuid'],
+                  "app_name": wf_info['wf_name'],
+                  "wfr_meta": wf_info['wfr_meta'],
+                  "parameters": parameters,
+                  "config": wf_info['config'],
+                  "custom_pf_fields": wf_info['custom_pf_fields'],
+                  "_tibanna": {"env": my_env,
+                               "run_type": wf_info['wf_name'],
+                               "run_id": run_name},
+                  "tag": tag
+                  }
+    # r = json.dumps(input_json)
+    # print(r)
+    e = ff_utils.post_metadata(input_json, 'WorkflowRun/run', key=my_key)
+    url = json.loads(e['input'])['_tibanna']['url']
+    display(HTML("<a href='{}' target='_blank'>{}</a>".format(url, e['status'])))
+
+
+def run_missing_atac2(wf_info, organism, paired, ta,
+                      my_env, my_key, run_name):
+    my_s3_util = s3Utils(env=my_env)
+    raw_bucket = my_s3_util.raw_file_bucket
+    out_bucket = my_s3_util.outfile_bucket
+
+    if organism == "human":
+        org = 'hs'
+        input_files = [{
+            "object_key": "4DNFIZ1TGJZR.bed.gz",
+            "bucket_name": raw_bucket,
+            "workflow_argument_name": "atac.blacklist",
+            "uuid": "9562ffbd-9f7a-4bd7-9c10-c335137d8966"
+        },
+            {
+            "object_key": "4DNFIZJB62D1.chrom.sizes",
+            "bucket_name": raw_bucket,
+            "workflow_argument_name": "atac.chrsz",
+            "uuid": "9866d158-da3c-4d9b-96a9-1d59632eabeb"
+        }]
+
+    elif organism == "mouse":
+        org = 'mm'
+        input_files = [{
+            "object_key": "4DNFIZ3FBPK8.bed.gz",
+            "bucket_name": raw_bucket,
+            "workflow_argument_name": "atac.blacklist",
+            "uuid": "a32747a3-8a9e-4a9e-a7a1-4db0e8b65925"
+        },
+            {
+            "object_key": "4DNFIBP173GC.chrom.sizes",
+            "bucket_name": raw_bucket,
+            "workflow_argument_name": "atac.chrsz",
+            "uuid": "be0a9819-d2ce-4422-be4b-234fb1677dd9"
+        }]
+
+    ta_f = extract_file_info(ta, 'atac.tas', my_env, rename=['bed', 'tagAlign'])
+    input_files.append(ta_f)
+
+    if paired == 'single':
+        chip_p = False
+    elif paired == 'paired':
+        chip_p = True
+
+    parameters = {
+        "atac.pipeline_type": 'atac',
+        "atac.paired_end": chip_p,
+        "atac.gensz": org,
+        "atac.disable_ataqc": True,
+        "atac.enable_xcor": False,
+    }
+
+    if paired == 'single':
+        frag_temp = [300]
+        fraglist = frag_temp * len(ta)
+        parameters['atac.fraglen'] = fraglist
+
+    tag = '1.1.1'
+    """Creates the trigger json that is used by foufront endpoint.
+    """
+    input_json = {'input_files': input_files,
+                  'output_bucket': out_bucket,
+                  'workflow_uuid': wf_info['wf_uuid'],
+                  "app_name": wf_info['wf_name'],
+                  "wfr_meta": wf_info['wfr_meta'],
+                  "parameters": parameters,
+                  "config": wf_info['config'],
+                  "custom_pf_fields": wf_info['custom_pf_fields'],
+                  "_tibanna": {"env": my_env,
+                               "run_type": wf_info['wf_name'],
+                               "run_id": run_name},
+                  "tag": tag
+                  }
+    # r = json.dumps(input_json)
+    # print(r)
+    e = ff_utils.post_metadata(input_json, 'WorkflowRun/run', key=my_key)
+    url = json.loads(e['input'])['_tibanna']['url']
+    display(HTML("<a href='{}' target='_blank'>{}</a>".format(url, e['status'])))
+
+
+def select_best_2(file_list, my_key):
+    scores = []
+    # run it for list with at least 3 elements
+    if len(file_list) < 3:
+        return(file_list)
+
+    for f in file_list:
+        f_resp = ff_utils.get_metadata(f, my_key)
+        qc = f_resp.get('quality_metric')
+        if not qc:
+            print('No qc found on file', f)
+            return
+        qc_resp = ff_utils.get_metadata(qc['uuid'], my_key)
+        try:
+            score = qc_resp['nodup_flagstat_qc'][0]['mapped']
+        except:
+            score = qc_resp['ctl_nodup_flagstat_qc'][0]['mapped']
+        scores.append((score, f))
+    scores = sorted(scores, key=lambda x: -x[0])
+    return [scores[0][1], scores[1][1]]
