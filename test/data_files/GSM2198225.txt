@@ -41,7 +41,7 @@
 !Sample_library_selection = other
 !Sample_library_source = genomic
 !Sample_library_strategy = OTHER
-!Sample_relation = BioSample: https://www.ncbi.nlm.nih.gov/biosample/SAMN05234759
+!Sample_relation = BioSample: https://www.ncbi.nlm.nih.gov/biosample/SAMN06219555
 !Sample_relation = SRA: https://www.ncbi.nlm.nih.gov/sra?term=SRX1839065
 !Sample_supplementary_file_1 = ftp://ftp.ncbi.nlm.nih.gov/geo/samples/GSM2198nnn/GSM2198225/suppl/GSM2198225_Kit_unin_merge.bedgraph.gz
 !Sample_series_id = GSE83290

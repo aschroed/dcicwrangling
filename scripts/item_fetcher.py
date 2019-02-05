@@ -49,7 +49,7 @@ def main():  # pragma: no cover
     for iid in id_list:
         try:
             res = get_metadata(iid, auth)
-        except Exception as e:
+        except Exception:
             problems.append(iid)
             continue
 

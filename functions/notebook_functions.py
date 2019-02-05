@@ -45,8 +45,11 @@ def get_query_or_linked(con_key, query="", linked="", linked_frame="object", ign
         items = ff_utils.search_metadata(query, key=con_key)
         store = {}
         # make a object type dictionary with raw jsons
-        for an_item in items:
-            obj_type = an_item['@type'][0]
+        for an_it in items:
+            add_on_s = 'frame=' + linked_frame
+            an_item = ff_utils.get_metadata(an_it['uuid'], key=con_key, add_on=add_on_s)
+
+            obj_type = an_it['@type'][0]
             obj_key = schema_name[obj_type]
             if obj_key not in store:
                 store[obj_key] = []
@@ -430,6 +433,7 @@ def clean_for_reupload(file_acc, key, clean_release_dates=False, delete_runs=Tru
     del_add_on = 'delete_fields=' + ','.join(del_f)
     ff_utils.patch_metadata({'status': 'uploading'}, obj_id=resp['uuid'], key=key, add_on=del_add_on)
 
+
 # get order from loadxl.py in fourfront
 ORDER = ['user', 'award', 'lab', 'static_section', 'page', 'ontology', 'ontology_term', 'badge', 'organism', 'file_format',
          'genomic_region', 'target', 'imaging_path', 'publication', 'publication_tracking', 'document',
@@ -438,7 +442,7 @@ ORDER = ['user', 'award', 'lab', 'static_section', 'page', 'ontology', 'ontology
          'treatment_agent', 'biosample',
          'quality_metric_fastqc', 'quality_metric_bamqc', 'quality_metric_pairsqc', 'quality_metric_dedupqc_repliseq',
          'microscope_setting_d1', 'microscope_setting_d2', 'microscope_setting_a1', 'microscope_setting_a2',
-         'file_fastq', 'file_fasta', 'file_processed', 'file_reference', 'file_calibration',
+         'file_fastq', 'file_fasta', 'file_vistrack', 'file_processed', 'file_reference', 'file_calibration',
          'file_microscopy', 'file_set', 'file_set_calibration', 'file_set_microscope_qc',
          'experiment_hi_c', 'experiment_capture_c', 'experiment_repliseq', 'experiment_atacseq', 'experiment_chiapet',
          'experiment_damid', 'experiment_seq', 'experiment_tsaseq', 'experiment_mic',
