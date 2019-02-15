@@ -116,7 +116,7 @@ def extract_file_info(obj_id, arg_name, env, rename=[]):
     return template
 
 
-def run_json(input_files, env, wf_info, run_name, tag):
+def run_json(input_files, env, wf_info, run_name):
     my_s3_util = s3Utils(env=env)
     out_bucket = my_s3_util.outfile_bucket
     """Creates the trigger json that is used by foufront endpoint.
@@ -139,8 +139,7 @@ def run_json(input_files, env, wf_info, run_name, tag):
                              },
                   "_tibanna": {"env": env,
                                "run_type": wf_info['wf_name'],
-                               "run_id": run_name},
-                  "tag": tag
+                               "run_id": run_name}
                   }
     # overwrite or add custom fields
     for a_key in ['config', 'custom_pf_fields', 'overwrite_input_extra']:
@@ -250,7 +249,7 @@ def find_pairs(my_rep_set, my_env, lookfor='pairs', exclude_miseq=True):
     return report, organism, enz, bwa, chrsize, enz_file, int(total_f_size / (1024 * 1024 * 1024)), lab
 
 
-def get_wfr_out(file_id, wfr_name, auth, md_qc=False, run=100):
+def get_wfr_out(file_id, wfr_name, auth, versions, md_qc=False, run=100):
     """For a given files, fetches the status of last wfr_name
     If there is a successful run it will return the output files as a dictionary of
     file_format:file_id, else, will return the status. Some runs, like qc and md5,
@@ -261,25 +260,26 @@ def get_wfr_out(file_id, wfr_name, auth, md_qc=False, run=100):
     wfr = {}
     run_status = 'did not run'
 
-    # add run time to wfr
-    if workflows:
-        for a_wfr in workflows:
-            wfr_type, time_info = a_wfr['display_title'].split(' run ')
-            # user submitted ones use run on insteand of run
-            time_info = time_info.strip('on').strip()
-            try:
-                wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S.%f')
-            except ValueError:
-                wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S')
-            a_wfr['run_hours'] = (datetime.utcnow() - wfr_time).total_seconds() / 3600
-            a_wfr['run_type'] = wfr_type.strip()
-    # sort wfrs
-        workflows = sorted(workflows, key=lambda k: (k['run_type'], -k['run_hours']))
-
-    try:
-        last_wfr = [i for i in workflows if i['run_type'] == wfr_name][-1]
-    except (KeyError, IndexError, TypeError):
+    my_workflows = [i for i in workflows if i['display_title'].startswith(wfr_name)]
+    if not my_workflows:
         return {'status': "no workflow in file"}
+    for a_wfr in my_workflows:
+        wfr_type, time_info = a_wfr['display_title'].split(' run ')
+        wfr_type_base, wfr_version = wfr_type.strip().split(' ')
+        # user submitted ones use run on insteand of run
+        time_info = time_info.strip('on').strip()
+        try:
+            wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S.%f')
+        except ValueError:
+            wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S')
+        a_wfr['run_hours'] = (datetime.utcnow() - wfr_time).total_seconds() / 3600
+        a_wfr['run_type'] = wfr_type_base.strip()
+        a_wfr['run_version'] = wfr_version.strip()
+    my_workflows = [i for i in my_workflows if i['run_version'] in versions]
+    if not my_workflows:
+        return {'status': "no workflow in file with accepted version"}
+    my_workflows = sorted(my_workflows, key=lambda k: k['run_hours'])
+    last_wfr = [i for i in my_workflows if i['run_type'] == wfr_name][0]
 
     wfr = ff_utils.get_metadata(last_wfr['uuid'], key=auth)
     run_duration = last_wfr['run_hours']
@@ -445,7 +445,7 @@ def release_files(set_id, list_items, auth):
             ff_utils.patch_metadata({"status": item_status}, obj_id=a_file, key=auth)
 
 
-def run_missing_wfr(wf_info, input_files, run_name, auth, env, tag='0.2.5'):
+def run_missing_wfr(wf_info, input_files, run_name, auth, env):
 
     all_inputs = []
     for arg, files in input_files.items():
@@ -454,7 +454,7 @@ def run_missing_wfr(wf_info, input_files, run_name, auth, env, tag='0.2.5'):
     # small tweak to get bg2bw working
     all_inputs = sorted(all_inputs, key=itemgetter('workflow_argument_name'))
 
-    input_json = run_json(all_inputs, env, wf_info, run_name, tag)
+    input_json = run_json(all_inputs, env, wf_info, run_name)
     e = ff_utils.post_metadata(input_json, 'WorkflowRun/run', key=auth)
 
     url = json.loads(e['input'])['_tibanna']['url']
