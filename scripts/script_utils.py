@@ -50,7 +50,7 @@ def get_item_ids_from_args(id_input, auth, is_search=False):
     '''depending on the args passed return a list of item ids'''
     if is_search:
         query = 'search/?' + id_input[0]
-        result = search_metadata(query, auth)
+        result = search_metadata(query, auth, is_generator=True)
         return [r.get('uuid') for r in result]
     try:
         with open(id_input[0]) as inf:
@@ -196,12 +196,18 @@ def get_linked_items(auth, itemid, found_items={},
         if 'error' not in res['status']:
             # create an entry for this item in found_items
             try:
-                obj_type = get_metadata(itemid, auth)['@type'][0]
+                object = get_metadata(itemid, auth)
+                obj_type = object.get('@type')[0]
                 found_items[itemid] = obj_type
             except (AttributeError, KeyError):  # noqa: E722
                 print("Can't find a type for item %s" % itemid)
                 obj_type = unk
+                object = None
             if obj_type not in no_children:
+                if obj_type in ['FileFastq', 'FileProcessed'] and object is not None:
+                    wfrs = object.get('workflow_run_inputs')
+                    for wfr in wfrs:
+                        found_items[wfr.get('uuid')] = 'WorkflowRun'
                 fields_to_check = copy.deepcopy(res)
                 id_list = []
                 for key, val in fields_to_check.items():
