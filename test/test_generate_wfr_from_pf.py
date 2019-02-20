@@ -98,7 +98,7 @@ def fp_data():
         "status": "uploaded",
         "uuid": "658ecf64-57a1-41aa-ac04-7224c7ed3207",
         "accession": "4DNFIYQBRZMZ",
-        "file_format": "bed",
+        "file_format": {"uuid": "69f6d609-f2ac-4c82-9472-1a13331b5ce9"},
         "filename": "file.bed.gz"
     }
 
@@ -213,7 +213,7 @@ def test_create_wfr_meta_only_json(auth, prov_workflow, infiles, outfile, wfr_ou
             for d in v:
                 assert d['workflow_argument_name'] == 'outputs'
                 assert d['value'] == '658ecf64-57a1-41aa-ac04-7224c7ed3207'
-                assert d['workflow_argument_format'] == 'bed'
+                assert d['workflow_argument_format'] == "69f6d609-f2ac-4c82-9472-1a13331b5ce9"
                 assert d['type'] == 'Output processed file'
 
 
@@ -286,6 +286,7 @@ def mocked_args_dbupd_is_false():
             'key': None,
             'env': 'prod',
             'dbupdate': False,
+            'search': False,
             'input': 'i',
             'workflow': 'w'
         }
@@ -299,6 +300,7 @@ def mocked_args_dbupd():
             'key': None,
             'env': 'prod',
             'dbupdate': True,
+            'search': False,
             'input': 'i',
             'workflow': 'w'
         }

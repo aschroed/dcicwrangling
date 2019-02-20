@@ -119,7 +119,7 @@ def format_items(items_list, field_list, comment):
                     item_info.append("")
             # the attachment field returns a dictionary
             elif field == "attachment":
-                    item_info.append("")
+                item_info.append("")
             else:
                 # add sub-embedded objects
                 # 1) only add if the field is not enumerated

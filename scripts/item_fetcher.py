@@ -48,16 +48,27 @@ def main():  # pragma: no cover
     problems = []
     for iid in id_list:
         try:
-            res = get_metadata(iid, auth)
+            res = get_metadata(iid, auth, add_on='frame=object')
         except Exception:
             problems.append(iid)
             continue
 
         if args.fields:
             line = ''
+            # counts = {}
             for f in fields:
                 val = res.get(f)
-                if isinstance(val, list):
+                # if val is not None:  # added in for specific use case
+                if isinstance(val, dict):
+                    val = val.get('uuid')
+                elif isinstance(val, list):
+                    # counts[f] = len(val)  # added in for specific use case
+                    # if len(counts) > 1:
+                    #     print(iid, '\t', counts)
+                    # else:
+                    #     cnt = list(counts.values())[0]
+                    #     if cnt > 1:
+                    #         print(iid, '\t', cnt)
                     vs = ''
                     for v in val:
                         if isinstance(v, dict):
@@ -84,4 +95,4 @@ def main():  # pragma: no cover
 
 
 if __name__ == '__main__':
-        main()
+    main()

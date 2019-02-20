@@ -11,30 +11,43 @@ from dcicutils.ff_utils import (
     post_metadata,
 )
 from dcicwrangling.scripts.script_utils import create_ff_arg_parser, convert_key_arg_to_dict
+''' Generalized script to load items given a file with a single json per line
+    NOTE: will not do any phasing
+'''
 
 
 def get_args():  # pragma: no cover
     parser = argparse.ArgumentParser(
-        description='Given a file of ontology term jsons (one per line) load into db',
+        description='Given a file of item jsons (one per line) load into db',
         parents=[create_ff_arg_parser()],
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
     parser.add_argument('infile',
                         help="the datafile containing object data to import")
+    parser.add_argument('--id_field',
+                        default='uuid',
+                        help="the name of a field to use as an identifier - default is uuid")
+    parser.add_argument('--itype',
+                        help="Item type using schema naming convention eg. ontology_term - not required for patching")
     args = parser.parse_args()
     if args.key:
         args.key = convert_key_arg_to_dict(args.key)
     return args
 
 
-def get_id(term):
-    id_tag = term.get('uuid')
-    if not id_tag:
-        id_tag = term.get('term_id')
-    if not id_tag:
-        id_tag = term.get('term_name')
-    return id_tag
+def camel_case(name):
+    return ''.join(x for x in name.title() if not x == '_')
+
+
+def get_id_value(field, item):
+    val = item.get(field)
+    if field == 'aliases':
+        try:
+            return val[0]
+        except IndexError:
+            return None
+    return val
 
 
 def main():  # pragma: no cover
@@ -47,41 +60,56 @@ def main():  # pragma: no cover
         print("Authentication failed")
         sys.exit(1)
 
-    phase2 = {}
+    print("Running on {}".format(auth.get('server')))
     # assumes a single line corresponds to json for single term
     if not args.dbupdate:
         print("DRY RUN - use --dbupdate to update the database")
-    with open(args.infile) as terms:
-        for t in terms:
-            phase2json = {}
-            term = json.loads(t)
-            id_tag = get_id(term)
+    itype = None
+    if args.itype:
+        itype = args.itype
+    labs = {}
+    awards = {}
+    with open(args.infile) as items:
+        for i in items:
+            i = i.strip()
+            if not i or i.startswith('#'):
+                continue
+            item = json.loads(i)
+            labs.update({item.get('lab'): None})
+            awards.update({item.get('award'): None})
+        print("Labs")
+        for l in labs.keys():
+            print(l)
+        print("Awards")
+        for a in awards.keys():
+            print(a)
+        exit()
+        for i in items:
+            id_tag = get_id_value(args.id_field, item)
             if id_tag is None:
-                print("No Identifier for ", term)
+                print("No Identifier for ", item)
             else:
-                tid = '/ontology-terms/' + id_tag
-                # look for parents and remove for phase 2 loading if they are there
-                if 'parents' in term:
-                    phase2json['parents'] = term['parents']
-                    del term['parents']
-                if 'slim_terms' in term:
-                    phase2json['slim_terms'] = term['slim_terms']
-                    del term['slim_terms']
-
+                tid = ''
+                if itype:
+                    tid = '/' + itype + '/'
+                tid += id_tag
                 try:
                     dbterm = get_metadata(tid, auth)
                 except:  # noqa
                     dbterm = None
                 op = ''
-                if dbterm and 'OntologyTerm' in dbterm.get('@type', []):
+                if dbterm and 'Error' not in dbterm.get('@type'):
+                    if itype and camel_case(itype) not in dbterm.get('@type'):
+                        print("Item is not same type as existing one in db")
+                        continue
                     if args.dbupdate:
-                        e = patch_metadata(term, dbterm["uuid"], auth)
+                        e = patch_metadata(item, dbterm["uuid"], auth)
                     else:
                         e = {'status': 'dry run'}
                     op = 'PATCH'
                 else:
                     if args.dbupdate:
-                        e = post_metadata(term, 'OntologyTerm', auth)
+                        e = post_metadata(item, camel_case(itype), auth)
                     else:
                         e = {'status': 'dry run'}
                     op = 'POST'
@@ -90,24 +118,9 @@ def main():  # pragma: no cover
                     print(op, status)
                 elif status and status == 'success':
                     print(op, status, e['@graph'][0]['uuid'])
-                    if phase2json:
-                        phase2[e['@graph'][0]['uuid']] = phase2json
                 else:
                     print('FAILED', tid, e)
 
-    print("START LOADING PHASE2 at ", str(datetime.now()))
-    for tid, data in phase2.items():
-        if args.dbupdate:
-            e = patch_metadata(data, tid, auth)
-        else:
-            e = {'status': 'dry run'}
-        status = e.get('status')
-        if status and status == 'dry run':
-            print('PATCH', status)
-        elif status and status == 'success':
-            print('PATCH', status, e['@graph'][0]['uuid'])
-        else:
-            print('FAILED', tid, e)
     end = datetime.now()
     print("FINISHED - START: ", str(start), "\tEND: ", str(end))
 
