@@ -32,7 +32,6 @@ def remove_skipped_vals(val, vals2skip=None, auth=None):
     if isinstance(val, str):
         val = [val]
         is_string = True
-
     val = [v for v in val if v not in vals2skip]
     if auth:
         vuuids = [scu.get_item_uuid(v, auth) for v in val]
@@ -67,6 +66,8 @@ def create_patch_for_new_from_old(old, new, fields2move, vals2skip=None):
                         uid = v.get('uuid')
                         if uid is not None:
                             litems.append(uid)
+                    else:
+                        litems.append(v)
                 if litems:
                     ja_patch_dict[f] = litems
             else:

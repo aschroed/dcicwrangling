@@ -199,7 +199,7 @@ def get_linked_items(auth, itemid, found_items={},
                 object = get_metadata(itemid, auth)
                 obj_type = object.get('@type')[0]
                 found_items[itemid] = obj_type
-            except (AttributeError, KeyError):  # noqa: E722
+            except (AttributeError, KeyError, TypeError):  # noqa: E722
                 print("Can't find a type for item %s" % itemid)
                 obj_type = unk
                 object = None
