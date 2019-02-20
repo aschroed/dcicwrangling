@@ -55,7 +55,7 @@ def main():  # pragma: no cover
 
         if args.fields:
             line = ''
-            counts = {}
+            # counts = {}
             for f in fields:
                 val = res.get(f)
                 # if val is not None:  # added in for specific use case
@@ -95,4 +95,4 @@ def main():  # pragma: no cover
 
 
 if __name__ == '__main__':
-        main()
+    main()
