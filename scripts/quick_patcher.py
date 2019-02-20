@@ -9,7 +9,7 @@ import argparse
 import json
 from datetime import datetime
 from dcicutils.ff_utils import get_authentication_with_server, patch_metadata
-from dcicwrangling.scripts.script_utils import create_ff_arg_parser, convert_key_arg_to_dict
+from dcicwrangling.functions.script_utils import create_ff_arg_parser, convert_key_arg_to_dict
 
 
 def get_args():  # pragma: no cover

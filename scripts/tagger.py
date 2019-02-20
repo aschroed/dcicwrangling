@@ -1,7 +1,7 @@
 import sys
 import argparse
 from dcicutils.ff_utils import get_authentication_with_server, get_metadata, patch_metadata
-from dcicwrangling.scripts import script_utils as scu
+from dcicwrangling.functions import script_utils as scu
 
 
 def make_tag_patch(item, tag):

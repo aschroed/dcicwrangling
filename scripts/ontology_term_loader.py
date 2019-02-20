@@ -10,7 +10,7 @@ from dcicutils.ff_utils import (
     patch_metadata,
     post_metadata,
 )
-from dcicwrangling.scripts.script_utils import create_ff_arg_parser, convert_key_arg_to_dict
+from dcicwrangling.functions.script_utils import create_ff_arg_parser, convert_key_arg_to_dict
 
 
 def get_args():  # pragma: no cover
