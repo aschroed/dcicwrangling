@@ -119,11 +119,11 @@ def test_pffmi_main_dryrun(mocker, capsys, mocked_args_dbupd_is_false, auth):
                           return_value=auth):
             with mocker.patch('scripts.patch_field_for_many_items.scu.get_item_ids_from_args',
                               return_value=iids):
-                    pf.main()
-                    out = capsys.readouterr()[0]
-                    for i in iids:
-                        s = "PATCHING %s to status = deleted" % i
-                        assert s in out
+                pf.main()
+                out = capsys.readouterr()[0]
+                for i in iids:
+                    s = "PATCHING %s to status = deleted" % i
+                    assert s in out
 
 
 def test_pffmi_main_val_is_array(mocker, capsys, mocked_args_is_array, auth):
@@ -134,11 +134,11 @@ def test_pffmi_main_val_is_array(mocker, capsys, mocked_args_is_array, auth):
                           return_value=auth):
             with mocker.patch('scripts.patch_field_for_many_items.scu.get_item_ids_from_args',
                               return_value=iids):
-                    pf.main()
-                    out = capsys.readouterr()[0]
-                    for i in iids:
-                        s = "PATCHING %s to aliases = ['4dn-dcic-lab:test']" % i
-                        assert s in out
+                pf.main()
+                out = capsys.readouterr()[0]
+                for i in iids:
+                    s = "PATCHING %s to aliases = ['4dn-dcic-lab:test']" % i
+                    assert s in out
 
 
 def test_pffmi_main_dbupdate(mocker, capsys, mocked_args_dbupd_is_true, auth):

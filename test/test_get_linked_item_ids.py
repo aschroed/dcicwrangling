@@ -191,13 +191,13 @@ def test_gl_main_plus(mocker, capsys, mocked_args_plus, auth, got_item_ids):
                                   return_value=None):
                     with mocker.patch('scripts.get_linked_item_ids.scu.get_linked_items',
                                       return_value=got_item_ids):
-                            with mocker.patch('scripts.get_linked_item_ids.is_released',
-                                              side_effect=se):
-                                gli.main()
-                                out = capsys.readouterr()[0]
-                                for f, v in got_item_ids.items():
-                                    assert f in out
-                                    assert v in out
+                        with mocker.patch('scripts.get_linked_item_ids.is_released',
+                                          side_effect=se):
+                            gli.main()
+                            out = capsys.readouterr()[0]
+                            for f, v in got_item_ids.items():
+                                assert f in out
+                                assert v in out
 
 
 def test_gl_main_plus_more(mocker, capsys, mocked_args_plus_more, auth, got_item_ids):
@@ -212,10 +212,10 @@ def test_gl_main_plus_more(mocker, capsys, mocked_args_plus_more, auth, got_item
                                   return_value=None):
                     with mocker.patch('scripts.get_linked_item_ids.scu.get_linked_items',
                                       side_effect=[got_item_ids, {'ret_uuid1': got_item_ids['ret_uuid1']}]):
-                            with mocker.patch('scripts.get_linked_item_ids.is_released',
-                                              side_effect=se):
-                                gli.main()
-                                out = capsys.readouterr()[0]
-                                for f, v in got_item_ids.items():
-                                    assert f in out
-                                    assert v in out
+                        with mocker.patch('scripts.get_linked_item_ids.is_released',
+                                          side_effect=se):
+                            gli.main()
+                            out = capsys.readouterr()[0]
+                            for f, v in got_item_ids.items():
+                                assert f in out
+                                assert v in out

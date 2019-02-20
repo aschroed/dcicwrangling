@@ -989,7 +989,7 @@ def select_best_2(file_list, my_key):
         qc_resp = ff_utils.get_metadata(qc['uuid'], my_key)
         try:
             score = qc_resp['nodup_flagstat_qc'][0]['mapped']
-        except:
+        except Exception:
             score = qc_resp['ctl_nodup_flagstat_qc'][0]['mapped']
         scores.append((score, f))
     scores = sorted(scores, key=lambda x: -x[0])

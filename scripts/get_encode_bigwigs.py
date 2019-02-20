@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import sys
 import argparse
-import json
 import requests
 import copy
 from dcicutils.ff_utils import get_authentication_with_server, get_metadata, post_metadata
@@ -251,4 +250,4 @@ def main():  # pragma: no cover
 
 
 if __name__ == '__main__':
-        main()
+    main()

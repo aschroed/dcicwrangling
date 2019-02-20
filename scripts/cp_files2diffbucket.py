@@ -4,8 +4,6 @@ copy files from raw file bucket to processed file bucket
 '''
 import sys
 import argparse
-import gzip
-import collections
 import boto3
 from dcicutils.ff_utils import get_authentication_with_server, get_metadata
 from dcicwrangling.scripts import script_utils as scu
@@ -47,11 +45,11 @@ def main():  # pragma: no cover
         try:
             # print(file_key + ' cp from ' + source_bucket + ' to ' + target_bucket)
             s3.meta.client.copy(copy_source, target_bucket, file_key)
-        except:
+        except Exception:
             print('Can not find file on source', file_key)
             continue
         print('{} file copied'.format(file_key))
 
 
 if __name__ == '__main__':
-        main()
+    main()

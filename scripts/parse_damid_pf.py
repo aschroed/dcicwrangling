@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 import sys
 import argparse
-import json
-import requests
-import copy
 import xlrd
+import datetime
 from dcicutils.ff_utils import (
     get_authentication_with_server,
     patch_metadata, search_metadata)
@@ -101,7 +99,6 @@ def main():  # pragma: no cover
     types = next(row)
     fields.pop(0)
     types.pop(0)
-    fields2types = dict(zip(fields, types))
     for values in row:
         pf_found = False
         if values[0].startswith('#'):
@@ -219,7 +216,7 @@ def main():  # pragma: no cover
                     try:
                         res = patch_metadata(patch, repset_uuid, auth)
                         print(res.status)
-                    except:
+                    except Exception:
                         print("Can't patch {iid} with\n\t{p}".format(iid=repset_uuid, p=patch))
 
             reps = eset.get('replicate_exps')
@@ -270,19 +267,9 @@ def main():  # pragma: no cover
                                 print('SUCCESS')
                             else:
                                 print('unexpected response\n', res)
-                        except:
+                        except Exception:
                             print("Can't patch {iid} with\n\t{p}".format(iid=repuuid, p=reppatch))
 
 
-    # for c, v in processed.items():
-    #     print(c, " cell line")
-    #     for e, i in v.items():
-    #         print('\t', e, " DAM ID SEQ\n\thas the following processed files")
-    #         for r, d in i.items():
-    #             print('\t\t', r, " experiment")
-    #             for j in d:
-    #                 print('\t\t\t', j[0], '\t', j[1])
-
-
 if __name__ == '__main__':
-        main()
+    main()
