@@ -56,7 +56,7 @@ def test_remove_skipped_vals_w_good_atids(mocker):
     val = ['id1', 'id2']
     vals2skip = ['id1', 'id2', 'id3']
     # import pdb; pdb.set_trace()
-    with mocker.patch('scripts.script_utils.get_item_uuid',
+    with mocker.patch('functions.script_utils.get_item_uuid',
                       side_effect=side_effect):
         result = rj.remove_skipped_vals(val, vals2skip)
         assert not result
@@ -67,7 +67,7 @@ def test_remove_skipped_vals_w_item_lookup(mocker):
     val = ['id1', 'id2']
     vals2skip = ['id1']
     # import pdb; pdb.set_trace()
-    with mocker.patch('scripts.script_utils.get_item_uuid',
+    with mocker.patch('functions.script_utils.get_item_uuid',
                       side_effect=side_effect):
         result = rj.remove_skipped_vals(val, vals2skip)
         assert result[0] == val[1]
@@ -78,7 +78,7 @@ def test_remove_skipped_vals_w_item_lookup_and_not_found(mocker):
     val = ['id1', 'id2', 'id3']
     vals2skip = ['id3', 'id4']
     # import pdb; pdb.set_trace()
-    with mocker.patch('scripts.script_utils.get_item_uuid',
+    with mocker.patch('functions.script_utils.get_item_uuid',
                       side_effect=side_effect):
         result = rj.remove_skipped_vals(val, vals2skip)
         assert result[0] == val[0]
