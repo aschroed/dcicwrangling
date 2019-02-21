@@ -10,7 +10,7 @@ from dcicutils.ff_utils import (
     patch_metadata,
     post_metadata,
 )
-from dcicwrangling.scripts.script_utils import create_ff_arg_parser, convert_key_arg_to_dict
+from dcicwrangling.functions.script_utils import create_ff_arg_parser, convert_key_arg_to_dict
 ''' Generalized script to load items given a file with a single json per line
     NOTE: will not do any phasing
 '''
