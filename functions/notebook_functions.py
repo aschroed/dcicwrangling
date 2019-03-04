@@ -359,25 +359,19 @@ def get_wfr_report(wfrs, con_key):
         """For a given workflow_run item, grabs details, uuid, run_status, wfr name, date, and run time"""
         wfr_uuid = wfr_data['uuid']
         wfr_data = ff_utils.get_metadata(wfr_uuid, key=con_key)
-        wfr_status = wfr_data['run_status']
+        wfr_type, time_info = wfr_data['display_title'].split(' run ')
+        wfr_type_base, wfr_version = wfr_type.strip().split(' ')
+        time_info = time_info.strip('on').strip()
         try:
-            wfr_name = wfr_data['title'].split(' run ')[0].strip()
-        except:  # noqa
-            print('ProblematicCase')
-            print(wfr_data['uuid'], wfr_data.get('display_title', 'no title'))
-            continue
-        try:
-            wfr_time = datetime.strptime(wfr_data['date_created'], '%Y-%m-%dT%H:%M:%S.%f+00:00')
-        except ValueError:  # if it was exact second, no fraction is in value
-            print("wfr time bingo", wfr_uuid)
-            wfr_time = datetime.strptime(wfr_data['date_created'], '%Y-%m-%dT%H:%M:%S+00:00')
+            wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S.%f')
+        except ValueError:
+            wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S')
         run_hours = (datetime.utcnow() - wfr_time).total_seconds() / 3600
-        wfr_name_list = wfr_data['title'].split(' run ')[0].split('/')
-        wfr_name = wfr_name_list[0].strip()
-        try:
-            wfr_rev = wfr_name_list[1].strip()
-        except:  # noqa
-            wfr_rev = "0"
+        # try:
+        #     wfr_time = datetime.strptime(wfr_data['date_created'], '%Y-%m-%dT%H:%M:%S.%f+00:00')
+        # except ValueError:  # if it was exact second, no fraction is in value
+        #     print("wfr time bingo", wfr_uuid)
+        #     wfr_time = datetime.strptime(wfr_data['date_created'], '%Y-%m-%dT%H:%M:%S+00:00')
         output_files = wfr_data.get('output_files', None)
         output_uuids = []
         if output_files:
@@ -387,11 +381,11 @@ def get_wfr_report(wfrs, con_key):
 
         wfr_rep = {'wfr_uuid': wfr_data['uuid'],
                    'wfr_status': wfr_data['run_status'],
-                   'wfr_name': wfr_name,
-                   'wfr_rev': wfr_rev,
+                   'wfr_name': wfr_type_base.strip(),
+                   'wfr_version': wfr_version.strip(),
                    'wfr_date': wfr_time,
                    'run_time': run_hours,
-                   'status': wfr_status,
+                   'status': wfr_data['status'],
                    'outputs': output_uuids}
         wfr_report.append(wfr_rep)
     wfr_report = sorted(wfr_report, key=lambda k: (k['wfr_date'], k['wfr_name']))

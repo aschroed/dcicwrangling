@@ -314,7 +314,7 @@ def get_wfr_out(file_id, wfr_name, auth, versions, md_qc=False, run=100):
         return {'status': "no completed run"}
 
 
-def get_wfr_out_file(file_id, wfr_name, auth, md_qc=False, run=100):
+def get_wfr_out_file(file_id, wfr_name, auth, versions, md_qc=False, run=100):
     """For a given files, fetches the status of last wfr_name
     If there is a successful run it will return the output files as a dictionary of
     argument_name:file_id, else, will return the status. Some runs, like qc and md5,
@@ -325,25 +325,26 @@ def get_wfr_out_file(file_id, wfr_name, auth, md_qc=False, run=100):
     wfr = {}
     run_status = 'did not run'
 
-    # add run time to wfr
-    if workflows:
-        for a_wfr in workflows:
-            wfr_type, time_info = a_wfr['display_title'].split(' run ')
-            # user submitted ones use run on insteand of run
-            time_info = time_info.strip('on').strip()
-            try:
-                wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S.%f')
-            except ValueError:
-                wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S')
-            a_wfr['run_hours'] = (datetime.utcnow() - wfr_time).total_seconds() / 3600
-            a_wfr['run_type'] = wfr_type.strip()
-    # sort wfrs
-        workflows = sorted(workflows, key=lambda k: (k['run_type'], -k['run_hours']))
-
-    try:
-        last_wfr = [i for i in workflows if i['run_type'] == wfr_name][-1]
-    except (KeyError, IndexError, TypeError):
+    my_workflows = [i for i in workflows if i['display_title'].startswith(wfr_name)]
+    if not my_workflows:
         return {'status': "no workflow in file"}
+    for a_wfr in my_workflows:
+        wfr_type, time_info = a_wfr['display_title'].split(' run ')
+        wfr_type_base, wfr_version = wfr_type.strip().split(' ')
+        # user submitted ones use run on insteand of run
+        time_info = time_info.strip('on').strip()
+        try:
+            wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S.%f')
+        except ValueError:
+            wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S')
+        a_wfr['run_hours'] = (datetime.utcnow() - wfr_time).total_seconds() / 3600
+        a_wfr['run_type'] = wfr_type_base.strip()
+        a_wfr['run_version'] = wfr_version.strip()
+    my_workflows = [i for i in my_workflows if i['run_version'] in versions]
+    if not my_workflows:
+        return {'status': "no workflow in file with accepted version"}
+    my_workflows = sorted(my_workflows, key=lambda k: k['run_hours'])
+    last_wfr = [i for i in my_workflows if i['run_type'] == wfr_name][0]
 
     wfr = ff_utils.get_metadata(last_wfr['uuid'], key=auth)
     run_duration = last_wfr['run_hours']
@@ -385,7 +386,8 @@ def add_processed_files(item_id, list_pc, auth):
 def add_preliminary_processed_files(item_id, list_pc, auth, run_type="hic"):
     titles = {"hic": "HiC Processing Pipeline - Preliminary Files",
               "repliseq": "Repli-Seq Pipeline - Preliminary Files",
-              'chip': "ENCODE ChIP-Seq Pipeline - Preliminary Files"}
+              'chip': "ENCODE ChIP-Seq Pipeline - Preliminary Files",
+              'atac': "ENCODE ATAC-Seq Pipeline - Preliminary Files"}
     pc_set_title = titles[run_type]
     resp = ff_utils.get_metadata(item_id, key=auth)
 
@@ -432,8 +434,11 @@ def add_preliminary_processed_files(item_id, list_pc, auth, run_type="hic"):
     ff_utils.patch_metadata(patch, obj_id=item_id, key=auth)
 
 
-def release_files(set_id, list_items, auth):
-    item_status = ff_utils.get_metadata(set_id, key=auth)['status']
+def release_files(set_id, list_items, auth, status=None):
+    if status:
+        item_status = status
+    else:
+        item_status = ff_utils.get_metadata(set_id, key=auth)['status']
     # bring files to same status as experiments and sets
     if item_status in ['released', 'released to project', 'pre-release']:
         for a_file in list_items:
@@ -475,7 +480,7 @@ def extract_nz_file(acc, auth):
         pass
     # Soo suggested assigning 6 for Chiapet
     # Burak asked for running all without an NZ with paramter 6
-    elif exp_type in ['CHIA-pet', 'micro-C', 'DNase Hi-C', 'TrAC-loop']:
+    elif exp_type in ['CHIA-pet', 'ChIA-PET', 'micro-C', 'DNase Hi-C', 'TrAC-loop']:
         nz_num = '6'
     else:
         return (None, None)
