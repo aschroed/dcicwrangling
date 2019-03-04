@@ -1,0 +1,415 @@
+{
+    "cwl_directory_url_v1": "https://raw.githubusercontent.com/4dn-dcic/docker-4dn-repliseq/v14/cwl",
+    "uuid": "4459a4d8-1bd8-4b6a-b2cc-2506f4270a34",
+    "date_created": "2018-12-04T03:16:54.498039+00:00",
+    "app_name": "repliseq-parta",
+    "cwl_child_filenames": [
+        "clip.cwl",
+        "align.cwl",
+        "filtersort.cwl",
+        "dedup.cwl",
+        "count.cwl"
+    ],
+    "version_upgrade_log": "The count script (used by run-count.sh) now sorts the binfile before feeding to bedtools coverage to avoid a sorting inconsistency issue.",
+    "data_types": [
+        "Repli-seq"
+    ],
+    "accession": "4DNWFBT37VUW",
+    "description": "This is a subworkflow of the Repli-seq data processing pipeline. It takes a raw fastq file, aligns to the reference genome, performs filtering and reports read counts in a bedgraph (bg) format.",
+    "public_release": "2019-02-18",
+    "title": "Repli-seq data processing pipeline for alignment, filtering and counting v14",
+    "app_version": "v14",
+    "status": "released",
+    "last_modified": {
+        "modified_by": "986b362f-4eb6-4a9c-8173-3ab267307e3a",
+        "date_modified": "2019-02-18T22:16:04.436429+00:00"
+    },
+    "schema_version": "5",
+    "workflow_type": "Repli-seq data processing",
+    "previous_version": "146da22a-502d-4500-bf57-a7cf0b4b2364",
+    "lab": "828cd4fe-ebb0-4b36-a94a-d2e3a36cc989",
+    "category": "align + filter + count",
+    "submitted_by": "986b362f-4eb6-4a9c-8173-3ab267307e3a",
+    "award": "b0b9c607-f8b4-4f02-93f4-9895b461334b",
+    "arguments": [
+        {
+            "workflow_argument_name": "fastq",
+            "argument_format": "c13d06cf-218e-4f61-aaf0-91f226248b2c",
+            "argument_type": "Input file"
+        },
+        {
+            "workflow_argument_name": "bwaIndex",
+            "argument_format": "d13d06cf-218e-4f61-55f0-91f226248b2c",
+            "argument_type": "Input file"
+        },
+        {
+            "workflow_argument_name": "chromsizes",
+            "argument_format": "d13d06cf-218e-4f61-55f0-93f226248b2c",
+            "argument_type": "Input file"
+        },
+        {
+            "workflow_argument_name": "nthreads",
+            "argument_type": "parameter"
+        },
+        {
+            "workflow_argument_name": "memperthread",
+            "argument_type": "parameter"
+        },
+        {
+            "workflow_argument_name": "winsize",
+            "argument_type": "parameter"
+        },
+        {
+            "workflow_argument_name": "filtered_sorted_deduped_bam",
+            "argument_format": "d13d06cf-218e-4f61-aaf0-91f226248b3c",
+            "argument_type": "Output processed file"
+        },
+        {
+            "workflow_argument_name": "dedup_qc_report",
+            "argument_type": "Output QC file"
+        },
+        {
+            "secondary_file_formats": [
+                "d1311112-218e-4f61-aaf0-91f226248b2c",
+                "d1311111-218e-4f61-aaf0-91f226248b2c"
+            ],
+            "workflow_argument_name": "count_bg",
+            "argument_format": "d1312212-218e-4f61-aaf0-91f226248b2c",
+            "argument_type": "Output processed file"
+        }
+    ],
+    "steps": [
+        {
+            "outputs": [
+                {
+                    "target": [
+                        {
+                            "name": "fastq1",
+                            "step": "align"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "global": false,
+                        "file_format": "fastq"
+                    },
+                    "name": "out_clipped_fastq"
+                }
+            ],
+            "meta": {
+                "analysis_step_types": [
+                    "adapter removal"
+                ],
+                "software_used": [
+                    "97ffd707-b673-4184-a0f6-ca1dfc324067",
+                    "344ef3c8-266e-49b2-ab33-ed13d6d85915"
+                ],
+                "description": "Adapter removal according to the Repli-seq pipeline"
+            },
+            "name": "clip",
+            "inputs": [
+                {
+                    "source": [
+                        {
+                            "name": "fastq"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": true,
+                        "file_format": "c13d06cf-218e-4f61-aaf0-91f226248b2c"
+                    },
+                    "name": "input_fastq"
+                }
+            ]
+        },
+        {
+            "outputs": [
+                {
+                    "target": [
+                        {
+                            "name": "input_bam",
+                            "step": "filtersort"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "global": false,
+                        "file_format": "bam"
+                    },
+                    "name": "out_bam"
+                }
+            ],
+            "meta": {
+                "analysis_step_types": [
+                    "alignment"
+                ],
+                "software_used": [
+                    "5befdeda-66a8-43bc-a469-5a5e7248198e",
+                    "344ef3c8-266e-49b2-ab33-ed13d6d85915"
+                ],
+                "description": "Alignment according to the Repli-seq pipeline"
+            },
+            "name": "align",
+            "inputs": [
+                {
+                    "source": [
+                        {
+                            "name": "out_clipped_fastq",
+                            "step": "clip"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "global": false,
+                        "file_format": "c13d06cf-218e-4f61-aaf0-91f226248b2c"
+                    },
+                    "name": "fastq1"
+                },
+                {
+                    "source": [
+                        {
+                            "name": "bwaIndex"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "reference file",
+                        "global": true,
+                        "file_format": "d13d06cf-218e-4f61-55f0-91f226248b2c"
+                    },
+                    "name": "bwa_index"
+                },
+                {
+                    "source": [
+                        {
+                            "name": "nthreads"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "parameter",
+                        "global": true
+                    },
+                    "name": "nThreads"
+                }
+            ]
+        },
+        {
+            "outputs": [
+                {
+                    "target": [
+                        {
+                            "name": "input_bam",
+                            "step": "dedup"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "global": false,
+                        "file_format": "bam"
+                    },
+                    "name": "out_filtered_sorted_bam"
+                }
+            ],
+            "meta": {
+                "analysis_step_types": [
+                    "filtering",
+                    "sorting"
+                ],
+                "software_used": [
+                    "752e712f-4ebe-4335-a95e-53cd55a8a42f",
+                    "344ef3c8-266e-49b2-ab33-ed13d6d85915"
+                ],
+                "description": "Filtering and sorting according to the Repli-seq pipeline"
+            },
+            "name": "filtersort",
+            "inputs": [
+                {
+                    "source": [
+                        {
+                            "name": "out_bam",
+                            "step": "align"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "global": false,
+                        "file_format": "d13d06cf-218e-4f61-aaf0-91f226248b3c"
+                    },
+                    "name": "input_bam"
+                },
+                {
+                    "source": [
+                        {
+                            "name": "nthreads"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "parameter",
+                        "global": true
+                    },
+                    "name": "nthreads"
+                },
+                {
+                    "source": [
+                        {
+                            "name": "memperthread"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "parameter",
+                        "global": true
+                    },
+                    "name": "memperthread"
+                }
+            ]
+        },
+        {
+            "outputs": [
+                {
+                    "target": [
+                        {
+                            "name": "filtered_sorted_deduped_bam"
+                        },
+                        {
+                            "name": "input_bam",
+                            "step": "count"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": true,
+                        "file_format": "bam"
+                    },
+                    "name": "out_deduped_bam"
+                },
+                {
+                    "target": [
+                        {
+                            "name": "dedup_qc_report"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "QC",
+                        "global": true
+                    },
+                    "name": "out_qc_report"
+                }
+            ],
+            "meta": {
+                "analysis_step_types": [
+                    "duplicate removal"
+                ],
+                "software_used": [
+                    "752e712f-4ebe-4335-a95e-53cd55a8a42f",
+                    "344ef3c8-266e-49b2-ab33-ed13d6d85915"
+                ],
+                "description": "PCR Duplicate removal according to the Repli-seq pipeline"
+            },
+            "name": "dedup",
+            "inputs": [
+                {
+                    "source": [
+                        {
+                            "name": "out_filtered_sorted_bam",
+                            "step": "filtersort"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "global": false,
+                        "file_format": "d13d06cf-218e-4f61-aaf0-91f226248b3c"
+                    },
+                    "name": "input_bam"
+                }
+            ]
+        },
+        {
+            "outputs": [
+                {
+                    "target": [
+                        {
+                            "name": "count_bg"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": true,
+                        "file_format": "bg"
+                    },
+                    "name": "out_count_bg"
+                }
+            ],
+            "meta": {
+                "analysis_step_types": [
+                    "binning",
+                    "aggregation"
+                ],
+                "software_used": [
+                    "13d47cb7-79d1-4472-8d6f-1e1263631b4e",
+                    "344ef3c8-266e-49b2-ab33-ed13d6d85915",
+                    "58c2eadd-7a15-4e8c-960f-9c7022af2bfc",
+                    "00eda937-3149-4252-8dc9-c27de59d75ed"
+                ],
+                "description": "Read aggregation according to the Repli-seq pipeline"
+            },
+            "name": "count",
+            "inputs": [
+                {
+                    "source": [
+                        {
+                            "name": "out_deduped_bam",
+                            "step": "dedup"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": false,
+                        "file_format": "d13d06cf-218e-4f61-aaf0-91f226248b3c"
+                    },
+                    "name": "input_bam"
+                },
+                {
+                    "source": [
+                        {
+                            "name": "chromsizes"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "reference file",
+                        "global": true,
+                        "file_format": "d13d06cf-218e-4f61-55f0-93f226248b2c"
+                    },
+                    "name": "chrsizes"
+                },
+                {
+                    "source": [
+                        {
+                            "name": "winsize"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "parameter",
+                        "global": true
+                    },
+                    "name": "winsize"
+                }
+            ]
+        }
+    ],
+    "workflow_language": "CWL",
+    "cwl_main_filename": "repliseq-parta.cwl",
+    "project_release": "2019-02-18",
+    "name": "repliseq-parta",
+    "cwl_directory_url": "https://raw.githubusercontent.com/4dn-dcic/docker-4dn-repliseq/v14/cwl"
+}
