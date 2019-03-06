@@ -5,32 +5,45 @@ import functions.notebook_functions as nb
 
 # accepted workflows
 # workflow name, accepted revision numbers (0 if none), accetable run time (hours)
-workflow_details = [['md5', ['0'], 12],
-                    ['fastqc-0-11-4-1', ['0', '1'], 24],
-                    ['bwa-mem 0.2.5', ['0'], 50],
-                    ['pairsqc-single 0.2.5', ['0'], 12],
-                    ['hi-c-processing-bam 0.2.5', ['0'], 50],
-                    ['hi-c-processing-pairs 0.2.5', ['0'], 100],
-                    ['hi-c-processing-pairs-nore 0.2.5', ['0'], 100],
-                    ['hi-c-processing-pairs-nonorm 0.2.5', ['0'], 100],
-                    ['hi-c-processing-pairs-nore-nonorm 0.2.5', ['0'], 100],
-                    ['repliseq-parta 0.2.5', ['0'], 100],
-                    ['bedGraphToBigWig', ['0'], 24],
-                    ['bedtobeddb', ['0'], 24],
-                    ['encode-atacseq 0.2.5', ['0'], 100],
-                    ['encode-chipseq 0.2.5', ['0'], 100],
-                    ['encode-chipseq-aln-chip 1.1.1', ['0'], 100],
-                    ['encode-chipseq-aln-ctl 1.1.1', ['0'], 100],
-                    ['encode-chipseq-postaln 1.1.1', ['0'], 100],
-                    ['encode-atacseq-aln 1.1.1', ['0'], 100],
-                    ['encode-atacseq-postaln 1.1.1', ['0'], 100]
+workflow_details = [['md5', ['0.0.4', '0.2.6'], 12],
+                    ['fastqc-0-11-4-1', ['0.2.0'], 50],
+                    ['bwa-mem', ['0.2.6'], 50],
+                    ['pairsqc-single', ['0.2.5', '0.2.6'], 100],
+                    ['hi-c-processing-bam', ['0.2.6'], 50],
+                    ['hi-c-processing-pairs', ['0.2.6'], 200],
+                    ['hi-c-processing-pairs-nore', ['0.2.6'], 200],
+                    ['hi-c-processing-pairs-nonorm', ['0.2.6'], 200],
+                    ['hi-c-processing-pairs-nore-nonorm', ['0.2.6'], 200],
+                    ['repliseq-parta', ['v13.1', 'v14', 'v15'], 200],
+                    ['bedGraphToBigWig', ['v4'], 24],
+                    ['bedtobeddb', ['v2'], 24],
+                    ['encode-chipseq-aln-chip', ['1.1.1'], 200],
+                    ['encode-chipseq-aln-ctl', ['1.1.1'], 200],
+                    ['encode-chipseq-postaln', ['1.1.1'], 200],
+                    ['encode-atacseq-aln', ['1.1.1'], 200],
+                    ['encode-atacseq-postaln', ['1.1.1'], 200],
+                    ['mergebed', ['v1'], 200]
                     ]
+
 workflow_names = [i[0] for i in workflow_details]
 
 
 def delete_wfrs(file_resp, my_key, delete=False):
+    # file_resp in object_frame
     deleted_wfrs = []
     wfr_report = []
+    # special clause until we sort input_wfr_switch issue
+    # do not delete output wfrs of control files
+    output_wfrs = file_resp.get('workflow_run_outputs')
+    if not output_wfrs:
+        pass
+    else:
+        output_wfr = ff_utils.get_metadata(output_wfrs[0], key=my_key)
+        wfr_type, time_info = output_wfr['display_title'].split(' run ')
+        if wfr_type == 'encode-chipseq-aln-ctl 1.1.1':
+            print('skipping control file for wfr check', file_resp['accession'])
+            return
+
     wfrs = file_resp.get('workflow_run_inputs')
     if wfrs:
         wfrs = [ff_utils.get_metadata(w, key=my_key) for w in wfrs]
@@ -87,7 +100,7 @@ def delete_wfrs(file_resp, my_key, delete=False):
             return
         else:
             wfr_report = nb.get_wfr_report(wfrs, my_key)
-            # printTable(wfr_report, ['wfr_name', 'run_time', 'wfr_rev', 'run_time', 'wfr_status'])
+            # printTable(wfr_report, ['wfr_name', 'run_time', 'wfr_version', 'run_time', 'wfr_status'])
             # check if any unlisted wfr in report
             my_wfr_names = [i['wfr_name'] for i in wfr_report]
             unlisted = [x for x in my_wfr_names if x not in workflow_names]
@@ -109,11 +122,14 @@ def delete_wfrs(file_resp, my_key, delete=False):
                             print(wf_name, 'still running for', file_resp['accession'])
                         else:
                             old_wfrs.append(active_wfr)
-                    elif active_wfr['wfr_rev'] not in accepted_rev:
+                    elif active_wfr['wfr_version'] not in accepted_rev:
                         old_wfrs.append(active_wfr)
                     if old_wfrs:
                         for wfr_to_del in old_wfrs:
                             if wfr_to_del['status'] != 'deleted':
+                                if wfr_to_del['status'] in ['archived', 'replaced']:
+                                    print(wfr_to_del['wfr_name'], wfr_to_del['status'], ' wfr found, skipping ', wfr_to_del['wfr_uuid'], file_resp['accession'])
+                                    continue
                                 ####################################################
                                 ## TEMPORARY PIECE
                                 if wfr_to_del['status'] == 'released to project':
