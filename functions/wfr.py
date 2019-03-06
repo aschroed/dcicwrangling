@@ -207,24 +207,43 @@ def find_pairs(my_rep_set, my_env, lookfor='pairs', exclude_miseq=True):
                 continue
             # check that file has a pair
             f1 = file_resp['@id']
+            f2 = ""
+            paired = ""
+            # is there a pair?
+            try:
+                relations = file_resp['related_files']
+                paired_files = [relation['file']['@id'] for relation in relations if relation['relationship_type'] == 'paired with']
+                assert len(paired_files) == 1
+                f2 = paired_files[0]
+                paired = "Yes"
+            except:
+                paired = "No"
 
             # for experiments with unpaired fastq files
             if lookfor == 'single':
-                report[exp_resp['accession']].append(f1)
+                if paired == 'No':
+                    report[exp_resp['accession']].append(f1)
+                else:
+                    print('expected single files, found paired end')
+                    return
             # for experiments with paired files
             else:
+                if paired != 'Yes':
+                    print('expected paired files, found single end')
+                    return
                 f2 = ''
                 relations = file_resp.get('related_files')
 
                 if not relations:
                     print(f1, 'does not have a pair')
-                    continue
+                    return
                 for relation in relations:
                     if relation['relationship_type'] == 'paired with':
                         f2 = relation['file']['@id']
                 if not f2:
                     print(f1, 'does not have a pair')
-                    continue
+                    return
+
                 report[exp_resp['accession']].append((f1, f2))
     # get the organism
     if len(list(set(organisms))) == 1:
