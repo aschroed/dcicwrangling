@@ -109,6 +109,7 @@ def format_items(items_list, field_list, comment):
     for item in items_list:
         item_info = []
         for field in field_list:
+            write_value = ''
             # required fields will have a star
             field = field.strip('*')
             # add # to skip existing items during submission
