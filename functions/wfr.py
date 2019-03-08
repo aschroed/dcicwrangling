@@ -470,7 +470,6 @@ def release_files(set_id, list_items, auth, status=None):
 
 
 def run_missing_wfr(wf_info, input_files, run_name, auth, env):
-
     all_inputs = []
     for arg, files in input_files.items():
         inp = extract_file_info(files, arg, env)
@@ -483,7 +482,6 @@ def run_missing_wfr(wf_info, input_files, run_name, auth, env):
 
     url = json.loads(e['input'])['_tibanna']['url']
     display(HTML("<a href='{}' target='_blank'>{}</a>".format(url, e['status'])))
-    #time.sleep(30)
 
 
 def extract_nz_file(acc, auth):
@@ -521,11 +519,11 @@ def get_chip_info(f_exp_resp, my_key):
     """Gether the following information from the first experiment in the chip set"""
     control = ""  # True or False (True if set in scope is control)
     control_set = ""  # None (if no control exp is set), or the control experiment for the one in scope
-    target_type = "" # Histone or TF (or None for control)
+    target_type = ""  # Histone or TF (or None for control)
     # get target
     target = f_exp_resp.get('targeted_factor')
     if target:
-        target_type = 'tf' # set to tf default and switch to histone (this part might need some work later)
+        target_type = 'tf'  # set to tf default and switch to histone (this part might need some work later)
         target_dt = target['display_title']
         if target_dt.startswith('Protein:H2') or target_dt.startswith('Protein:H3'):
             target_type = 'histone'
