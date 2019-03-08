@@ -109,7 +109,7 @@ def test(ctx, watch=False, last_failing=False, no_flake=False, k=''):
 def flake(ctx):
     '''static linter to ensure code passes standards'''
     """Run flake8 on codebase."""
-    run('flake8 .', echo=True)
+    run('flake8 --ignore E501,E722.', echo=True)
     print("flake8 passed!!!")
 
 
