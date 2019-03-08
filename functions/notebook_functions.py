@@ -155,7 +155,7 @@ def format_items(items_list, field_list, comment):
 
 
 def is_uuid(value):
-    #md5 qualifies as uuid
+    # md5 qualifies as uuid, not strictly uuid4: modify
     if '-' not in value:
         return False
     try:
@@ -201,7 +201,7 @@ def record_object(uuid, con_key, schema_name, store_frame='raw',
                   add_pc_wfr=False, store={}, item_uuids=[], ignore_field=[]):
     """starting from a single uuid, tracks all linked items,
     keeps a list of uuids, and dictionary of items for each schema in the given store_frame"""
-    #keep list of fields that only exist in frame embedded (revlinks) that you want connected
+    # keep list of fields that only exist in frame embedded (revlinks) that you want connected
     if add_pc_wfr:
         add_from_embedded = {'file_fastq': ['workflow_run_inputs', 'workflow_run_outputs'],
                              'file_processed': ['workflow_run_inputs', 'workflow_run_outputs']
@@ -209,7 +209,7 @@ def record_object(uuid, con_key, schema_name, store_frame='raw',
     else:
         add_from_embedded = {}
 
-    #find schema name, store as obj_key, create empty list if missing in store
+    # find schema name, store as obj_key, create empty list if missing in store
     object_resp = ff_utils.get_metadata(uuid, key=con_key, add_on='frame=object')
     object_resp = remove_keys(object_resp, ignore_field)
 
@@ -226,7 +226,7 @@ def record_object(uuid, con_key, schema_name, store_frame='raw',
     raw_resp = remove_keys(raw_resp, ignore_field)
 
     # if resp['status'] not in ['current', 'released']:
-    #     print(obj_key, uuid, resp['status'])
+    # print(obj_key, uuid, resp['status'])
 
     # add raw frame to store and uuid to list
     if uuid not in item_uuids:
@@ -265,7 +265,7 @@ def record_object(uuid, con_key, schema_name, store_frame='raw',
 def record_object_es(uuid_list, con_key, schema_name, store_frame='raw', add_pc_wfr=False, ignore_field=[]):
     """starting from a single uuid, tracks all linked items,
     keeps a list of uuids, and dictionary of items for each schema in the given store_frame"""
-    #keep list of fields that only exist in frame embedded (revlinks) that you want connected
+    # keep list of fields that only exist in frame embedded (revlinks) that you want connected
     if add_pc_wfr:
         add_from_embedded = {'file_fastq': ['workflow_run_inputs', 'workflow_run_outputs'],
                              'file_processed': ['workflow_run_inputs', 'workflow_run_outputs']
@@ -277,7 +277,7 @@ def record_object_es(uuid_list, con_key, schema_name, store_frame='raw', add_pc_
     while uuid_list:
         # chunk the requests - don't want to hurt es performance
         chunk = 100
-        #find schema name, store as obj_key, create empty list if missing in store
+        # find schema name, store as obj_key, create empty list if missing in store
         chunked_uuids = [uuid_list[i:i + chunk] for i in range(0, len(uuid_list), chunk)]
         all_responses = []
         for a_chunk in chunked_uuids:
@@ -307,7 +307,7 @@ def record_object_es(uuid_list, con_key, schema_name, store_frame='raw', add_pc_
                 print('Problem encountered - skipped - check')
                 continue
 
-            #get linked items from es
+            # get linked items from es
             for key in ES_item['links']:
                 skip = False
                 # if link is from ignored_field, skip
@@ -328,7 +328,7 @@ def record_object_es(uuid_list, con_key, schema_name, store_frame='raw', add_pc_
                 for a_field in add_fields:
                     field_val = emb_resp.get(a_field)
                     if field_val:
-                        #turn it into string
+                        # turn it into string
                         field_val = str(field_val)
                         # check if any of embedded uuids is in the field value
                         for a_uuid in ES_item['linked_uuids']:
@@ -397,12 +397,12 @@ def printTable(myDict, colList=None):
     """ Pretty print a list of dictionaries Author: Thierry Husson"""
     if not colList:
         colList = list(myDict[0].keys() if myDict else [])
-    myList = [colList] # 1st row = header
+    myList = [colList]  # 1st row = header
     for item in myDict:
         myList.append([str(item[col] or '') for col in colList])
     colSize = [max(map(len, col)) for col in zip(*myList)]
     formatStr = ' | '.join(["{{:<{}}}".format(i) for i in colSize])
-    myList.insert(1, ['-' * i for i in colSize]) # Seperating line
+    myList.insert(1, ['-' * i for i in colSize])  # Seperating line
     for item in myList:
         print(formatStr.format(*item))
 

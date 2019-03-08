@@ -26,7 +26,7 @@ setup(
         "scripts/_version.py").readlines()[-1].split()[-1].strip("\"'"),
     description='4DN-DCIC Scripts for wrangling metadata and data.',
     long_description=README,
-    packages=['scripts', 'notebooks', 'functions'],
+    packages=['scripts', 'functions'],
     include_package_data=True,
     zip_safe=False,
     author='4DN-DCIC',

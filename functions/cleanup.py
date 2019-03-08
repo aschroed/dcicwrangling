@@ -74,7 +74,7 @@ def delete_wfrs(file_resp, my_key, delete=False):
                         print('Unlisted Workflow', wfr_to_del['wfr_name'], 'deleted file workflow',
                               wfr_to_del['wfr_uuid'], file_resp['accession'])
                     ####################################################
-                    ## TEMPORARY PIECE##################################
+                    # TEMPORARY PIECE##################################
                     if wfr_to_del['status'] == 'released to project':
                         print('saved from deletion', wfr_to_del['wfr_name'], 'deleted file workflow',
                               wfr_to_del['wfr_uuid'], file_resp['accession'])
@@ -104,21 +104,18 @@ def delete_wfrs(file_resp, my_key, delete=False):
             # check if any unlisted wfr in report
             my_wfr_names = [i['wfr_name'] for i in wfr_report]
             unlisted = [x for x in my_wfr_names if x not in workflow_names]
-            #report the unlisted ones
+            # report the unlisted ones
             if unlisted:
                 print('Unlisted Workflow', unlisted, 'skipped in', file_resp['accession'])
             for wf_name, accepted_rev, accepted_run_time in workflow_details:
-                #for each type of worklow make a list of old ones, and patch status and description
+                # for each type of worklow make a list of old ones, and patch status and description
                 sub_wfrs = [i for i in wfr_report if i['wfr_name'] == wf_name]
                 if sub_wfrs:
                     active_wfr = sub_wfrs[-1]
                     old_wfrs = sub_wfrs[:-1]
                     # check the status of the most recent workflow
                     if active_wfr['wfr_status'] != 'complete':
-                        if (
-                            active_wfr['wfr_status'] in ['running', 'started']
-                            and active_wfr['run_time'] < accepted_run_time
-                        ):
+                        if (active_wfr['wfr_status'] in ['running', 'started'] and active_wfr['run_time'] < accepted_run_time):
                             print(wf_name, 'still running for', file_resp['accession'])
                         else:
                             old_wfrs.append(active_wfr)
@@ -131,7 +128,7 @@ def delete_wfrs(file_resp, my_key, delete=False):
                                     print(wfr_to_del['wfr_name'], wfr_to_del['status'], ' wfr found, skipping ', wfr_to_del['wfr_uuid'], file_resp['accession'])
                                     continue
                                 ####################################################
-                                ## TEMPORARY PIECE
+                                # TEMPORARY PIECE
                                 if wfr_to_del['status'] == 'released to project':
                                     print('saved from deletion', wfr_to_del['wfr_name'], 'old style or dub',
                                           wfr_to_del['wfr_uuid'], file_resp['accession'])

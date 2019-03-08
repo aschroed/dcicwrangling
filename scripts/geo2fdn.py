@@ -114,7 +114,7 @@ type_dict = {'chipseq': 'ChIP-seq', 'tsaseq': 'TSA-seq', 'rnaseq': 'RNA-seq',
              'repliseq': 'Repli-seq'}
 
 
-def handle_timeout(command): # pragma: no cover
+def handle_timeout(command):  # pragma: no cover
     '''
     To retry commands if the server connection times out.
     '''
