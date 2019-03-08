@@ -67,24 +67,9 @@ def main():  # pragma: no cover
     itype = None
     if args.itype:
         itype = args.itype
-    labs = {}
-    awards = {}
-    with open(args.infile) as items:
-        for i in items:
-            i = i.strip()
-            if not i or i.startswith('#'):
-                continue
-            item = json.loads(i)
-            labs.update({item.get('lab'): None})
-            awards.update({item.get('award'): None})
-        print("Labs")
-        for l in labs.keys():
-            print(l)
-        print("Awards")
-        for a in awards.keys():
-            print(a)
-        exit()
-        for i in items:
+    with open(args.infile) as i:
+        items = json.load(i)
+        for item in items:
             id_tag = get_id_value(args.id_field, item)
             if id_tag is None:
                 print("No Identifier for ", item)
