@@ -61,6 +61,8 @@ def get_query_or_linked(con_key, query="", linked="", linked_frame="object", ign
 
 def append_items_to_xls(input_xls, add_items, schema_name, comment=True):
     output_file_name = "_with_items.".join(input_xls.split('.'))
+    # if xlsx, change to xls, can not store xlsx properly
+    output_file_name = output_file_name.replace(".xlsx", ".xls")
     bookread = xlrd.open_workbook(input_xls)
     book_w = xlwt.Workbook()
     Sheets_read = bookread.sheet_names()
