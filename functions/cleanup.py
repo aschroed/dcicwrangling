@@ -47,13 +47,15 @@ def delete_wfrs(file_resp, my_key, delete=False):
     wfrs = file_resp.get('workflow_run_inputs')
     if wfrs:
         wfrs = [ff_utils.get_metadata(w, key=my_key) for w in wfrs]
-    # look for md5s
-    # to do add more single input runs
+    # look for md5s on files without wfr_run_output (file_microscopy ...)
     if not wfrs:
-        wfrs_url = ('/search/?type=WorkflowRun&type=WorkflowRun&workflow.title=md5'
+        wfrs_url = ('/search/?type=WorkflowRun&type=WorkflowRun&workflow.title=md5+0.2.6&workflow.title=md5+0.0.4'
                     '&input_files.value.accession=') + file_resp['accession']
-        wfrs = ff_utils.search_metadata(wfrs_url, key=my_key)
-
+        wfrs = [w['uuid'] for w in ff_utils.search_metadata(wfrs_url, key=my_key)]
+        wfrs = [ff_utils.get_metadata(w, key=my_key) for w in wfrs]
+    # Skip sbg and file provenance
+    wfrs = [i for i in wfrs if not i['@id'].startswith('/workflow-run-sbg/')]
+    wfrs = [i for i in wfrs if not i['display_title'].startswith('File Provenance Tracking')]
     # Delete wfrs if file is deleted
     if file_resp['status'] == 'deleted':
         if file_resp.get('quality_metric'):
