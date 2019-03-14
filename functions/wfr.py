@@ -128,6 +128,7 @@ def run_json(input_files, env, wf_info, run_name):
                   "wfr_meta": wf_info['wfr_meta'],
                   "parameters": wf_info['parameters'],
                   "config": {"ebs_type": "gp2",
+                             "spot_instance": True,
                              "json_bucket": "4dn-aws-pipeline-run-json",
                              "ebs_iops": "",
                              "shutdown_min": "now",
