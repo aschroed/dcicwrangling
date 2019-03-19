@@ -1,5 +1,4 @@
 from dcicutils import ff_utils
-import functions.notebook_functions as nb
 from datetime import datetime
 
 # what kind of files should be searched for worflow run inputs, use url compatible naming
@@ -27,6 +26,47 @@ workflow_details = [['md5', ['0.0.4', '0.2.6'], 12],
                     ]
 
 workflow_names = [i[0] for i in workflow_details]
+
+
+def get_wfr_report(wfrs, con_key):
+    # for a given list of wfrs, produce a simpler report
+    wfr_report = []
+    for wfr_data in wfrs:
+        wfr_rep = {}
+        """For a given workflow_run item, grabs details, uuid, run_status, wfr name, date, and run time"""
+        wfr_uuid = wfr_data['uuid']
+        wfr_data = ff_utils.get_metadata(wfr_uuid, key=con_key)
+        wfr_type, time_info = wfr_data['display_title'].split(' run ')
+        wfr_type_base, wfr_version = wfr_type.strip().split(' ')
+        time_info = time_info.strip('on').strip()
+        try:
+            wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S.%f')
+        except ValueError:
+            wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S')
+        run_hours = (datetime.utcnow() - wfr_time).total_seconds() / 3600
+        # try:
+        #     wfr_time = datetime.strptime(wfr_data['date_created'], '%Y-%m-%dT%H:%M:%S.%f+00:00')
+        # except ValueError:  # if it was exact second, no fraction is in value
+        #     print("wfr time bingo", wfr_uuid)
+        #     wfr_time = datetime.strptime(wfr_data['date_created'], '%Y-%m-%dT%H:%M:%S+00:00')
+        output_files = wfr_data.get('output_files', None)
+        output_uuids = []
+        if output_files:
+            for i in output_files:
+                if i.get('value', None):
+                    output_uuids.append(i['value']['uuid'])
+
+        wfr_rep = {'wfr_uuid': wfr_data['uuid'],
+                   'wfr_status': wfr_data['run_status'],
+                   'wfr_name': wfr_type_base.strip(),
+                   'wfr_version': wfr_version.strip(),
+                   'wfr_date': wfr_time,
+                   'run_time': run_hours,
+                   'status': wfr_data['status'],
+                   'outputs': output_uuids}
+        wfr_report.append(wfr_rep)
+    wfr_report = sorted(wfr_report, key=lambda k: (k['wfr_date'], k['wfr_name']))
+    return wfr_report
 
 
 def delete_wfrs(file_resp, my_key, delete=False):
@@ -70,7 +110,7 @@ def delete_wfrs(file_resp, my_key, delete=False):
         if not wfrs:
             return
         else:
-            wfr_report = nb.get_wfr_report(wfrs, my_key)
+            wfr_report = get_wfr_report(wfrs, my_key)
             for wfr_to_del in wfr_report:
                 if wfr_to_del['status'] != 'deleted':
                     if wfr_to_del['wfr_name'] not in workflow_names:
@@ -102,7 +142,7 @@ def delete_wfrs(file_resp, my_key, delete=False):
         if not wfrs:
             return
         else:
-            wfr_report = nb.get_wfr_report(wfrs, my_key)
+            wfr_report = get_wfr_report(wfrs, my_key)
             # printTable(wfr_report, ['wfr_name', 'run_time', 'wfr_version', 'run_time', 'wfr_status'])
             # check if any unlisted wfr in report
             my_wfr_names = [i['wfr_name'] for i in wfr_report]
@@ -153,44 +193,3 @@ def delete_wfrs(file_resp, my_key, delete=False):
                                         for out_file in wfr_to_del['outputs']:
                                             ff_utils.patch_metadata({'status': "deleted"}, obj_id=out_file, key=my_key)
     return deleted_wfrs
-
-
-def get_wfr_report(wfrs, con_key):
-    # for a given list of wfrs, produce a simpler report
-    wfr_report = []
-    for wfr_data in wfrs:
-        wfr_rep = {}
-        """For a given workflow_run item, grabs details, uuid, run_status, wfr name, date, and run time"""
-        wfr_uuid = wfr_data['uuid']
-        wfr_data = ff_utils.get_metadata(wfr_uuid, key=con_key)
-        wfr_type, time_info = wfr_data['display_title'].split(' run ')
-        wfr_type_base, wfr_version = wfr_type.strip().split(' ')
-        time_info = time_info.strip('on').strip()
-        try:
-            wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S.%f')
-        except ValueError:
-            wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S')
-        run_hours = (datetime.utcnow() - wfr_time).total_seconds() / 3600
-        # try:
-        #     wfr_time = datetime.strptime(wfr_data['date_created'], '%Y-%m-%dT%H:%M:%S.%f+00:00')
-        # except ValueError:  # if it was exact second, no fraction is in value
-        #     print("wfr time bingo", wfr_uuid)
-        #     wfr_time = datetime.strptime(wfr_data['date_created'], '%Y-%m-%dT%H:%M:%S+00:00')
-        output_files = wfr_data.get('output_files', None)
-        output_uuids = []
-        if output_files:
-            for i in output_files:
-                if i.get('value', None):
-                    output_uuids.append(i['value']['uuid'])
-
-        wfr_rep = {'wfr_uuid': wfr_data['uuid'],
-                   'wfr_status': wfr_data['run_status'],
-                   'wfr_name': wfr_type_base.strip(),
-                   'wfr_version': wfr_version.strip(),
-                   'wfr_date': wfr_time,
-                   'run_time': run_hours,
-                   'status': wfr_data['status'],
-                   'outputs': output_uuids}
-        wfr_report.append(wfr_rep)
-    wfr_report = sorted(wfr_report, key=lambda k: (k['wfr_date'], k['wfr_name']))
-    return wfr_report
