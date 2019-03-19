@@ -6,48 +6,52 @@ import json
 from datetime import datetime
 from dcicutils.ff_utils import (
     get_authentication_with_server,
-    get_metadata,
-    patch_metadata,
     post_metadata,
 )
 from dcicwrangling.functions.script_utils import create_ff_arg_parser, convert_key_arg_to_dict
-''' Generalized script to load items given a file with a single json per line
-    NOTE: will not do any phasing
+''' Will attempt to load data from a file into the database
+    The file can be a simple list of json items in which case you need to specify an item type
+    with the --itype option (file created by generate_ontology is like this)
+    or the file can specify a dictionary with item types as keys and list of jsons as values
 '''
 
 
 def get_args():  # pragma: no cover
     parser = argparse.ArgumentParser(
-        description='Given a file of item jsons (one per line) load into db',
+        description='Given a file of item jsons try to load into database',
         parents=[create_ff_arg_parser()],
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
     parser.add_argument('infile',
                         help="the datafile containing object data to import")
-    parser.add_argument('--id_field',
-                        default='uuid',
-                        help="the name of a field to use as an identifier - default is uuid")
     parser.add_argument('--itype',
-                        help="Item type using schema naming convention eg. ontology_term - not required for patching")
+                        help="The item type to load if not specified in the file by dict key")
     args = parser.parse_args()
     if args.key:
         args.key = convert_key_arg_to_dict(args.key)
     return args
 
 
-def camel_case(name):
-    return ''.join(x for x in name.title() if not x == '_')
-
-
-def get_id_value(field, item):
-    val = item.get(field)
-    if field == 'aliases':
+def load(auth, itype, item_list, chunk_size=50):
+    ''' we probably want to chunk up jsons
+    '''
+    list_length = len(item_list)
+    curr_pos = 0
+    while curr_pos < list_length:
+        slice_for = chunk_size if chunk_size <= (list_length - curr_pos) else list_length - curr_pos
+        new_end = curr_pos + slice_for
+        chunk = item_list[curr_pos: new_end]
+        store = {itype: chunk}
+        payload = {'store': store, 'overwrite': True}
+        if 'localhost' in auth.get('server', ''):
+            payload['config_uri'] = 'development.ini'
+        import pdb; pdb.set_trace()
         try:
-            return val[0]
-        except IndexError:
-            return None
-    return val
+            res = post_metadata(payload, 'load_data', auth)
+        except Exception:
+            print("PROBLEM WITH POST")
+        curr_pos = new_end
 
 
 def main():  # pragma: no cover
@@ -60,54 +64,27 @@ def main():  # pragma: no cover
         print("Authentication failed")
         sys.exit(1)
 
-    print("Running on {}".format(auth.get('server')))
-    # assumes a single line corresponds to json for single term
     if not args.dbupdate:
         print("DRY RUN - use --dbupdate to update the database")
-    itype = None
-    if args.itype:
-        itype = args.itype
-    with open(args.infile) as i:
-        items = json.load(i)
-        for item in items:
-            id_tag = get_id_value(args.id_field, item)
-            if id_tag is None:
-                print("No Identifier for ", item)
+    with open(args.infile) as ifile:
+        item_store = json.loads(ifile.read())
+        if not args.itype:
+            if not isinstance(item_store, dict):
+                print("File is not in correct format")
+                sys.exit(1)
+            for itype, items in item_store.items():
+                if args.dbupdate:
+                    load(auth, itype, items)
+                else:
+                    print('DRY RUN - would try to load {} {} items'.format(len(items), itype))
+        else:
+            if not isinstance(item_store, list):
+                print("File is not in correct format")
+                sys.exit(1)
+            if args.dbupdate:
+                load(auth, args.itype, item_store)
             else:
-                tid = ''
-                if itype:
-                    tid = '/' + itype + '/'
-                tid += id_tag
-                try:
-                    dbterm = get_metadata(tid, auth)
-                except:  # noqa
-                    dbterm = None
-                op = ''
-                if dbterm and 'Error' not in dbterm.get('@type'):
-                    if itype and camel_case(itype) not in dbterm.get('@type'):
-                        print("Item is not same type as existing one in db")
-                        continue
-                    if args.dbupdate:
-                        e = patch_metadata(item, dbterm["uuid"], auth)
-                    else:
-                        e = {'status': 'dry run'}
-                    op = 'PATCH'
-                else:
-                    if args.dbupdate:
-                        e = post_metadata(item, camel_case(itype), auth)
-                    else:
-                        e = {'status': 'dry run'}
-                    op = 'POST'
-                status = e.get('status')
-                if status and status == 'dry run':
-                    print(op, status)
-                elif status and status == 'success':
-                    print(op, status, e['@graph'][0]['uuid'])
-                else:
-                    print('FAILED', tid, e)
-
-    end = datetime.now()
-    print("FINISHED - START: ", str(start), "\tEND: ", str(end))
+                print('DRY RUN - would try to load {} {} items'.format(len(item_store), args.itype))
 
 
 if __name__ == '__main__':  # pragma: no cover
