@@ -33,25 +33,17 @@ def get_args():  # pragma: no cover
     return args
 
 
-def load(auth, itype, item_list, chunk_size=50):
-    ''' we probably want to chunk up jsons
-    '''
+def load(auth, itype, item_list):
     list_length = len(item_list)
-    curr_pos = 0
-    while curr_pos < list_length:
-        slice_for = chunk_size if chunk_size <= (list_length - curr_pos) else list_length - curr_pos
-        new_end = curr_pos + slice_for
-        chunk = item_list[curr_pos: new_end]
-        store = {itype: chunk}
-        payload = {'store': store, 'overwrite': True}
-        if 'localhost' in auth.get('server', ''):
-            payload['config_uri'] = 'development.ini'
-        import pdb; pdb.set_trace()
-        try:
-            res = post_metadata(payload, 'load_data', auth)
-        except Exception:
-            print("PROBLEM WITH POST")
-        curr_pos = new_end
+    store = {itype: item_list}
+    payload = {'store': store, 'overwrite': True}
+    if 'localhost' in auth.get('server', ''):
+        payload['config_uri'] = 'development.ini'
+    try:
+        res = post_metadata(payload, 'load_data', auth)
+    except Exception as e:
+        print("PROBLEM WITH POST")
+        print(e)
 
 
 def main():  # pragma: no cover

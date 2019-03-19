@@ -222,3 +222,14 @@ def get_linked_items(auth, itemid, found_items={},
                     for uid in id_list:
                         found_items.update(get_linked_items(auth, uid, found_items))  # pragma: no cover
     return found_items
+
+
+def chunk_list(item_list, chunk_size=None):
+    list_length = len(item_list)
+    curr_pos = 0
+    while curr_pos < list_length:
+        slice_for = chunk_size if (chunk_size and chunk_size <= (list_length - curr_pos)) else list_length - curr_pos
+        new_end = curr_pos + slice_for
+        chunk = item_list[curr_pos: new_end]
+        # do something with the chunk
+        curr_pos = new_end
