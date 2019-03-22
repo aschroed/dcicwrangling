@@ -34,13 +34,13 @@ def get_args():  # pragma: no cover
 
 
 def load(auth, itype, item_list):
-    list_length = len(item_list)
+    # list_length = len(item_list)
     store = {itype: item_list}
     payload = {'store': store, 'overwrite': True}
     if 'localhost' in auth.get('server', ''):
         payload['config_uri'] = 'development.ini'
     try:
-        res = post_metadata(payload, 'load_data', auth)
+        post_metadata(payload, 'load_data', auth)
     except Exception as e:
         print("PROBLEM WITH POST")
         print(e)

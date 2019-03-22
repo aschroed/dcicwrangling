@@ -482,8 +482,8 @@ def run_missing_wfr(wf_info, input_files, run_name, auth, env):
     e = ff_utils.post_metadata(input_json, 'WorkflowRun/run', key=auth)
 
     url = json.loads(e['input'])['_tibanna']['url']
-    return url
-    #display(HTML("<a href='{}' target='_blank'>{}</a>".format(url, e['status'])))
+    display(HTML("<a href='{}' target='_blank'>{}</a>".format(url, e['status'])))
+    return
 
 
 def extract_nz_file(acc, auth):
