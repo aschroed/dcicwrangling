@@ -230,6 +230,6 @@ def chunk_list(item_list, chunk_size=None):
     while curr_pos < list_length:
         slice_for = chunk_size if (chunk_size and chunk_size <= (list_length - curr_pos)) else list_length - curr_pos
         new_end = curr_pos + slice_for
-        chunk = item_list[curr_pos: new_end]
+        # chunk = item_list[curr_pos: new_end]
         # do something with the chunk
         curr_pos = new_end

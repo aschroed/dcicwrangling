@@ -95,7 +95,7 @@ def delete_wfrs(file_resp, my_key, delete=False):
         wfrs = [w['uuid'] for w in ff_utils.search_metadata(wfrs_url, key=my_key)]
         wfrs = [ff_utils.get_metadata(w, key=my_key) for w in wfrs]
     # Skip sbg and file provenance
-    wfrs = [i for i in wfrs if not i['@id'].startswith('/workflow-run-sbg/')]
+    wfrs = [i for i in wfrs if not i['@id'].startswith('/workflow-runs-sbg/')]
     wfrs = [i for i in wfrs if not i['display_title'].startswith('File Provenance Tracking')]
     # Delete wfrs if file is deleted
     if file_resp['status'] == 'deleted':

@@ -483,6 +483,7 @@ def run_missing_wfr(wf_info, input_files, run_name, auth, env):
 
     url = json.loads(e['input'])['_tibanna']['url']
     display(HTML("<a href='{}' target='_blank'>{}</a>".format(url, e['status'])))
+    return
 
 
 def extract_nz_file(acc, auth):

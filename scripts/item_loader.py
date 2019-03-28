@@ -159,7 +159,7 @@ def load_file(auth, itype, filename):
     if 'localhost' in auth.get('server', ''):
         payload['config_uri'] = 'development.ini'
     try:
-        res = post_metadata(payload, 'load_data', auth)
+        post_metadata(payload, 'load_data', auth)
     except Exception as e:
         raise
 
