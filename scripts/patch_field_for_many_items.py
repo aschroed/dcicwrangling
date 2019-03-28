@@ -19,6 +19,8 @@ def get_args(args):
                         action='store_true',
                         help="Field is an array.  Default is False \
                         use this so value is correctly formatted even if only a single value")
+    parser.add_argument('--numtype',
+                        help="options: 'i' or 'f' If the field value is integer or number deal accordingly")
     args = parser.parse_args(args)
     if args.key:
         args.key = scu.convert_key_arg_to_dict(args.key)
@@ -41,6 +43,12 @@ def main():
         val = False
     if args.isarray:
         val = val.split("'")[1::2]
+    ntype = args.numtype
+    if ntype:
+        if ntype == 'i':
+            val = int(val)
+        elif ntype == 'f':
+            val = float(val)
     for iid in itemids:
         print("PATCHING", iid, "to", field, "=", val)
         if (args.dbupdate):
