@@ -133,6 +133,32 @@ def step_settings(step_name, my_organism, attribution, params={}):
             }
         },
         {
+            'wf_name': 'hi-c-processing-pairs',
+            'wf_uuid': '4dn-dcic-lab:wf-hi-c-processing-pairs-0.2.7',
+            'parameters': {"nthreads": 4,
+                           "maxmem": "32g",
+                           "no_balance": False
+                           },
+            'custom_pf_fields': {
+                'cooler_normvector': {
+                    'genome_assembly': genome,
+                    'file_type': 'juicebox norm vector',
+                    'description': out_n},
+                'hic': {
+                    'genome_assembly': genome,
+                    'file_type': 'contact matrix',
+                    'description': out_n},
+                'mcool': {
+                    'genome_assembly': genome,
+                    'file_type': 'contact matrix',
+                    'description': out_n},
+                'merged_pairs': {
+                    'genome_assembly': genome,
+                    'file_type': 'contact list-combined',
+                    'description': out_n}
+            }
+        },
+        {
             'wf_name': 'repliseq-parta',
             'wf_uuid': '4dn-dcic-lab:wf-repliseq-parta-v16',
             "parameters": {"nthreads": 4, "memperthread": "2G"},
@@ -343,8 +369,8 @@ def step_settings(step_name, my_organism, attribution, params={}):
             'custom_pf_fields': {
                 'merged_bed': {
                     'genome_assembly': genome,
-                    'file_type': 'peaks',
-                    'description': 'ATAC-seq merged peak calls'}
+                    'file_type': 'read positions',
+                    'description': 'Merged file, positions of aligned reads in bed format, one line per read mate'}
             }
         }
     ]
