@@ -91,11 +91,6 @@ def format_items(items_list, field_list, comment):
     all_items = []
     # filter for fields that exist on the excel sheet
     for item in items_list:
-
-        print_info = False
-        if 'imaging_paths' in item:
-            print_info = True
-
         item_info = []
         for field in field_list:
             write_value = ''
