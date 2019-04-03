@@ -62,7 +62,11 @@ def append_items_to_xls(input_xls, add_items, schema_name, comment=True):
                 new_sheet.write(write_column_index, write_row_index, cell_value, style)
 
         # get items to add
-        items_to_add = add_items.get(schema_name[sheet])
+        # exception for microscopy paths
+        if sheet == 'ExperimentMic_Path':
+            items_to_add = add_items.get(schema_name['ExperimentMic'])
+        else:
+            items_to_add = add_items.get(schema_name[sheet])
         if items_to_add:
             formatted_items = format_items(items_to_add, first_row_values, comment)
             for i, item in enumerate(formatted_items):
@@ -105,12 +109,16 @@ def format_items(items_list, field_list, comment):
                 # add sub-embedded objects
                 # 1) only add if the field is not enumerated
                 # 2) only add the first item if there are multiple
-                # any other option becomes confusing
+                # if you want to add more, accumulate all key value pairs in a single dictionary
+                # [{main.sub1:a, main.sub2:b ,main.sub1-1:c, main.sub2-1:d,}]
+                # and prepare the excel with these fields
                 if "." in field:
+
                     main_field, sub_field = field.split('.')
                     temp_value = item.get(main_field)
                     if temp_value:
                         write_value = temp_value[0].get(sub_field, '')
+
                 # usual cases
                 else:
                     write_value = item.get(field, '')
