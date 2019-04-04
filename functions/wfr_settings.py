@@ -50,100 +50,12 @@ def step_settings(step_name, my_organism, attribution, params={}):
         },
         {
             'wf_name': 'hi-c-processing-pairs',
-            'wf_uuid': 'c9e0e6f7-b0ed-4a42-9466-cadc2dd84df0',
-            'parameters': {"nthreads": 1, "maxmem": "32g"},
-            'custom_pf_fields': {
-                'cooler_normvector': {
-                    'genome_assembly': genome,
-                    'file_type': 'juicebox norm vector',
-                    'description': out_n},
-                'hic': {
-                    'genome_assembly': genome,
-                    'file_type': 'contact matrix',
-                    'description': out_n},
-                'mcool': {
-                    'genome_assembly': genome,
-                    'file_type': 'contact matrix',
-                    'description': out_n},
-                'merged_pairs': {
-                    'genome_assembly': genome,
-                    'file_type': 'contact list-combined',
-                    'description': out_n}
-            }
-        },
-        {
-            'wf_name': 'hi-c-processing-pairs-nore',
-            'wf_uuid': 'c19ee11e-9d5a-454f-af50-600a0cf990b6',
-            'parameters': {"nthreads": 1, "maxmem": "32g"},
-            'custom_pf_fields': {
-                'cooler_normvector': {
-                    'genome_assembly': genome,
-                    'file_type': 'juicebox norm vector',
-                    'description': out_n},
-                'hic': {
-                    'genome_assembly': genome,
-                    'file_type': 'contact matrix',
-                    'description': out_n},
-                'mcool': {
-                    'genome_assembly': genome,
-                    'file_type': 'contact matrix',
-                    'description': out_n},
-                'merged_pairs': {
-                    'genome_assembly': genome,
-                    'file_type': 'contact list-combined',
-                    'description': out_n}
-            }
-        },
-        {
-            'wf_name': 'hi-c-processing-pairs-nonorm',
-            'wf_uuid': 'bd6e25ea-f368-4758-a821-d30e0b5a4100',
-            'parameters': {"nthreads": 1, "maxmem": "32g"},
-            'custom_pf_fields': {
-                'hic': {
-                    'genome_assembly': genome,
-                    'file_type': 'contact matrix',
-                    'description': out_n},
-                'mcool': {
-                    'genome_assembly': genome,
-                    'file_type': 'contact matrix',
-                    'description': out_n},
-                'merged_pairs': {
-                    'genome_assembly': genome,
-                    'file_type': 'contact list-combined',
-                    'description': out_n}
-            }
-        },
-        {
-            'wf_name': 'hi-c-processing-pairs-nore-nonorm',
-            'wf_uuid': '05b62bba-7bfa-46cc-8d8e-3d37f4feb8bd',
-            'parameters': {"nthreads": 1, "maxmem": "32g"},
-            'custom_pf_fields': {
-                'hic': {
-                    'genome_assembly': genome,
-                    'file_type': 'contact matrix',
-                    'description': out_n},
-                'mcool': {
-                    'genome_assembly': genome,
-                    'file_type': 'contact matrix',
-                    'description': out_n},
-                'merged_pairs': {
-                    'genome_assembly': genome,
-                    'file_type': 'contact list-combined',
-                    'description': out_n}
-            }
-        },
-        {
-            'wf_name': 'hi-c-processing-pairs',
             'wf_uuid': '4dn-dcic-lab:wf-hi-c-processing-pairs-0.2.7',
             'parameters': {"nthreads": 4,
                            "maxmem": "32g",
                            "no_balance": False
                            },
             'custom_pf_fields': {
-                'cooler_normvector': {
-                    'genome_assembly': genome,
-                    'file_type': 'juicebox norm vector',
-                    'description': out_n},
                 'hic': {
                     'genome_assembly': genome,
                     'file_type': 'contact matrix',
