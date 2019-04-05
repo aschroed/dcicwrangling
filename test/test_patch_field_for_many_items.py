@@ -47,6 +47,7 @@ def mocked_args_dbupd_is_false():
             'dbupdate': False,
             'search': False,
             'isarray': False,
+            'numtype': None,
             'input': ['id1', 'id2'],
             'field': 'status',
             'value': 'deleted'
@@ -62,6 +63,7 @@ def mocked_args_dbupd_is_true():
             'env': 'prod',
             'dbupdate': True,
             'search': False,
+            'numtype': None,
             'isarray': False,
             'input': ['id1', 'id2'],
             'field': 'status',
@@ -81,6 +83,7 @@ def mocked_args_is_array():
             'isarray': True,
             'input': ['id1', 'id2'],
             'field': 'aliases',
+            'numtype': None,
             'value': "'4dn-dcic-lab:test'"
         }
     )
@@ -97,6 +100,7 @@ def mocked_args_w_delete():
             'isarray': False,
             'input': ['id1', 'id2'],
             'field': 'aliases',
+            'numtype': None,
             'value': '*delete*'
         }
     )
