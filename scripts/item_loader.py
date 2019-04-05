@@ -147,7 +147,7 @@ def load_json(auth, itype, item_list, chunk_size=50):
         if 'localhost' in auth.get('server', ''):
             payload['config_uri'] = 'development.ini'
         try:
-            res = post_metadata(payload, 'load_data', auth)
+            post_metadata(payload, 'load_data', auth)
         except Exception as e:
             print("PROBLEM WITH POST")
             print(e)
@@ -160,7 +160,7 @@ def load_file(auth, itype, filename):
         payload['config_uri'] = 'development.ini'
     try:
         post_metadata(payload, 'load_data', auth)
-    except Exception as e:
+    except:
         raise
 
 
@@ -252,7 +252,7 @@ def main():  # pragma: no cover
                             item['uuid'] = uid
                             to_post.append(item)
                 if to_post:
-                    import pdb; pdb.set_trace()
+                    # import pdb; pdb.set_trace()
                     load_json(auth, itype, to_post, chunk_size=1000)
                 if to_patch:
                     patch_jsons(auth, to_patch)
