@@ -10,7 +10,7 @@ workflow_details = [['md5', ['0.0.4', '0.2.6'], 12],
                     ['bwa-mem', ['0.2.6'], 50],
                     ['pairsqc-single', ['0.2.5', '0.2.6'], 100],
                     ['hi-c-processing-bam', ['0.2.6'], 50],
-                    ['hi-c-processing-pairs', ['0.2.6'], 200],
+                    ['hi-c-processing-pairs', ['0.2.6', '0.2.7'], 200],
                     ['hi-c-processing-pairs-nore', ['0.2.6'], 200],
                     ['hi-c-processing-pairs-nonorm', ['0.2.6'], 200],
                     ['hi-c-processing-pairs-nore-nonorm', ['0.2.6'], 200],
@@ -51,10 +51,13 @@ def get_wfr_report(wfrs, con_key):
         #     wfr_time = datetime.strptime(wfr_data['date_created'], '%Y-%m-%dT%H:%M:%S+00:00')
         output_files = wfr_data.get('output_files', None)
         output_uuids = []
+        qc_uuids = []
         if output_files:
             for i in output_files:
                 if i.get('value', None):
                     output_uuids.append(i['value']['uuid'])
+                if i.get('value_qc', None):
+                    qc_uuids.append(i['value_qc']['uuid'])
 
         wfr_rep = {'wfr_uuid': wfr_data['uuid'],
                    'wfr_status': wfr_data['run_status'],
@@ -63,7 +66,8 @@ def get_wfr_report(wfrs, con_key):
                    'wfr_date': wfr_time,
                    'run_time': run_hours,
                    'status': wfr_data['status'],
-                   'outputs': output_uuids}
+                   'outputs': output_uuids,
+                   'qcs': qc_uuids}
         wfr_report.append(wfr_rep)
     wfr_report = sorted(wfr_report, key=lambda k: (k['wfr_date'], k['wfr_name']))
     return wfr_report
@@ -77,9 +81,14 @@ def delete_wfrs(file_resp, my_key, delete=False):
     # do not delete output wfrs of control files
     output_wfrs = file_resp.get('workflow_run_outputs')
     if not output_wfrs:
-        pass
+        if file_resp['@id'].startswith('/file_processed/'):
+            # user submtted processed files
+            return
+        else:
+            # raw files:
+            pass
     else:
-        output_wfr = ff_utils.get_metadata(output_wfrs[0], key=my_key)
+        output_wfr = output_wfrs[0]
         wfr_type, time_info = output_wfr['display_title'].split(' run ')
         if wfr_type == 'encode-chipseq-aln-ctl 1.1.1':
             print('skipping control file for wfr check', file_resp['accession'])
@@ -87,7 +96,7 @@ def delete_wfrs(file_resp, my_key, delete=False):
 
     wfrs = file_resp.get('workflow_run_inputs')
     if wfrs:
-        wfrs = [ff_utils.get_metadata(w, key=my_key) for w in wfrs]
+        wfrs = [ff_utils.get_metadata(w['uuid'], key=my_key) for w in wfrs]
     # look for md5s on files without wfr_run_output (file_microscopy ...)
     if not wfrs:
         wfrs_url = ('/search/?type=WorkflowRun&type=WorkflowRun&workflow.title=md5+0.2.6&workflow.title=md5+0.0.4'
@@ -136,6 +145,9 @@ def delete_wfrs(file_resp, my_key, delete=False):
                         if wfr_to_del['outputs']:
                             for out_file in wfr_to_del['outputs']:
                                 ff_utils.patch_metadata({'status': "deleted"}, obj_id=out_file, key=my_key)
+                        if wfr_to_del.get('qcs'):
+                            for out_qc in wfr_to_del['qcs']:
+                                ff_utils.patch_metadata({'status': "deleted"}, obj_id=out_qc, key=my_key)
 
     else:
         # get a report on all workflow_runs
@@ -192,4 +204,7 @@ def delete_wfrs(file_resp, my_key, delete=False):
                                     if wfr_to_del['outputs']:
                                         for out_file in wfr_to_del['outputs']:
                                             ff_utils.patch_metadata({'status': "deleted"}, obj_id=out_file, key=my_key)
+                                    if wfr_to_del.get('qcs'):
+                                        for out_qc in wfr_to_del['qcs']:
+                                            ff_utils.patch_metadata({'status': "deleted"}, obj_id=out_qc, key=my_key)
     return deleted_wfrs
