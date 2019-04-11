@@ -10,7 +10,8 @@ def test_pffmi_get_args_required_default():
         'search': False,
         'isarray': False,
         'field': 'status',
-        'value': 'deleted'
+        'value': 'deleted',
+        'numtype': None
     }
     args = pf.get_args(['i', 'status', 'deleted'])
     for k, v in defaults.items():
@@ -49,7 +50,8 @@ def mocked_args_dbupd_is_false():
             'isarray': False,
             'input': ['id1', 'id2'],
             'field': 'status',
-            'value': 'deleted'
+            'value': 'deleted',
+            'numtype': None
         }
     )
 
@@ -65,7 +67,8 @@ def mocked_args_dbupd_is_true():
             'isarray': False,
             'input': ['id1', 'id2'],
             'field': 'status',
-            'value': 'deleted'
+            'value': 'deleted',
+            'numtype': None
         }
     )
 
@@ -81,7 +84,8 @@ def mocked_args_is_array():
             'isarray': True,
             'input': ['id1', 'id2'],
             'field': 'aliases',
-            'value': "'4dn-dcic-lab:test'"
+            'value': "'4dn-dcic-lab:test'",
+            'numtype': None
         }
     )
 
@@ -97,7 +101,8 @@ def mocked_args_w_delete():
             'isarray': False,
             'input': ['id1', 'id2'],
             'field': 'aliases',
-            'value': '*delete*'
+            'value': '*delete*',
+            'numtype': None
         }
     )
 
