@@ -28,14 +28,12 @@ workflow_details = [['md5', ['0.0.4', '0.2.6'], 12],
 workflow_names = [i[0] for i in workflow_details]
 
 
-def get_wfr_report(wfrs, con_key):
+def get_wfr_report(wfrs):
     # for a given list of wfrs, produce a simpler report
     wfr_report = []
     for wfr_data in wfrs:
         wfr_rep = {}
         """For a given workflow_run item, grabs details, uuid, run_status, wfr name, date, and run time"""
-        wfr_uuid = wfr_data['uuid']
-        wfr_data = ff_utils.get_metadata(wfr_uuid, key=con_key)
         wfr_type, time_info = wfr_data['display_title'].split(' run ')
         wfr_type_base, wfr_version = wfr_type.strip().split(' ')
         time_info = time_info.strip('on').strip()
@@ -73,8 +71,9 @@ def get_wfr_report(wfrs, con_key):
     return wfr_report
 
 
-def delete_wfrs(file_resp, my_key, delete=False):
-    # file_resp in object_frame
+def delete_wfrs(file_resp, my_key, delete=False, stash=None):
+    # file_resp in embedded frame
+    # stash: all related wfrs for file_resp
     deleted_wfrs = []
     wfr_report = []
     # special clause until we sort input_wfr_switch issue
@@ -94,15 +93,22 @@ def delete_wfrs(file_resp, my_key, delete=False):
             print('skipping control file for wfr check', file_resp['accession'])
             return
 
-    wfrs = file_resp.get('workflow_run_inputs')
-    if wfrs:
-        wfrs = [ff_utils.get_metadata(w, key=my_key) for w in wfrs]
+    wfr_uuids = [i['uuid'] for i in file_resp.get('workflow_run_inputs')]
+    wfrs = []
+    if wfr_uuids:
+        # fetch them from stash
+        if stash:
+            wfrs = [i for i in stash if i['uuid'] in wfr_uuids]
+            assert len(wfrs) == len(wfr_uuids)
+        else:
+            wfrs = [ff_utils.get_metadata(w, key=my_key) for w in wfrs]
     # look for md5s on files without wfr_run_output (file_microscopy ...)
-    if not wfrs:
+    else:
         wfrs_url = ('/search/?type=WorkflowRun&type=WorkflowRun&workflow.title=md5+0.2.6&workflow.title=md5+0.0.4'
                     '&input_files.value.accession=') + file_resp['accession']
         wfrs = [w['uuid'] for w in ff_utils.search_metadata(wfrs_url, key=my_key)]
         wfrs = [ff_utils.get_metadata(w, key=my_key) for w in wfrs]
+
     # Skip sbg and file provenance
     wfrs = [i for i in wfrs if not i['@id'].startswith('/workflow-runs-sbg/')]
     wfrs = [i for i in wfrs if not i['display_title'].startswith('File Provenance Tracking')]
@@ -119,7 +125,7 @@ def delete_wfrs(file_resp, my_key, delete=False):
         if not wfrs:
             return
         else:
-            wfr_report = get_wfr_report(wfrs, my_key)
+            wfr_report = get_wfr_report(wfrs)
             for wfr_to_del in wfr_report:
                 if wfr_to_del['status'] != 'deleted':
                     if wfr_to_del['wfr_name'] not in workflow_names:
@@ -154,7 +160,7 @@ def delete_wfrs(file_resp, my_key, delete=False):
         if not wfrs:
             return
         else:
-            wfr_report = get_wfr_report(wfrs, my_key)
+            wfr_report = get_wfr_report(wfrs)
             # printTable(wfr_report, ['wfr_name', 'run_time', 'wfr_version', 'run_time', 'wfr_status'])
             # check if any unlisted wfr in report
             my_wfr_names = [i['wfr_name'] for i in wfr_report]
