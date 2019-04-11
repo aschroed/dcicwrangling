@@ -8,7 +8,7 @@
     }
   },
   "Notebook": {
-    "Toolbar": true,
-    "Header": true
+    "Header": true,
+    "Toolbar": true
   }
 }
