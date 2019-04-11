@@ -160,11 +160,7 @@ def load_file(auth, itype, filename):
         payload['config_uri'] = 'development.ini'
     try:
         post_metadata(payload, 'load_data', auth)
-<<<<<<< HEAD
-    except:
-=======
     except Exception:
->>>>>>> master
         raise
 
 
