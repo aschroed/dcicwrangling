@@ -96,7 +96,7 @@ def delete_wfrs(file_resp, my_key, delete=False):
 
     wfrs = file_resp.get('workflow_run_inputs')
     if wfrs:
-        wfrs = [ff_utils.get_metadata(w['uuid'], key=my_key) for w in wfrs]
+        wfrs = [ff_utils.get_metadata(w, key=my_key) for w in wfrs]
     # look for md5s on files without wfr_run_output (file_microscopy ...)
     if not wfrs:
         wfrs_url = ('/search/?type=WorkflowRun&type=WorkflowRun&workflow.title=md5+0.2.6&workflow.title=md5+0.0.4'
