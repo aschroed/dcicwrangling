@@ -1,8 +1,6 @@
 from dcicutils import ff_utils
 from datetime import datetime
 
-# what kind of files should be searched for worflow run inputs, use url compatible naming
-
 # accepted workflows
 # workflow name, accepted revision numbers (0 if none), accetable run time (hours)
 workflow_details = [['md5', ['0.0.4', '0.2.6'], 12],
@@ -76,11 +74,12 @@ def delete_wfrs(file_resp, my_key, delete=False, stash=None):
     # stash: all related wfrs for file_resp
     deleted_wfrs = []
     wfr_report = []
+    file_type = file_resp['@id'].split('/')[1]
     # special clause until we sort input_wfr_switch issue
     # do not delete output wfrs of control files
     output_wfrs = file_resp.get('workflow_run_outputs')
     if not output_wfrs:
-        if file_resp['@id'].startswith('/file_processed/'):
+        if file_type == 'files-processed':
             # user submtted processed files
             return
         else:
@@ -100,19 +99,19 @@ def delete_wfrs(file_resp, my_key, delete=False, stash=None):
         if stash:
             wfrs = [i for i in stash if i['uuid'] in wfr_uuids]
             assert len(wfrs) == len(wfr_uuids)
+        # if no stash, get from database
         else:
-            wfrs = [ff_utils.get_metadata(w, key=my_key) for w in wfrs]
+            wfrs = [i['embedded'] for i in ff_utils.get_es_metadata(wfr_uuids, sources=['embedded.*'], key=my_key)]
     # look for md5s on files without wfr_run_output (file_microscopy ...)
     else:
-        wfrs_url = ('/search/?type=WorkflowRun&type=WorkflowRun&workflow.title=md5+0.2.6&workflow.title=md5+0.0.4'
-                    '&input_files.value.accession=') + file_resp['accession']
-        wfrs = [w['uuid'] for w in ff_utils.search_metadata(wfrs_url, key=my_key)]
-        wfrs = [ff_utils.get_metadata(w, key=my_key) for w in wfrs]
-
+        if file_type not in ['files-fastq', 'files-processed']:
+            wfrs_url = ('/search/?type=WorkflowRun&type=WorkflowRun&workflow.title=md5+0.2.6&workflow.title=md5+0.0.4'
+                        '&input_files.value.accession=') + file_resp['accession']
+            wfrs = ff_utils.search_metadata(wfrs_url, key=my_key)
     # Skip sbg and file provenance
     wfrs = [i for i in wfrs if not i['@id'].startswith('/workflow-runs-sbg/')]
     wfrs = [i for i in wfrs if not i['display_title'].startswith('File Provenance Tracking')]
-    # Delete wfrs if file is deleted
+    # CLEAN UP IF FILE IS DELETED
     if file_resp['status'] == 'deleted':
         if file_resp.get('quality_metric'):
             if delete:
