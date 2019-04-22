@@ -9,9 +9,9 @@ from dcicutils.ff_utils import search_metadata, get_metadata
 def create_ff_arg_parser():
     ff_arg_parser = argparse.ArgumentParser(add_help=False)
     ff_arg_parser.add_argument('--env',
-                               default='data',
+                               default='fourfront-mastertest',
                                help="The environment to use i.e. data, webdev, mastertest.\
-                               Default is 'data')")
+                               Default is 'mastertest')")
     ff_arg_parser.add_argument('--key',
                                default=None,
                                help="An access key dictionary including key, secret and server.\

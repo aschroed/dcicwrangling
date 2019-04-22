@@ -5,7 +5,7 @@ from scripts import patch_field_for_many_items as pf
 def test_pffmi_get_args_required_default():
     defaults = {
         'dbupdate': False,
-        'env': 'data',
+        'env': 'fourfront-mastertest',
         'key': None,
         'search': False,
         'isarray': False,
