@@ -34,6 +34,7 @@ def main():
     except Exception:
         print("Authentication failed")
         sys.exit(1)
+    print("Working on {}".format(auth.get('server')))
     itemids = scu.get_item_ids_from_args(args.input, auth, args.search)
     field = args.field
     val = args.value
