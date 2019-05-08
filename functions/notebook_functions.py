@@ -173,7 +173,10 @@ def get_schema_names(con_key):
     schema_name = {}
     profiles = ff_utils.get_metadata('/profiles/', key=con_key, add_on='frame=raw')
     for key, value in profiles.items():
-        schema_name[key] = value['id'].split('/')[-1][:-5]
+        try:
+            schema_name[key] = value['id'].split('/')[-1][:-5]
+        except:
+            continue
     return schema_name
 
 

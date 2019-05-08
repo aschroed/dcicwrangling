@@ -33,7 +33,11 @@ def get_wfr_report(wfrs):
         wfr_rep = {}
         """For a given workflow_run item, grabs details, uuid, run_status, wfr name, date, and run time"""
         wfr_type, time_info = wfr_data['display_title'].split(' run ')
-        wfr_type_base, wfr_version = wfr_type.strip().split(' ')
+        # skip all style awsem runs
+        try:
+            wfr_type_base, wfr_version = wfr_type.strip().split(' ')
+        except:
+            continue
         time_info = time_info.strip('on').strip()
         try:
             wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S.%f')
