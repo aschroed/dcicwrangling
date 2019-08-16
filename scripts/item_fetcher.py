@@ -5,7 +5,7 @@ specified in the --fields parameter)
 '''
 import sys
 import argparse
-from dcicutils.ff_utils import get_authentication_with_server, get_metadata
+from dcicutils.ff_utils import get_authentication_with_server, get_metadata, get_es_metadata
 from dcicwrangling.functions import script_utils as scu
 
 
@@ -48,6 +48,7 @@ def main():  # pragma: no cover
     problems = []
     for iid in id_list:
         try:
+            restest = get_es_metadata([iid], key=auth)
             res = get_metadata(iid, auth, add_on='frame=object')
         except Exception:
             problems.append(iid)
