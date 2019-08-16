@@ -48,7 +48,6 @@ def main():  # pragma: no cover
     problems = []
     for iid in id_list:
         try:
-            restest = get_es_metadata([iid], key=auth)
             res = get_metadata(iid, auth, add_on='frame=object')
         except Exception:
             problems.append(iid)
