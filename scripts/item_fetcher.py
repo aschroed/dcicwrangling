@@ -5,7 +5,7 @@ specified in the --fields parameter)
 '''
 import sys
 import argparse
-from dcicutils.ff_utils import get_authentication_with_server, get_metadata, get_es_metadata
+from dcicutils.ff_utils import get_authentication_with_server, get_metadata
 from dcicwrangling.functions import script_utils as scu
 
 
