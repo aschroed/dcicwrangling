@@ -1,10 +1,10 @@
 {
+  "Notebook": {
+    "Toolbar": true,
+    "Header": true
+  },
   "load_extensions": {
     "jupyter-js-widgets/extension": true
-  },
-  "Notebook": {
-    "Header": true,
-    "Toolbar": true
   },
   "Cell": {
     "cm_config": {
