@@ -257,7 +257,7 @@ def test_create_wfr_meta_only_json_no_workflow_args(mocker, auth, prov_workflow,
 def test_wfr_get_args_required_default():
     defaults = {
         'dbupdate': False,
-        'env': 'data',
+        'env': 'fourfront-mastertest',
         'key': None,
         'search': False,
         'workflow': 'bef50397-4d72-4ed1-9c78-100e14e5c47f'

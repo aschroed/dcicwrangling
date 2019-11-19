@@ -5,12 +5,13 @@ from scripts import patch_field_for_many_items as pf
 def test_pffmi_get_args_required_default():
     defaults = {
         'dbupdate': False,
-        'env': 'data',
+        'env': 'fourfront-mastertest',
         'key': None,
         'search': False,
         'isarray': False,
         'field': 'status',
-        'value': 'deleted'
+        'value': 'deleted',
+        'numtype': None
     }
     args = pf.get_args(['i', 'status', 'deleted'])
     for k, v in defaults.items():
@@ -47,9 +48,11 @@ def mocked_args_dbupd_is_false():
             'dbupdate': False,
             'search': False,
             'isarray': False,
+            'numtype': None,
             'input': ['id1', 'id2'],
             'field': 'status',
-            'value': 'deleted'
+            'value': 'deleted',
+            'numtype': None
         }
     )
 
@@ -62,10 +65,12 @@ def mocked_args_dbupd_is_true():
             'env': 'prod',
             'dbupdate': True,
             'search': False,
+            'numtype': None,
             'isarray': False,
             'input': ['id1', 'id2'],
             'field': 'status',
-            'value': 'deleted'
+            'value': 'deleted',
+            'numtype': None
         }
     )
 
@@ -81,7 +86,8 @@ def mocked_args_is_array():
             'isarray': True,
             'input': ['id1', 'id2'],
             'field': 'aliases',
-            'value': "'4dn-dcic-lab:test'"
+            'value': "'4dn-dcic-lab:test'",
+            'numtype': None
         }
     )
 
@@ -97,7 +103,8 @@ def mocked_args_w_delete():
             'isarray': False,
             'input': ['id1', 'id2'],
             'field': 'aliases',
-            'value': '*delete*'
+            'value': '*delete*',
+            'numtype': None
         }
     )
 

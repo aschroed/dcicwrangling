@@ -116,7 +116,7 @@ def extract_file_info(obj_id, arg_name, env, rename=[]):
     return template
 
 
-def run_json(input_files, env, wf_info, run_name, tag):
+def run_json(input_files, env, wf_info, run_name):
     my_s3_util = s3Utils(env=env)
     out_bucket = my_s3_util.outfile_bucket
     """Creates the trigger json that is used by foufront endpoint.
@@ -128,6 +128,7 @@ def run_json(input_files, env, wf_info, run_name, tag):
                   "wfr_meta": wf_info['wfr_meta'],
                   "parameters": wf_info['parameters'],
                   "config": {"ebs_type": "gp2",
+                             "spot_instance": True,
                              "json_bucket": "4dn-aws-pipeline-run-json",
                              "ebs_iops": "",
                              "shutdown_min": "now",
@@ -139,8 +140,7 @@ def run_json(input_files, env, wf_info, run_name, tag):
                              },
                   "_tibanna": {"env": env,
                                "run_type": wf_info['wf_name'],
-                               "run_id": run_name},
-                  "tag": tag
+                               "run_id": run_name}
                   }
     # overwrite or add custom fields
     for a_key in ['config', 'custom_pf_fields', 'overwrite_input_extra']:
@@ -208,24 +208,43 @@ def find_pairs(my_rep_set, my_env, lookfor='pairs', exclude_miseq=True):
                 continue
             # check that file has a pair
             f1 = file_resp['@id']
+            f2 = ""
+            paired = ""
+            # is there a pair?
+            try:
+                relations = file_resp['related_files']
+                paired_files = [relation['file']['@id'] for relation in relations if relation['relationship_type'] == 'paired with']
+                assert len(paired_files) == 1
+                f2 = paired_files[0]
+                paired = "Yes"
+            except:
+                paired = "No"
 
             # for experiments with unpaired fastq files
             if lookfor == 'single':
-                report[exp_resp['accession']].append(f1)
+                if paired == 'No':
+                    report[exp_resp['accession']].append(f1)
+                else:
+                    print('expected single files, found paired end')
+                    return
             # for experiments with paired files
             else:
+                if paired != 'Yes':
+                    print('expected paired files, found single end')
+                    return
                 f2 = ''
                 relations = file_resp.get('related_files')
 
                 if not relations:
                     print(f1, 'does not have a pair')
-                    continue
+                    return
                 for relation in relations:
                     if relation['relationship_type'] == 'paired with':
                         f2 = relation['file']['@id']
                 if not f2:
                     print(f1, 'does not have a pair')
-                    continue
+                    return
+
                 report[exp_resp['accession']].append((f1, f2))
     # get the organism
     if len(list(set(organisms))) == 1:
@@ -250,7 +269,7 @@ def find_pairs(my_rep_set, my_env, lookfor='pairs', exclude_miseq=True):
     return report, organism, enz, bwa, chrsize, enz_file, int(total_f_size / (1024 * 1024 * 1024)), lab
 
 
-def get_wfr_out(file_id, wfr_name, auth, md_qc=False, run=100):
+def get_wfr_out(file_id, wfr_name, auth, versions, md_qc=False, run=100):
     """For a given files, fetches the status of last wfr_name
     If there is a successful run it will return the output files as a dictionary of
     file_format:file_id, else, will return the status. Some runs, like qc and md5,
@@ -261,25 +280,26 @@ def get_wfr_out(file_id, wfr_name, auth, md_qc=False, run=100):
     wfr = {}
     run_status = 'did not run'
 
-    # add run time to wfr
-    if workflows:
-        for a_wfr in workflows:
-            wfr_type, time_info = a_wfr['display_title'].split(' run ')
-            # user submitted ones use run on insteand of run
-            time_info = time_info.strip('on').strip()
-            try:
-                wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S.%f')
-            except ValueError:
-                wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S')
-            a_wfr['run_hours'] = (datetime.utcnow() - wfr_time).total_seconds() / 3600
-            a_wfr['run_type'] = wfr_type.strip()
-    # sort wfrs
-        workflows = sorted(workflows, key=lambda k: (k['run_type'], -k['run_hours']))
-
-    try:
-        last_wfr = [i for i in workflows if i['run_type'] == wfr_name][-1]
-    except (KeyError, IndexError, TypeError):
+    my_workflows = [i for i in workflows if i['display_title'].startswith(wfr_name)]
+    if not my_workflows:
         return {'status': "no workflow in file"}
+    for a_wfr in my_workflows:
+        wfr_type, time_info = a_wfr['display_title'].split(' run ')
+        wfr_type_base, wfr_version = wfr_type.strip().split(' ')
+        # user submitted ones use run on insteand of run
+        time_info = time_info.strip('on').strip()
+        try:
+            wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S.%f')
+        except ValueError:
+            wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S')
+        a_wfr['run_hours'] = (datetime.utcnow() - wfr_time).total_seconds() / 3600
+        a_wfr['run_type'] = wfr_type_base.strip()
+        a_wfr['run_version'] = wfr_version.strip()
+    my_workflows = [i for i in my_workflows if i['run_version'] in versions]
+    if not my_workflows:
+        return {'status': "no workflow in file with accepted version"}
+    my_workflows = sorted(my_workflows, key=lambda k: k['run_hours'])
+    last_wfr = [i for i in my_workflows if i['run_type'] == wfr_name][0]
 
     wfr = ff_utils.get_metadata(last_wfr['uuid'], key=auth)
     run_duration = last_wfr['run_hours']
@@ -314,7 +334,7 @@ def get_wfr_out(file_id, wfr_name, auth, md_qc=False, run=100):
         return {'status': "no completed run"}
 
 
-def get_wfr_out_file(file_id, wfr_name, auth, md_qc=False, run=100):
+def get_wfr_out_file(file_id, wfr_name, auth, versions, md_qc=False, run=100):
     """For a given files, fetches the status of last wfr_name
     If there is a successful run it will return the output files as a dictionary of
     argument_name:file_id, else, will return the status. Some runs, like qc and md5,
@@ -325,25 +345,26 @@ def get_wfr_out_file(file_id, wfr_name, auth, md_qc=False, run=100):
     wfr = {}
     run_status = 'did not run'
 
-    # add run time to wfr
-    if workflows:
-        for a_wfr in workflows:
-            wfr_type, time_info = a_wfr['display_title'].split(' run ')
-            # user submitted ones use run on insteand of run
-            time_info = time_info.strip('on').strip()
-            try:
-                wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S.%f')
-            except ValueError:
-                wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S')
-            a_wfr['run_hours'] = (datetime.utcnow() - wfr_time).total_seconds() / 3600
-            a_wfr['run_type'] = wfr_type.strip()
-    # sort wfrs
-        workflows = sorted(workflows, key=lambda k: (k['run_type'], -k['run_hours']))
-
-    try:
-        last_wfr = [i for i in workflows if i['run_type'] == wfr_name][-1]
-    except (KeyError, IndexError, TypeError):
+    my_workflows = [i for i in workflows if i['display_title'].startswith(wfr_name)]
+    if not my_workflows:
         return {'status': "no workflow in file"}
+    for a_wfr in my_workflows:
+        wfr_type, time_info = a_wfr['display_title'].split(' run ')
+        wfr_type_base, wfr_version = wfr_type.strip().split(' ')
+        # user submitted ones use run on insteand of run
+        time_info = time_info.strip('on').strip()
+        try:
+            wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S.%f')
+        except ValueError:
+            wfr_time = datetime.strptime(time_info, '%Y-%m-%d %H:%M:%S')
+        a_wfr['run_hours'] = (datetime.utcnow() - wfr_time).total_seconds() / 3600
+        a_wfr['run_type'] = wfr_type_base.strip()
+        a_wfr['run_version'] = wfr_version.strip()
+    my_workflows = [i for i in my_workflows if i['run_version'] in versions]
+    if not my_workflows:
+        return {'status': "no workflow in file with accepted version"}
+    my_workflows = sorted(my_workflows, key=lambda k: k['run_hours'])
+    last_wfr = [i for i in my_workflows if i['run_type'] == wfr_name][0]
 
     wfr = ff_utils.get_metadata(last_wfr['uuid'], key=auth)
     run_duration = last_wfr['run_hours']
@@ -385,7 +406,8 @@ def add_processed_files(item_id, list_pc, auth):
 def add_preliminary_processed_files(item_id, list_pc, auth, run_type="hic"):
     titles = {"hic": "HiC Processing Pipeline - Preliminary Files",
               "repliseq": "Repli-Seq Pipeline - Preliminary Files",
-              'chip': "ENCODE ChIP-Seq Pipeline - Preliminary Files"}
+              'chip': "ENCODE ChIP-Seq Pipeline - Preliminary Files",
+              'atac': "ENCODE ATAC-Seq Pipeline - Preliminary Files"}
     pc_set_title = titles[run_type]
     resp = ff_utils.get_metadata(item_id, key=auth)
 
@@ -432,8 +454,11 @@ def add_preliminary_processed_files(item_id, list_pc, auth, run_type="hic"):
     ff_utils.patch_metadata(patch, obj_id=item_id, key=auth)
 
 
-def release_files(set_id, list_items, auth):
-    item_status = ff_utils.get_metadata(set_id, key=auth)['status']
+def release_files(set_id, list_items, auth, status=None):
+    if status:
+        item_status = status
+    else:
+        item_status = ff_utils.get_metadata(set_id, key=auth)['status']
     # bring files to same status as experiments and sets
     if item_status in ['released', 'released to project', 'pre-release']:
         for a_file in list_items:
@@ -445,8 +470,7 @@ def release_files(set_id, list_items, auth):
             ff_utils.patch_metadata({"status": item_status}, obj_id=a_file, key=auth)
 
 
-def run_missing_wfr(wf_info, input_files, run_name, auth, env, tag='0.2.5'):
-
+def run_missing_wfr(wf_info, input_files, run_name, auth, env):
     all_inputs = []
     for arg, files in input_files.items():
         inp = extract_file_info(files, arg, env)
@@ -454,12 +478,12 @@ def run_missing_wfr(wf_info, input_files, run_name, auth, env, tag='0.2.5'):
     # small tweak to get bg2bw working
     all_inputs = sorted(all_inputs, key=itemgetter('workflow_argument_name'))
 
-    input_json = run_json(all_inputs, env, wf_info, run_name, tag)
+    input_json = run_json(all_inputs, env, wf_info, run_name)
     e = ff_utils.post_metadata(input_json, 'WorkflowRun/run', key=auth)
 
     url = json.loads(e['input'])['_tibanna']['url']
     display(HTML("<a href='{}' target='_blank'>{}</a>".format(url, e['status'])))
-    #time.sleep(30)
+    return
 
 
 def extract_nz_file(acc, auth):
@@ -475,7 +499,7 @@ def extract_nz_file(acc, auth):
         pass
     # Soo suggested assigning 6 for Chiapet
     # Burak asked for running all without an NZ with paramter 6
-    elif exp_type in ['CHIA-pet', 'micro-C', 'DNase Hi-C', 'TrAC-loop']:
+    elif exp_type in ['CHIA-pet', 'ChIA-PET', 'micro-C', 'DNase Hi-C', 'TrAC-loop']:
         nz_num = '6'
     else:
         return (None, None)
@@ -497,11 +521,11 @@ def get_chip_info(f_exp_resp, my_key):
     """Gether the following information from the first experiment in the chip set"""
     control = ""  # True or False (True if set in scope is control)
     control_set = ""  # None (if no control exp is set), or the control experiment for the one in scope
-    target_type = "" # Histone or TF (or None for control)
+    target_type = ""  # Histone or TF (or None for control)
     # get target
     target = f_exp_resp.get('targeted_factor')
     if target:
-        target_type = 'tf' # set to tf default and switch to histone (this part might need some work later)
+        target_type = 'tf'  # set to tf default and switch to histone (this part might need some work later)
         target_dt = target['display_title']
         if target_dt.startswith('Protein:H2') or target_dt.startswith('Protein:H3'):
             target_type = 'histone'

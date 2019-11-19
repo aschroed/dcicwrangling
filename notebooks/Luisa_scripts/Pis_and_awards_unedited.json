@@ -1,0 +1,946 @@
+{
+  "dcic:cathy_barr": {
+    "first_name": "Cathy",
+    "last_name": "Barr",
+    "awards": [
+      "TCPA-2017-09"
+    ]
+  },
+  "dcic:art_petronis": {
+    "first_name": "Art",
+    "last_name": "Petronis",
+    "awards": [
+      "TCPA-2017-09"
+    ]
+  },
+  "dcic:guillaume_bourque": {
+    "first_name": "Guillaume",
+    "last_name": "Bourque",
+    "awards": [
+      "TCPA-2017-10"
+    ]
+  },
+  "dcic:tomi_pastinen": {
+    "first_name": "Tomi",
+    "last_name": "Pastinen",
+    "awards": [
+      "TCPA-2017-10"
+    ]
+  },
+  "dcic:chao-ting_wu": {
+    "first_name": "Chao-Ting",
+    "last_name": "Wu",
+    "awards": [
+      "TCPA-2017-05"
+    ]
+  },
+  "dcic:anuj_srivastava": {
+    "first_name": "Anuj",
+    "last_name": "Srivastava",
+    "awards": [
+      "TCPA-2017-05"
+    ]
+  },
+  "dcic:nicola_neretti": {
+    "first_name": "Nicola",
+    "last_name": "Neretti",
+    "awards": [
+      "TCPA-2017-05"
+    ]
+  },
+  "dcic:joan_steitz": {
+    "first_name": "Joan",
+    "last_name": "Steitz",
+    "awards": [
+      "TCPA-2017-06"
+    ]
+  },
+  "dcic:karla_neugebauer": {
+    "first_name": "Karla",
+    "last_name": "Neugebauer",
+    "awards": [
+      "TCPA-2017-06"
+    ]
+  },
+  "dcic:joanna_wysocka": {
+    "first_name": "Joanna",
+    "last_name": "Wysocka",
+    "awards": [
+      "TCPA-2017-01"
+    ]
+  },
+  "dcic:karen_adelman": {
+    "first_name": "Karen",
+    "last_name": "Adelman",
+    "awards": [
+      "TCPA-2017-01"
+    ]
+  },
+  "dcic:francois_spitz": {
+    "first_name": "Francois",
+    "last_name": "Spitz",
+    "awards": [
+      "TCPA-2017-07"
+    ]
+  },
+  "dcic:jeroen_de_ridder": {
+    "first_name": "Jeroen",
+    "last_name": "de Ridder",
+    "awards": [
+      "TCPA-2017-03"
+    ]
+  },
+  "dcic:antonio_giraldez": {
+    "first_name": "Antonio",
+    "last_name": "Giraldez",
+    "awards": [
+      "TCPA-2017-02"
+    ]
+  },
+  "dcic:thoru_pederson": {
+    "first_name": "Thoru",
+    "last_name": "Pederson",
+    "awards": [
+      "DA040588"
+    ]
+  },
+  "dcic:andrea_chiariello": {
+    "first_name": "Andrea",
+    "last_name": "Chiariello",
+    "awards": [
+      "DK107977",
+      "CA200147"
+    ]
+  },
+  "dcic:dariusz_plewczy\u0144ski": {
+    "first_name": "Dariusz",
+    "last_name": "Plewczy\u0144ski",
+    "awards": [
+      "DK107967"
+    ]
+  },
+  "dcic:jeff_chuang": {
+    "first_name": "Jeff",
+    "last_name": "Chuang",
+    "awards": [
+      "DK107967"
+    ]
+  },
+  "dcic:frank_chuang": {
+    "first_name": "Frank",
+    "last_name": "Chuang",
+    "awards": [
+      "EB021230"
+    ]
+  },
+  "4dn-dcic-lab:wouter-de-laat": {
+    "first_name": "Wouter",
+    "last_name": "de Laat",
+    "awards": [
+      "TCPA-2017-03"
+    ]
+  },
+  "4dn-dcic-lab:brad_cairns": {
+    "first_name": "Bradley",
+    "last_name": "Cairns",
+    "awards": [
+      "TCPA-2017-02"
+    ]
+  },
+  "dcic:qingsong_tang": {
+    "first_name": "Qingsong",
+    "last_name": "Tang",
+    "awards": [
+      "TCPA-2017-08"
+    ]
+  },
+  "dcic:binbin_lai": {
+    "first_name": "Binbin",
+    "last_name": "Lai",
+    "awards": [
+      "TCPA-2017-08"
+    ]
+  },
+  "dcic:gangqing_hu": {
+    "first_name": "Gangqing",
+    "last_name": "Hu",
+    "awards": [
+      "TCPA-2017-08"
+    ]
+  },
+  "dcic:keji_zhao": {
+    "first_name": "Keji",
+    "last_name": "Zhao",
+    "awards": [
+      "TCPA-2017-08"
+    ]
+  },
+  "dcic:kami_ahmad": {
+    "first_name": "Kami",
+    "last_name": "Ahmad",
+    "awards": [
+      "TCPA-2017-04"
+    ]
+  },
+  "dcic:steve_henikoff": {
+    "first_name": "Steve",
+    "last_name": "Henikoff",
+    "awards": [
+      "TCPA-2017-04"
+    ]
+  },
+  "dcic:feng_yue": {
+    "first_name": "Feng",
+    "last_name": "Yue",
+    "awards": [
+      "CA200060"
+    ]
+  },
+  "dcic:xianghongjasmine_zhou": {
+    "first_name": "Xianghong Jasmine",
+    "last_name": "Zhou",
+    "awards": [
+      "DK107981"
+    ]
+  },
+  "dcic:huimin_zhao": {
+    "first_name": "Huimin",
+    "last_name": "Zhao",
+    "awards": [
+      "DK107965"
+    ]
+  },
+  "dcic:ken_zaret": {
+    "first_name": "Ken",
+    "last_name": "Zaret",
+    "awards": [
+      "EB021239",
+      "TCPA-2017-07"
+    ]
+  },
+  "dcic:john_yates": {
+    "first_name": "John",
+    "last_name": "Yates",
+    "awards": [
+      "DA040709"
+    ]
+  },
+  "dcic:jie_yao": {
+    "first_name": "Jie",
+    "last_name": "Yao",
+    "awards": [
+      "EB021232"
+    ]
+  },
+  "dcic:scot_wolfe": {
+    "first_name": "Scot",
+    "last_name": "Wolfe",
+    "awards": [
+      "DK107980"
+    ]
+  },
+  "dcic:chialin_wei": {
+    "first_name": "Chia Lin",
+    "last_name": "Wei",
+    "awards": [
+      "DK107967"
+    ]
+  },
+  "dcic:bas_vansteensel": {
+    "first_name": "Bas",
+    "last_name": "van Steensel",
+    "awards": [
+      "DK107965"
+    ]
+  },
+  "dcic:cole_trapnell": {
+    "first_name": "Cole",
+    "last_name": "Trapnell",
+    "awards": [
+      "DK107979"
+    ]
+  },
+  "dcic:lin_tian": {
+    "first_name": "Lin",
+    "last_name": "Tian",
+    "awards": [
+      "EB021230"
+    ]
+  },
+  "dcic:andrew_spakowitz": {
+    "first_name": "Andrew",
+    "last_name": "Spakowitz",
+    "awards": [
+      "EB021237"
+    ]
+  },
+  "dcic:erik_sontheimer": {
+    "first_name": "Erik",
+    "last_name": "Sontheimer",
+    "awards": [
+      "DK107980"
+    ]
+  },
+  "dcic:maike_sander": {
+    "first_name": "Maike",
+    "last_name": "Sander",
+    "awards": [
+      "DK107977",
+      "CA200147"
+    ]
+  },
+  "dcic:andrej_sali": {
+    "first_name": "Andrej",
+    "last_name": "Sali",
+    "awards": [
+      "DK107981"
+    ]
+  },
+  "dcic:michael_rout": {
+    "first_name": "Michael",
+    "last_name": "Rout",
+    "awards": [
+      "DK107981"
+    ]
+  },
+  "dcic:bernd_rieger": {
+    "first_name": "Bernd",
+    "last_name": "Rieger",
+    "awards": [
+      "EB021238"
+    ]
+  },
+  "dcic:oliver_rando": {
+    "first_name": "Oliver",
+    "last_name": "Rando",
+    "awards": [
+      "DK107980"
+    ]
+  },
+  "dcic:ana_pombo": {
+    "first_name": "Ana",
+    "last_name": "Pombo",
+    "awards": [
+      "DK107977"
+    ]
+  },
+  "dcic:jennifer_phillips-cremins": {
+    "first_name": "Jennifer",
+    "last_name": "Phillips-Cremins",
+    "awards": [
+      "HL129998"
+    ]
+  },
+  "dcic:hanspeter_pfister": {
+    "first_name": "Hanspeter",
+    "last_name": "Pfister",
+    "awards": [
+      "CA200059"
+    ]
+  },
+  "dcic:abdullah_ozer": {
+    "first_name": "Abdullah",
+    "last_name": "Ozer",
+    "awards": [
+      "HL129958"
+    ]
+  },
+  "dcic:mario_nicodemi": {
+    "first_name": "Mario",
+    "last_name": "Nicodemi",
+    "awards": [
+      "DK107977",
+      "CA200147"
+    ]
+  },
+  "dcic:takashi_nagano": {
+    "first_name": "Takashi",
+    "last_name": "Nagano",
+    "awards": [
+      "HL129971"
+    ]
+  },
+  "dcic:chuck_murry": {
+    "first_name": "Chuck",
+    "last_name": "Murry",
+    "awards": [
+      "DK107979"
+    ]
+  },
+  "dcic:william_moerner": {
+    "first_name": "William",
+    "last_name": "Moerner",
+    "awards": [
+      "EB021237"
+    ]
+  },
+  "dcic:john_marko": {
+    "first_name": "John",
+    "last_name": "Marko",
+    "awards": [
+      "DK107980"
+    ]
+  },
+  "dcic:rene_maehr": {
+    "first_name": "Rene",
+    "last_name": "Maehr",
+    "awards": [
+      "DK107980"
+    ]
+  },
+  "dcic:jian_ma": {
+    "first_name": "Jian",
+    "last_name": "Ma",
+    "awards": [
+      "DK107965"
+    ]
+  },
+  "dcic:wenyuan_li": {
+    "first_name": "Wenyuan",
+    "last_name": "Li",
+    "awards": [
+      "DK107981"
+    ]
+  },
+  "dcic:carolyn_larabell": {
+    "first_name": "Carolyn",
+    "last_name": "Larabell",
+    "awards": [
+      "DA040582"
+    ]
+  },
+  "dcic:peter_kharchenko": {
+    "first_name": "Peter",
+    "last_name": "Kharchenko",
+    "awards": [
+      "CA200059"
+    ]
+  },
+  "dcic:yoshiro_izumiya": {
+    "first_name": "Yoshiro",
+    "last_name": "Izumiya",
+    "awards": [
+      "EB021230"
+    ]
+  },
+  "dcic:ming_hu": {
+    "first_name": "Ming",
+    "last_name": "Hu",
+    "awards": [
+      "DK107977"
+    ]
+  },
+  "dcic:olga_dudko": {
+    "first_name": "Olga",
+    "last_name": "Dudko",
+    "awards": [
+      "DK107977",
+      "CA200147"
+    ]
+  },
+  "dcic:zhijun_duan": {
+    "first_name": "ZhiJun",
+    "last_name": "Duan",
+    "awards": [
+      "DK107979",
+      "TCPA-2017-04"
+    ]
+  },
+  "dcic:jesse_dixon": {
+    "first_name": "Jesse",
+    "last_name": "Dixon",
+    "awards": [
+      "DK107977",
+      "CA200147"
+    ]
+  },
+  "dcic:christine_disteche": {
+    "first_name": "Christine",
+    "last_name": "Disteche",
+    "awards": [
+      "DK107979"
+    ]
+  },
+  "dcic:xinxian_deng": {
+    "first_name": "Xinxian",
+    "last_name": "Deng",
+    "awards": [
+      "DK107979",
+      "TCPA-2017-04"
+    ]
+  },
+  "dcic:charles_danko": {
+    "first_name": "Charles",
+    "last_name": "Danko",
+    "awards": [
+      "HL129958"
+    ]
+  },
+  "dcic:robert_coleman": {
+    "first_name": "Robert",
+    "last_name": "Coleman",
+    "awards": [
+      "EB021236"
+    ]
+  },
+  "dcic:michael_clark": {
+    "first_name": "Michael",
+    "last_name": "Clark",
+    "awards": [
+      "EB021237"
+    ]
+  },
+  "dcic:ibrahim_cisse": {
+    "first_name": "Ibrahim",
+    "last_name": "Cisse",
+    "awards": [
+      "DK107980"
+    ]
+  },
+  "dcic:r.holland_cheng": {
+    "first_name": "R. Holland",
+    "last_name": "Cheng",
+    "awards": [
+      "EB021230"
+    ]
+  },
+  "dcic:brian_chait": {
+    "first_name": "Brian",
+    "last_name": "Chait",
+    "awards": [
+      "DK107981"
+    ]
+  },
+  "dcic:rafael_casellas": {
+    "first_name": "Rafael",
+    "last_name": "Casellas",
+    "awards": [
+      "DK107967"
+    ]
+  },
+  "dcic:christopher_carroll": {
+    "first_name": "Christopher",
+    "last_name": "Carroll",
+    "awards": [
+      "EB021232"
+    ]
+  },
+  "dcic:lewis_brown": {
+    "first_name": "Lewis",
+    "last_name": "Brown",
+    "awards": [
+      "DA040582"
+    ]
+  },
+  "dcic:paul_blainey": {
+    "first_name": "Paul",
+    "last_name": "Blainey",
+    "awards": [
+      "DK107967"
+    ]
+  },
+  "dcic:ewan_birney": {
+    "first_name": "Ewan",
+    "last_name": "Birney",
+    "awards": [
+      "EB021223"
+    ]
+  },
+  "dcic:simona_bianco": {
+    "first_name": "Simona",
+    "last_name": "Bianco",
+    "awards": [
+      "DK107977",
+      "CA200147"
+    ]
+  },
+  "dcic:carlo_annunziatella": {
+    "first_name": "Carlo",
+    "last_name": "Annunziatella",
+    "awards": [
+      "DK107977",
+      "CA200147"
+    ]
+  },
+  "dcic:rupesh_amin": {
+    "first_name": "Rupesh",
+    "last_name": "Amin",
+    "awards": [
+      "DA040583"
+    ]
+  },
+  "dcic:john_aitchison": {
+    "first_name": "John",
+    "last_name": "Aitchison",
+    "awards": [
+      "DK107981"
+    ]
+  },
+  "dcic:david_gilbert": {
+    "first_name": "David",
+    "last_name": "Gilbert",
+    "awards": [
+      "DK107965"
+    ]
+  },
+  "4dn-dcic-lab:nils_gehlenborg": {
+    "first_name": "Nils",
+    "last_name": "Gehlenborg",
+    "awards": [
+      "CA200059"
+    ]
+  },
+  "dcic:tom_misteli": {
+    "first_name": "Tom",
+    "last_name": "Misteli",
+    "awards": [
+      "DK107980"
+    ]
+  },
+  "dcic:jonas_ries": {
+    "first_name": "Jonas",
+    "last_name": "Ries",
+    "awards": [
+      "EB021223"
+    ]
+  },
+  "dcic:shu_chien": {
+    "first_name": "Shu",
+    "last_name": "Chien",
+    "awards": [
+      "CA200147"
+    ]
+  },
+  "dcic:shankar_subramaniam": {
+    "first_name": "Shankar",
+    "last_name": "Subramaniam",
+    "awards": [
+      "CA200147"
+    ]
+  },
+  "dcic:lin_chen": {
+    "first_name": "Lin",
+    "last_name": "Chen",
+    "awards": [
+      "DK107981"
+    ]
+  },
+  "dcic:cornelis_murre": {
+    "first_name": "Cornelis",
+    "last_name": "Murre",
+    "awards": [
+      "DK107977"
+    ]
+  },
+  "dcic:leonid_mirny": {
+    "first_name": "Leonid",
+    "last_name": "Mirny",
+    "awards": [
+      "DK107980",
+      "CA200059",
+      "TCPA-2017-07"
+    ]
+  },
+  "dcic:william_noble": {
+    "first_name": "William",
+    "last_name": "Noble",
+    "awards": [
+      "DK107979",
+      "TCPA-2017-04"
+    ]
+  },
+  "dcic:rustem_ismagilov": {
+    "first_name": "Rustem",
+    "last_name": "Ismagilov",
+    "awards": [
+      "HL130007"
+    ]
+  },
+  "dcic:gerd_blobel": {
+    "first_name": "Gerd",
+    "last_name": "Blobel",
+    "awards": [
+      "HL129998"
+    ]
+  },
+  "dcic:amos_tanay": {
+    "first_name": "Amos",
+    "last_name": "Tanay",
+    "awards": [
+      "HL129971"
+    ]
+  },
+  "dcic:warren_zipfel": {
+    "first_name": "Warren",
+    "last_name": "Zipfel",
+    "awards": [
+      "HL129958"
+    ]
+  },
+  "dcic:hening_lin": {
+    "first_name": "Hening",
+    "last_name": "Lin",
+    "awards": [
+      "HL129958"
+    ]
+  },
+  "dcic:mark_ellisman": {
+    "first_name": "Mark",
+    "last_name": "Ellisman",
+    "awards": [
+      "EB021247"
+    ]
+  },
+  "dcic:qi_lei_stanley": {
+    "first_name": "Lei Stanley",
+    "last_name": "Qi",
+    "awards": [
+      "EB021240"
+    ]
+  },
+  "dcic:mike_levine": {
+    "first_name": "Mike",
+    "last_name": "Levine",
+    "awards": [
+      "EB021239"
+    ]
+  },
+  "dcic:xavier_darzacq": {
+    "first_name": "Xavier",
+    "last_name": "Darzacq",
+    "awards": [
+      "EB021236",
+      "DK107980"
+    ]
+  },
+  "dcic:david_baddeley": {
+    "first_name": "David",
+    "last_name": "Baddeley",
+    "awards": [
+      "EB021232"
+    ]
+  },
+  "dcic:john_rinn": {
+    "first_name": "John",
+    "last_name": "Rinn",
+    "awards": [
+      "DA040612"
+    ]
+  },
+  "dcic:sonja_hess": {
+    "first_name": "Sonja",
+    "last_name": "Hess",
+    "awards": [
+      "DA040612"
+    ]
+  },
+  "dcic:peter_park": {
+    "first_name": "Peter",
+    "last_name": "Park",
+    "awards": [
+      "CA200059"
+    ]
+  },
+  "dcic:ting_wang": {
+    "first_name": "Ting",
+    "last_name": "Wang",
+    "awards": [
+      "CA200060",
+      "TCPA-2017-09"
+    ]
+  },
+  "dcic:sheng_zhong": {
+    "first_name": "Sheng",
+    "last_name": "Zhong",
+    "awards": [
+      "CA200147"
+    ]
+  },
+  "dcic:stavros_lomvardas": {
+    "first_name": "Stavros",
+    "last_name": "Lomvardas",
+    "awards": [
+      "DA040582"
+    ]
+  },
+  "dcic:joan_ritland": {
+    "first_name": "Joan",
+    "last_name": "Ritland",
+    "awards": [
+      "DA040583"
+    ]
+  },
+  "dcic:mark_groudine": {
+    "first_name": "Mark",
+    "last_name": "Groudine",
+    "awards": [
+      "DA040583"
+    ]
+  },
+  "dcic:paul_kaufman": {
+    "first_name": "Paul",
+    "last_name": "Kaufman",
+    "awards": [
+      "DA040588"
+    ]
+  },
+  "dcic:cliff_brangwynne": {
+    "first_name": "Cliff",
+    "last_name": "Brangwynne",
+    "awards": [
+      "DA040601"
+    ]
+  },
+  "dcic:mitchell_guttman": {
+    "first_name": "Mitchell",
+    "last_name": "Guttman",
+    "awards": [
+      "DA040612",
+      "HL130007"
+    ]
+  },
+  "dcic:larry_gerace": {
+    "first_name": "Larry",
+    "last_name": "Gerace",
+    "awards": [
+      "DA040709"
+    ]
+  },
+  "dcic:jan_ellenberg": {
+    "first_name": "Jan",
+    "last_name": "Ellenberg",
+    "awards": [
+      "EB021223"
+    ]
+  },
+  "dcic:kit_lam": {
+    "first_name": "Kit",
+    "last_name": "Lam",
+    "awards": [
+      "EB021230"
+    ]
+  },
+  "dcic:joerg_bewersdorf": {
+    "first_name": "Joerg",
+    "last_name": "Bewersdorf",
+    "awards": [
+      "EB021232"
+    ]
+  },
+  "dcic:robert_singer": {
+    "first_name": "Robert",
+    "last_name": "Singer",
+    "awards": [
+      "EB021236"
+    ]
+  },
+  "dcic:jan_liphardt": {
+    "first_name": "Jan",
+    "last_name": "Liphardt",
+    "awards": [
+      "EB021237"
+    ]
+  },
+  "dcic:david_grunwald": {
+    "first_name": "David",
+    "last_name": "Grunwald",
+    "awards": [
+      "EB021238"
+    ]
+  },
+  "dcic:thomas_gregor": {
+    "first_name": "Thomas",
+    "last_name": "Gregor",
+    "awards": [
+      "EB021239",
+      "TCPA-2017-07"
+    ]
+  },
+  "dcic:long_cai": {
+    "first_name": "Long",
+    "last_name": "Cai",
+    "awards": [
+      "EB021240"
+    ]
+  },
+  "dcic:clodagh_o_shea": {
+    "first_name": "Clodagh",
+    "last_name": "O Shea",
+    "awards": [
+      "EB021247"
+    ]
+  },
+  "dcic:john_lis": {
+    "first_name": "John",
+    "last_name": "Lis",
+    "awards": [
+      "HL129958"
+    ]
+  },
+  "dcic:peter_fraser": {
+    "first_name": "Peter",
+    "last_name": "Fraser",
+    "awards": [
+      "HL129971"
+    ]
+  },
+  "dcic:arjun_raj": {
+    "first_name": "Arjun",
+    "last_name": "Raj",
+    "awards": [
+      "HL129998"
+    ]
+  },
+  "dcic:erez_lieberman_aiden": {
+    "first_name": "Erez",
+    "last_name": "Lieberman Aiden",
+    "awards": [
+      "HL130010"
+    ]
+  },
+  "dcic:jay_ashok_shendure": {
+    "first_name": "Jay Ashok",
+    "last_name": "Shendure",
+    "awards": [
+      "DK107979",
+      "TCPA-2017-04"
+    ]
+  },
+  "dcic:job_dekker": {
+    "first_name": "Job",
+    "last_name": "Dekker",
+    "awards": [
+      "DK107980",
+      "DA040588"
+    ]
+  },
+  "dcic:andrew_belmont": {
+    "first_name": "Andrew",
+    "last_name": "Belmont",
+    "awards": [
+      "DK107965"
+    ]
+  },
+  "dcic:yijun_ruan": {
+    "first_name": "Yijun",
+    "last_name": "Ruan",
+    "awards": [
+      "DK107967"
+    ]
+  },
+  "dcic:bing_ren": {
+    "first_name": "Bing",
+    "last_name": "Ren",
+    "awards": [
+      "DK107977",
+      "CA200147"
+    ]
+  },
+  "dcic:frank_alber": {
+    "first_name": "Frank",
+    "last_name": "Alber",
+    "awards": [
+      "DK107981"
+    ]
+  }
+}

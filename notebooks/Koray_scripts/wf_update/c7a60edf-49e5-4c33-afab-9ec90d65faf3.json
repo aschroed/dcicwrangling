@@ -1,0 +1,507 @@
+{
+    "arguments": [
+        {
+            "workflow_argument_name": "input_fastq2",
+            "argument_type": "Input file"
+        },
+        {
+            "workflow_argument_name": "input_fastq1",
+            "argument_type": "Input file"
+        },
+        {
+            "workflow_argument_name": "bowtie_index",
+            "argument_type": "Input file"
+        },
+        {
+            "workflow_argument_name": "RE_bed",
+            "argument_type": "Input file"
+        },
+        {
+            "workflow_argument_name": "chrlen_file",
+            "argument_type": "Input file"
+        },
+        {
+            "workflow_argument_name": "contact_matrix_binsize",
+            "argument_type": "parameter"
+        },
+        {
+            "workflow_argument_name": "chromosome",
+            "argument_type": "parameter"
+        },
+        {
+            "workflow_argument_name": "sorted_bam_pe",
+            "argument_type": "Output processed file"
+        },
+        {
+            "workflow_argument_name": "HiC_project_object_hdf5",
+            "argument_type": "Output processed file"
+        },
+        {
+            "workflow_argument_name": "HiC_distance_function_hdf5",
+            "argument_type": "Output processed file"
+        },
+        {
+            "workflow_argument_name": "normalized_fend_contact_matrix",
+            "argument_type": "Output processed file"
+        },
+        {
+            "workflow_argument_name": "normalized_enrich_contact_matrix",
+            "argument_type": "Output processed file"
+        },
+        {
+            "workflow_argument_name": "expected_enrich_contact_matrix",
+            "argument_type": "Output processed file"
+        },
+        {
+            "workflow_argument_name": "observed_contact_matrix",
+            "argument_type": "Output processed file"
+        },
+        {
+            "workflow_argument_name": "expected_fend_contact_matrix",
+            "argument_type": "Output processed file"
+        },
+        {
+            "workflow_argument_name": "HiC_norm_binning_hdf5",
+            "argument_type": "Output processed file"
+        },
+        {
+            "workflow_argument_name": "HiC_data_object_hdf5",
+            "argument_type": "Output processed file"
+        }
+    ],
+    "uuid": "c7a60edf-49e5-4c33-afab-9ec90d65faf3",
+    "aliases": [],
+    "date_created": "2017-05-09T07:21:37.001064+00:00",
+    "cwl_pointer": "https://igor.sbgenomics.com/raw/4dn-dcic/dev/gitar-v0-2/0",
+    "workflow_type": "Hi-C data analysis",
+    "accession": "4DNWFSA73JEF",
+    "description": "GITAR Hi-C data processing pipeline",
+    "workflow_diagram": "",
+    "title": "GITAR",
+    "status": "in review by lab",
+    "last_modified": {
+        "modified_by": "986b362f-4eb6-4a9c-8173-3ab267307e3a",
+        "date_modified": "2019-02-11T20:53:09.507649+00:00"
+    },
+    "schema_version": "5",
+    "documents": [],
+    "alternate_accessions": [],
+    "lab": "828cd4fe-ebb0-4b36-a94a-d2e3a36cc989",
+    "category": "alignment + filtering + matrix generation",
+    "award": "b0b9c607-f8b4-4f02-93f4-9895b461334b",
+    "data_types": [
+        "Hi-C"
+    ],
+    "name": "gitar",
+    "workflow_language": "CWL",
+    "submitted_by": "986b362f-4eb6-4a9c-8173-3ab267307e3a",
+    "steps": [
+        {
+            "outputs": [
+                {
+                    "target": [
+                        {
+                            "name": "sorted_bam_pe"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": true,
+                        "file_format": "bam"
+                    },
+                    "name": "sorted_bam_pe"
+                },
+                {
+                    "target": [
+                        {
+                            "name": "input_bam2",
+                            "step": "hictool_bam2hdf5"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": false,
+                        "file_format": "bam"
+                    },
+                    "name": "split_bam2"
+                },
+                {
+                    "target": [
+                        {
+                            "name": "input_bam1",
+                            "step": "hictool_bam2hdf5"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": false,
+                        "file_format": "bam"
+                    },
+                    "name": "split_bam1"
+                }
+            ],
+            "meta": {
+                "analysis_step_types": [
+                    "alignment"
+                ],
+                "software_used": [
+                    "7868f960-50ac-11e4-916c-0800200c9a66"
+                ],
+                "description": "Alignment according to the GITAR pipeline"
+            },
+            "name": "hictool_fastq2bam",
+            "inputs": [
+                {
+                    "source": [
+                        {
+                            "name": "input_fastq2"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": true,
+                        "file_format": "c13d06cf-218e-4f61-aaf0-91f226248b2c"
+                    },
+                    "name": "input_fastq2"
+                },
+                {
+                    "source": [
+                        {
+                            "name": "input_fastq1"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": true,
+                        "file_format": "c13d06cf-218e-4f61-aaf0-91f226248b2c"
+                    },
+                    "name": "input_fastq1"
+                },
+                {
+                    "source": [
+                        {
+                            "name": "bowtie_index"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "reference file",
+                        "global": true,
+                        "file_format": "uncompressed_bowtie2Index"
+                    },
+                    "name": "bowtie_index"
+                }
+            ]
+        },
+        {
+            "outputs": [
+                {
+                    "target": [
+                        {
+                            "name": "HiC_project_object_hdf5"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": true,
+                        "file_format": "hdf5"
+                    },
+                    "name": "HiC_project_object_hdf5"
+                },
+                {
+                    "target": [
+                        {
+                            "name": "HiC_distance_function_hdf5"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": true,
+                        "file_format": "hdf5"
+                    },
+                    "name": "HiC_distance_function_hdf5"
+                },
+                {
+                    "target": [
+                        {
+                            "name": "fend_object_hdf5",
+                            "step": "hictool_hdf52matrix"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": false,
+                        "file_format": "hdf5"
+                    },
+                    "name": "fend_object_hdf5"
+                },
+                {
+                    "target": [
+                        {
+                            "name": "HiC_norm_binning_hdf5",
+                            "step": "hictool_hdf52matrix"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": false,
+                        "file_format": "hdf5"
+                    },
+                    "name": "HiC_norm_binning_hdf5"
+                },
+                {
+                    "target": [
+                        {
+                            "name": "HiC_data_object_hdf5",
+                            "step": "hictool_hdf52matrix"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": false,
+                        "file_format": "hdf5"
+                    },
+                    "name": "HiC_data_object_hdf5"
+                }
+            ],
+            "meta": {
+                "analysis_step_types": [
+                    "file format conversion"
+                ],
+                "software_used": [
+                    "7868f960-50ac-11e4-916c-0800200c9a66"
+                ],
+                "description": "Converting bam to hdf5 according to the GITAR pipeline"
+            },
+            "name": "hictool_bam2hdf5",
+            "inputs": [
+                {
+                    "source": [
+                        {
+                            "name": "RE_bed"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": true,
+                        "file_format": "69f6d609-f2ac-4c82-9472-1a13331b5ce9"
+                    },
+                    "name": "RE_bed"
+                },
+                {
+                    "source": [
+                        {
+                            "name": "split_bam2",
+                            "step": "hictool_fastq2bam"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": false,
+                        "file_format": "d13d06cf-218e-4f61-aaf0-91f226248b3c"
+                    },
+                    "name": "split_bam2"
+                },
+                {
+                    "source": [
+                        {
+                            "name": "split_bam1",
+                            "step": "hictool_fastq2bam"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": false,
+                        "file_format": "d13d06cf-218e-4f61-aaf0-91f226248b3c"
+                    },
+                    "name": "split_bam1"
+                }
+            ]
+        },
+        {
+            "outputs": [
+                {
+                    "target": [
+                        {
+                            "name": "normalized_fend_contact_matrix"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": true,
+                        "file_format": "matrix"
+                    },
+                    "name": "normalized_fend_contact_matrix"
+                },
+                {
+                    "target": [
+                        {
+                            "name": "normalized_enrich_contact_matrix"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": true,
+                        "file_format": "matrix"
+                    },
+                    "name": "normalized_enrich_contact_matrix"
+                },
+                {
+                    "target": [
+                        {
+                            "name": "expected_enrich_contact_matrix"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": true,
+                        "file_format": "matrix"
+                    },
+                    "name": "expected_enrich_contact_matrix"
+                },
+                {
+                    "target": [
+                        {
+                            "name": "observed_contact_matrix"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": true,
+                        "file_format": "matrix"
+                    },
+                    "name": "observed_contact_matrix"
+                },
+                {
+                    "target": [
+                        {
+                            "name": "expected_fend_contact_matrix"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": true,
+                        "file_format": "matrix"
+                    },
+                    "name": "expected_fend_contact_matrix"
+                }
+            ],
+            "meta": {
+                "analysis_step_types": [
+                    "normalization"
+                ],
+                "software_used": [
+                    "7868f960-50ac-11e4-916c-0800200c9a66"
+                ],
+                "description": "Contact (unnormalized and normalized) matrix creation according to the GITAR pipeline"
+            },
+            "name": "hictool_hdf52matrix",
+            "inputs": [
+                {
+                    "source": [
+                        {
+                            "name": "chrlen_file"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "reference file",
+                        "global": true,
+                        "file_format": "chromsizes"
+                    },
+                    "name": "chrlen_file"
+                },
+                {
+                    "source": [
+                        {
+                            "name": "contact_matrix_binsize"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "parameter",
+                        "global": true,
+                        "file_format": "69f6d609-f2ac-4c82-9472-1a13331b5ce2"
+                    },
+                    "name": "contact_matrix_binsize"
+                },
+                {
+                    "source": [
+                        {
+                            "name": "chromosome"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "parameter",
+                        "global": true
+                    },
+                    "name": "chromosome"
+                },
+                {
+                    "source": [
+                        {
+                            "name": "fend_object_hdf5",
+                            "step": "hictool_bam2hdf5"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": false,
+                        "file_format": "69f6d609-f2ac-4c82-9472-1a13331b5ce1"
+                    },
+                    "name": "fend_object_hdf5"
+                },
+                {
+                    "source": [
+                        {
+                            "name": "HiC_norm_binning_hdf5",
+                            "step": "hictool_bam2hdf5"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": false,
+                        "file_format": "69f6d609-f2ac-4c82-9472-1a13331b5ce1"
+                    },
+                    "name": "HiC_norm_binning_hdf5"
+                },
+                {
+                    "source": [
+                        {
+                            "name": "HiC_data_object_hdf5",
+                            "step": "hictool_bam2hdf5"
+                        }
+                    ],
+                    "meta": {
+                        "cardinality": "single",
+                        "type": "data file",
+                        "global": false,
+                        "file_format": "69f6d609-f2ac-4c82-9472-1a13331b5ce1"
+                    },
+                    "name": "HiC_data_object_hdf5"
+                }
+            ]
+        }
+    ]
+}

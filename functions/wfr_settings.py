@@ -50,73 +50,12 @@ def step_settings(step_name, my_organism, attribution, params={}):
         },
         {
             'wf_name': 'hi-c-processing-pairs',
-            'wf_uuid': 'c9e0e6f7-b0ed-4a42-9466-cadc2dd84df0',
-            'parameters': {"nthreads": 1, "maxmem": "32g"},
-            'custom_pf_fields': {
-                'cooler_normvector': {
-                    'genome_assembly': genome,
-                    'file_type': 'juicebox norm vector',
-                    'description': out_n},
-                'hic': {
-                    'genome_assembly': genome,
-                    'file_type': 'contact matrix',
-                    'description': out_n},
-                'mcool': {
-                    'genome_assembly': genome,
-                    'file_type': 'contact matrix',
-                    'description': out_n},
-                'merged_pairs': {
-                    'genome_assembly': genome,
-                    'file_type': 'contact list-combined',
-                    'description': out_n}
-            }
-        },
-        {
-            'wf_name': 'hi-c-processing-pairs-nore',
-            'wf_uuid': 'c19ee11e-9d5a-454f-af50-600a0cf990b6',
-            'parameters': {"nthreads": 1, "maxmem": "32g"},
-            'custom_pf_fields': {
-                'cooler_normvector': {
-                    'genome_assembly': genome,
-                    'file_type': 'juicebox norm vector',
-                    'description': out_n},
-                'hic': {
-                    'genome_assembly': genome,
-                    'file_type': 'contact matrix',
-                    'description': out_n},
-                'mcool': {
-                    'genome_assembly': genome,
-                    'file_type': 'contact matrix',
-                    'description': out_n},
-                'merged_pairs': {
-                    'genome_assembly': genome,
-                    'file_type': 'contact list-combined',
-                    'description': out_n}
-            }
-        },
-        {
-            'wf_name': 'hi-c-processing-pairs-nonorm',
-            'wf_uuid': 'bd6e25ea-f368-4758-a821-d30e0b5a4100',
-            'parameters': {"nthreads": 1, "maxmem": "32g"},
-            'custom_pf_fields': {
-                'hic': {
-                    'genome_assembly': genome,
-                    'file_type': 'contact matrix',
-                    'description': out_n},
-                'mcool': {
-                    'genome_assembly': genome,
-                    'file_type': 'contact matrix',
-                    'description': out_n},
-                'merged_pairs': {
-                    'genome_assembly': genome,
-                    'file_type': 'contact list-combined',
-                    'description': out_n}
-            }
-        },
-        {
-            'wf_name': 'hi-c-processing-pairs-nore-nonorm',
-            'wf_uuid': '05b62bba-7bfa-46cc-8d8e-3d37f4feb8bd',
-            'parameters': {"nthreads": 1, "maxmem": "32g"},
+            'wf_uuid': '4dn-dcic-lab:wf-hi-c-processing-pairs-0.2.7',
+            'parameters': {"nthreads": 4,
+                           "maxmem": "32g",
+                           "max_split_cooler": 10,
+                           "no_balance": False
+                           },
             'custom_pf_fields': {
                 'hic': {
                     'genome_assembly': genome,
@@ -134,7 +73,7 @@ def step_settings(step_name, my_organism, attribution, params={}):
         },
         {
             'wf_name': 'repliseq-parta',
-            'wf_uuid': '4459a4d8-1bd8-4b6a-b2cc-2506f4270a34',
+            'wf_uuid': '4dn-dcic-lab:wf-repliseq-parta-v16',
             "parameters": {"nthreads": 4, "memperthread": "2G"},
             'custom_pf_fields': {
                 'filtered_sorted_deduped_bam': {
@@ -184,68 +123,6 @@ def step_settings(step_name, my_organism, attribution, params={}):
             "overwrite_input_extra": False
         },
         {
-            "wf_name": "encode-chipseq",
-            "wf_uuid": "5b44ce1b-0347-40a6-bc9c-f39fb5d7bce3",
-            "parameters": {},
-            "config": {
-                "ebs_size": 0,
-                "ebs_type": "gp2",
-                "json_bucket": "4dn-aws-pipeline-run-json",
-                "EBS_optimized": False,
-                "ebs_iops": "",
-                "shutdown_min": "now",
-                "instance_type": "",
-                "key_name": "4dn-encode",
-                "password": "",
-                "log_bucket": "tibanna-output"
-            },
-            'custom_pf_fields': {
-                'chip.sig_fc': {
-                    'genome_assembly': genome,
-                    'file_type': 'intensity values',
-                    'description': 'ChIP-seq signal fold change over control input'},
-                'chip.peak_calls': {
-                    'genome_assembly': genome,
-                    'file_type': 'peaks',
-                    'description': 'ChIP-seq peak calls'},
-                'chip.qc_json': {
-                    'genome_assembly': genome,
-                    'file_type': 'qc',
-                    'description': 'ChIP-seq QC json'}
-            }
-        },
-        {
-            "wf_name": "encode-atacseq",
-            "wf_uuid": "6fb021e9-858c-4561-8ce1-e0adc673e0b5",
-            "parameters": {},
-            "config": {
-                "ebs_size": 0,
-                "ebs_type": "gp2",
-                "json_bucket": "4dn-aws-pipeline-run-json",
-                "EBS_optimized": True,
-                "ebs_iops": "",
-                "shutdown_min": "now",
-                "instance_type": "c4.4xlarge",
-                "key_name": "4dn-encode",
-                "password": "",
-                "log_bucket": "tibanna-output"
-            },
-            'custom_pf_fields': {
-                'atac.sig_fc': {
-                    'genome_assembly': genome,
-                    'file_type': 'intensity values',
-                    'description': 'ATAC-seq signal fold change over control input'},
-                'atac.peak_calls': {
-                    'genome_assembly': genome,
-                    'file_type': 'peaks',
-                    'description': 'ATAC-seq peak calls'},
-                'atac.qc_json': {
-                    'genome_assembly': genome,
-                    'file_type': 'qc',
-                    'description': 'ATAC-seq QC json'}
-            }
-        },
-        {
             "wf_name": "encode-chipseq-aln-chip",
             "wf_uuid": "4dn-dcic-lab:wf-encode-chipseq-aln-chip",
             "parameters": {},
@@ -265,8 +142,8 @@ def step_settings(step_name, my_organism, attribution, params={}):
             'custom_pf_fields': {
                 'chip.first_ta': {
                     'genome_assembly': genome,
-                    'file_type': 'counts',
-                    'description': 'Counts from ChIP-seq pipeline'},
+                    'file_type': 'read positions',
+                    'description': 'Positions of aligned reads in bed format, one line per read mate, for control experiment, from ENCODE ChIP-Seq Pipeline'},
                 'chip.first_ta_xcor': {
                     'genome_assembly': genome,
                     'file_type': 'intermediate file',
@@ -293,8 +170,8 @@ def step_settings(step_name, my_organism, attribution, params={}):
             'custom_pf_fields': {
                 'chip.first_ta_ctl': {
                     'genome_assembly': genome,
-                    'file_type': 'counts',
-                    'description': 'Counts from ChIP-seq pipeline'}
+                    'file_type': 'read positions',
+                    'description': 'Positions of aligned reads in bed format, one line per read mate, for control experiment, from ENCODE ChIP-Seq Pipeline'}
             }
         },
         {
@@ -318,15 +195,15 @@ def step_settings(step_name, my_organism, attribution, params={}):
                 'chip.optimal_peak': {
                     'genome_assembly': genome,
                     'file_type': 'peaks',
-                    'description': 'ChIP-seq peak calls'},
+                    'description': 'Peak calls from ENCODE ChIP-Seq Pipeline'},
                 'chip.conservative_peak': {
                     'genome_assembly': genome,
-                    'file_type': 'peaks',
-                    'description': 'ChIP-seq peak calls'},
+                    'file_type': 'conservative peaks',
+                    'description': 'Conservative peak calls from ENCODE ChIP-Seq Pipeline'},
                 'chip.sig_fc': {
                     'genome_assembly': genome,
-                    'file_type': 'intensity values',
-                    'description': 'ChIP-seq signal fold change over control input'}
+                    'file_type': 'signal fold change',
+                    'description': 'ChIP-seq signal fold change over input control'}
             }
         },
         {
@@ -349,8 +226,8 @@ def step_settings(step_name, my_organism, attribution, params={}):
             'custom_pf_fields': {
                 'atac.first_ta': {
                     'genome_assembly': genome,
-                    'file_type': 'counts',
-                    'description': 'Counts from ATAC-seq pipeline'}
+                    'file_type': 'read positions',
+                    'description': 'Positions of aligned reads in bed format, one line per read mate, from ENCODE ATAC-Seq Pipeline'}
             }
         },
         {
@@ -374,17 +251,41 @@ def step_settings(step_name, my_organism, attribution, params={}):
                 'atac.optimal_peak': {
                     'genome_assembly': genome,
                     'file_type': 'peaks',
-                    'description': 'ATAC-seq peak calls'},
+                    'description': 'Peak calls from ENCODE ATAC-Seq Pipeline'},
                 'atac.conservative_peak': {
                     'genome_assembly': genome,
-                    'file_type': 'peaks',
-                    'description': 'ATAC-seq peak calls'},
+                    'file_type': 'conservative peaks',
+                    'description': 'Conservative peak calls from ENCODE ATAC-Seq Pipeline'},
                 'atac.sig_fc': {
                     'genome_assembly': genome,
-                    'file_type': 'intensity values',
-                    'description': 'ATAC-seq signal fold change over control input'}
+                    'file_type': 'signal fold change',
+                    'description': 'ATAC-seq signal fold change'}
             }
         },
+        {
+            "wf_name": "mergebed",
+            "wf_uuid": "2b10e472-065e-43ed-992c-fccad6417b65",
+            "parameters": {"sortv": "0"},
+            "config": {
+                "ebs_size": 0,
+                "ebs_type": "gp2",
+                "json_bucket": "4dn-aws-pipeline-run-json",
+                "EBS_optimized": "",
+                "ebs_iops": "",
+                "shutdown_min": "now",
+                "instance_type": "",
+                "password": "",
+                "log_bucket": "tibanna-output",
+                "key_name": "",
+                "cloudwatch_dashboard": True
+            },
+            'custom_pf_fields': {
+                'merged_bed': {
+                    'genome_assembly': genome,
+                    'file_type': 'read positions',
+                    'description': 'Merged file, positions of aligned reads in bed format, one line per read mate'}
+            }
+        }
     ]
     # if params, overwrite parameters
     template = [i for i in wf_dict if i['wf_name'] == step_name][0]

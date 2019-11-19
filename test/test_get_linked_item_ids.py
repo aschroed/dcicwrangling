@@ -58,7 +58,7 @@ def test_is_released_no_status(mocker, auth):
 def test_gl_get_args_required_default():
     defaults = {
         'dbupdate': False,
-        'env': 'data',
+        'env': 'fourfront-mastertest',
         'include_released': False,
         'key': None,
         'no_children': None,
