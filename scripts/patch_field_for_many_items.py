@@ -43,7 +43,7 @@ def main():
     elif val == 'False':
         val = False
     if args.isarray:
-        val = val.split("'")[1::2]
+        val = val.split("'")
     ntype = args.numtype
     if ntype:
         if ntype == 'i':
