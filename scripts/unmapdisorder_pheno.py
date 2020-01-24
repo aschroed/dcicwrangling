@@ -2,19 +2,12 @@
 
 import sys
 import argparse
-import json
-import re
-import ast
 from datetime import datetime
-from uuid import uuid4
 from dcicutils.ff_utils import (
     get_authentication_with_server,
-    get_metadata,
-    patch_metadata,
-    post_metadata,
     search_metadata,
 )
-from dcicwrangling.functions.script_utils import create_ff_arg_parser, convert_key_arg_to_dict
+from dcicwrangling.functions.script_utils import convert_key_arg_to_dict
 
 
 def get_args():  # pragma: no cover

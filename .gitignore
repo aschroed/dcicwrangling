@@ -110,3 +110,4 @@ ENV/
 .mypy_cache/
 
 .pytest_cache
+notebooks/Andrea_scripts/*
