@@ -2,14 +2,7 @@
 
 import sys
 import argparse
-import json
-from datetime import datetime
-from dcicutils.ff_utils import (
-    get_authentication_with_server,
-    get_metadata,
-    patch_metadata,
-    post_metadata,
-)
+from dcicutils.ff_utils import get_authentication_with_server
 from dcicwrangling.scripts.script_utils import create_ff_arg_parser, convert_key_arg_to_dict
 
 
@@ -42,7 +35,7 @@ def switcher(case, x, term2id):
 def main():  # pragma: no cover
     args = get_args(sys.argv[1:])
     try:
-        auth = get_authentication_with_server(args.key, args.env)
+        get_authentication_with_server(args.key, args.env)
     except Exception:
         print("Authentication failed")
         sys.exit(1)
@@ -77,4 +70,4 @@ def main():  # pragma: no cover
 
 
 if __name__ == '__main__':  # pragma: no cover
-        main()
+    main()

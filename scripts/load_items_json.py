@@ -111,7 +111,7 @@ def get_args():  # pragma: no cover
     parser.add_argument('infile',
                         help="the datafile containing json formatted items")
     parser.add_argument('--itypes',
-                        nargs='*'',
+                        nargs='*',
                         help="The item type(s) to load if not specified in the file by store key(s)")
     parser.add_argument('--id-field',
                         help="Field name to used as identifier for items (all item types in file)")
