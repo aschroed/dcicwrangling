@@ -13,32 +13,32 @@ def srx_file():
 @pytest.fixture
 def bs_obj(mocker):
     with open('./test/data_files/SAMN06219555.xml', 'r') as samn:
-        with mocker.patch('Bio.Entrez.efetch', return_value=samn):
-            return geo.parse_bs_record('SAMN06219555')
+        mocker.patch('Bio.Entrez.efetch', return_value=samn)
+        return geo.parse_bs_record('SAMN06219555')
 
 
 @pytest.fixture
 def exp_with_sra(mocker, srx_file):
     with open(srx_file, 'r') as srx:
-        with mocker.patch('Bio.Entrez.efetch', return_value=srx):
-            gsm = GEOparse.get_GEO(filepath='./test/data_files/GSM2715320.txt')
-            return geo.parse_gsm(gsm)
+        mocker.patch('Bio.Entrez.efetch', return_value=srx)
+        gsm = GEOparse.get_GEO(filepath='./test/data_files/GSM2715320.txt')
+        return geo.parse_gsm(gsm)
 
 
 @pytest.fixture
 def exp_with_sra_pe(mocker):
     with open('./test/data_files/SRX1839065.xml', 'r') as srx:
-        with mocker.patch('Bio.Entrez.efetch', return_value=srx):
-            gsm = GEOparse.get_GEO(filepath='./test/data_files/GSM2198225.txt')
-            return geo.parse_gsm(gsm)
+        mocker.patch('Bio.Entrez.efetch', return_value=srx)
+        gsm = GEOparse.get_GEO(filepath='./test/data_files/GSM2198225.txt')
+        return geo.parse_gsm(gsm)
 
 
 @pytest.fixture
 def hidden_sra(mocker):
     with open('./test/data_files/SRX4191023.xml', 'r') as srx:
-        with mocker.patch('Bio.Entrez.efetch', return_value=srx):
-            gsm = GEOparse.get_GEO(filepath='./test/data_files/GSM2715320.txt')
-            return geo.parse_gsm(gsm)
+        mocker.patch('Bio.Entrez.efetch', return_value=srx)
+        gsm = GEOparse.get_GEO(filepath='./test/data_files/GSM2715320.txt')
+        return geo.parse_gsm(gsm)
 
 
 def test_parse_gsm_with_sra(mocker, srx_file):
