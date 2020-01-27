@@ -4,7 +4,6 @@ import sys
 import argparse
 import json
 import re
-import ast
 from datetime import datetime
 from dcicutils.ff_utils import (
     get_authentication_with_server,
