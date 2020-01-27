@@ -4,14 +4,12 @@ import sys
 import argparse
 import json
 import re
-import ast
 from datetime import datetime
 from dcicutils.ff_utils import (
     get_authentication_with_server,
     search_metadata,
 )
-# disabled because there is a re-definition
-# from dcicwrangling.functions.script_utils import convert_key_arg_to_dict
+from dcicwrangling.functions.script_utils import convert_key_arg_to_dict
 
 ''' Dictionary for field mapping between hpoa file and cgap disorder schema
 '''
@@ -74,15 +72,6 @@ def write_outfile(terms, filename, pretty=False):
             json.dump(terms, outfile, indent=4)
         else:
             json.dump(terms, outfile)
-
-
-def convert_key_arg_to_dict(key):
-    if all([v in key for v in ['key', 'secret', 'server']]):
-        key = ast.literal_eval(key)
-    if not isinstance(key, dict):
-        print("You included a key argument but it appears to be malformed or missing required info - see --help")
-        sys.exit(1)
-    return key
 
 
 def get_args():  # pragma: no cover
