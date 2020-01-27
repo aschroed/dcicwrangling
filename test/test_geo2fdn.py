@@ -43,9 +43,9 @@ def hidden_sra(mocker):
 
 def test_parse_gsm_with_sra(mocker, srx_file):
     with open(srx_file, 'r') as srx:
-        with mocker.patch('Bio.Entrez.efetch', return_value=srx):
-            gsm = GEOparse.get_GEO(filepath='./test/data_files/GSM2715320.txt')
-            exp = geo.parse_gsm(gsm)
+        mocker.patch('Bio.Entrez.efetch', return_value=srx)
+        gsm = GEOparse.get_GEO(filepath='./test/data_files/GSM2715320.txt')
+        exp = geo.parse_gsm(gsm)
     assert exp.link in srx_file
     assert exp.exptype == 'repliseq'
     assert exp.bs == 'SAMN06219555'
@@ -57,9 +57,9 @@ def test_parse_gsm_with_sra(mocker, srx_file):
 
 def test_parse_gsm_dbgap(mocker):
     with open('./test/data_files/SRX3028942.xml', 'r') as srx:
-        with mocker.patch('Bio.Entrez.efetch', return_value=srx):
-            gsm = GEOparse.get_GEO(filepath='./test/data_files/GSM2254215.txt')
-            exp = geo.parse_gsm(gsm)
+        mocker.patch('Bio.Entrez.efetch', return_value=srx)
+        gsm = GEOparse.get_GEO(filepath='./test/data_files/GSM2254215.txt')
+        exp = geo.parse_gsm(gsm)
     assert exp.bs == 'SAMN05449633'
     assert not exp.layout
     assert exp.instr == 'Illumina HiSeq 2500'
@@ -71,18 +71,17 @@ def test_parse_gsm_dbgap(mocker):
 
 def test_experiment_bad_sra(mocker, capfd):
     with open('./test/data_files/SRX0000000.xml', 'r') as srx:
-        with mocker.patch('Bio.Entrez.efetch', return_value=srx):
-            exp = geo.Experiment('hic', 'Illumina HiSeq 2500', 'GSM1234567',
-                                 'title', 'SAMN05449633', 'SRX0000000')
-            exp.get_sra()
+        mocker.patch('Bio.Entrez.efetch', return_value=srx)
+        exp = geo.Experiment('hic', 'Illumina HiSeq 2500', 'GSM1234567', 'title', 'SAMN05449633', 'SRX0000000')
+        exp.get_sra()
     out, err = capfd.readouterr()
     assert "Couldn't parse" in out
 
 
 def gsm_soft_to_exp_obj(mocker, gsm_file, exp_type=None):
-    with mocker.patch('scripts.geo2fdn.Experiment.get_sra'):
-        gsm = GEOparse.get_GEO(filepath=gsm_file)
-        return geo.parse_gsm(gsm, experiment_type=exp_type)
+    mocker.patch('scripts.geo2fdn.Experiment.get_sra')
+    gsm = GEOparse.get_GEO(filepath=gsm_file)
+    return geo.parse_gsm(gsm, experiment_type=exp_type)
 
 
 def test_parse_gsm_exptypes(mocker):
@@ -95,16 +94,16 @@ def test_parse_gsm_exptypes(mocker):
 
 def test_parse_bs_record(mocker):
     with open('./test/data_files/SAMN06219555.xml', 'r') as samn:
-        with mocker.patch('Bio.Entrez.efetch', return_value=samn):
-            bs = geo.parse_bs_record('SAMN06219555')
+        mocker.patch('Bio.Entrez.efetch', return_value=samn)
+        bs = geo.parse_bs_record('SAMN06219555')
     for item in ['tamoxifen', 'liver', 'NIPBL', 'Nipbl(flox/flox)']:
         assert item in bs.description
 
 
 def test_get_geo_metadata_seq(mocker):
-    with mocker.patch('scripts.geo2fdn.Experiment.get_sra'):
-        with mocker.patch('scripts.geo2fdn.parse_bs_record', return_value='SAMNXXXXXXXX'):
-            gse = geo.get_geo_metadata('./test/data_files/GSE93431_family.soft.gz')
+    mocker.patch('scripts.geo2fdn.Experiment.get_sra')
+    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value='SAMNXXXXXXXX')
+    gse = geo.get_geo_metadata('./test/data_files/GSE93431_family.soft.gz')
     assert len([exp for exp in gse.experiments if exp.exptype == 'hic']) == 6
     assert len([exp for exp in gse.experiments if exp.exptype == 'chipseq']) == 14
     assert len([exp for exp in gse.experiments if exp.exptype == 'rnaseq']) == 12
@@ -127,9 +126,9 @@ def test_get_geo_metadata_bad_accession(capfd):
 
 def test_get_geo_metadata_sra_hidden(capfd, mocker, hidden_sra):
     gse_all = GEOparse.get_GEO(filepath='./test/data_files/GSE93431_family.soft.gz')
-    with mocker.patch('scripts.geo2fdn.parse_bs_record', return_value='SAMNXXXXXXXX'):
-        with mocker.patch('scripts.geo2fdn.parse_gsm', return_value=hidden_sra):
-            gse = geo.get_geo_metadata('./test/data_files/GSE93431_family.soft.gz')
+    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value='SAMNXXXXXXXX')
+    mocker.patch('scripts.geo2fdn.parse_gsm', return_value=hidden_sra)
+    gse = geo.get_geo_metadata('./test/data_files/GSE93431_family.soft.gz')
     out, err = capfd.readouterr()
     assert not gse
     assert len(gse_all.gsms.values()) > 10
