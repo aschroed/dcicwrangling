@@ -64,7 +64,7 @@ def test_remove_skipped_vals_w_item_lookup(mocker):
     side_effect = ['uuid1', 'uuid2', 'uuid1']
     val = ['id1', 'id2']
     vals2skip = ['id1']
-    mocker.patch('functions.script_utils.get_item_uuid', side_effect=side_effect):
+    mocker.patch('functions.script_utils.get_item_uuid', side_effect=side_effect)
     result = rj.remove_skipped_vals(val, vals2skip)
     assert result[0] == val[1]
 
