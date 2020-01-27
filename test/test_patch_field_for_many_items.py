@@ -111,78 +111,64 @@ def mocked_args_w_delete():
 
 def test_pffmi_main_no_auth(mocker, capsys, mocked_args_no_args):
     with pytest.raises(SystemExit):
-        with mocker.patch('scripts.patch_field_for_many_items.get_args',
-                          return_value=mocked_args_no_args):
-            pf.main()
-            out = capsys.readouterr()[0]
-            assert out == "Authentication failed"
+        mocker.patch('scripts.patch_field_for_many_items.get_args',
+                     return_value=mocked_args_no_args)
+        pf.main()
+        out = capsys.readouterr()[0]
+        assert out == "Authentication failed"
 
 
 def test_pffmi_main_dryrun(mocker, capsys, mocked_args_dbupd_is_false, auth):
     iids = ['id1', 'id2']
-    with mocker.patch('scripts.patch_field_for_many_items.get_args',
-                      return_value=mocked_args_dbupd_is_false):
-        with mocker.patch('scripts.patch_field_for_many_items.get_authentication_with_server',
-                          return_value=auth):
-            with mocker.patch('scripts.patch_field_for_many_items.scu.get_item_ids_from_args',
-                              return_value=iids):
-                pf.main()
-                out = capsys.readouterr()[0]
-                for i in iids:
-                    s = "PATCHING %s to status = deleted" % i
-                    assert s in out
+    mocker.patch('scripts.patch_field_for_many_items.get_args', return_value=mocked_args_dbupd_is_false)
+    mocker.patch('scripts.patch_field_for_many_items.get_authentication_with_server', return_value=auth)
+    mocker.patch('scripts.patch_field_for_many_items.scu.get_item_ids_from_args', return_value=iids)
+    pf.main()
+    out = capsys.readouterr()[0]
+    for i in iids:
+        s = "PATCHING %s to status = deleted" % i
+        assert s in out
 
 
 def test_pffmi_main_val_is_array(mocker, capsys, mocked_args_is_array, auth):
     iids = ['id1', 'id2']
-    with mocker.patch('scripts.patch_field_for_many_items.get_args',
-                      return_value=mocked_args_is_array):
-        with mocker.patch('scripts.patch_field_for_many_items.get_authentication_with_server',
-                          return_value=auth):
-            with mocker.patch('scripts.patch_field_for_many_items.scu.get_item_ids_from_args',
-                              return_value=iids):
-                pf.main()
-                out = capsys.readouterr()[0]
-                for i in iids:
-                    s = "PATCHING %s to aliases = ['4dn-dcic-lab:test']" % i
-                    assert s in out
+    mocker.patch('scripts.patch_field_for_many_items.get_args', return_value=mocked_args_is_array)
+    mocker.patch('scripts.patch_field_for_many_items.get_authentication_with_server', return_value=auth)
+    mocker.patch('scripts.patch_field_for_many_items.scu.get_item_ids_from_args', return_value=iids)
+    pf.main()
+    out = capsys.readouterr()[0]
+    for i in iids:
+        s = "PATCHING %s to aliases = ['4dn-dcic-lab:test']" % i
+        assert s in out
 
 
 def test_pffmi_main_dbupdate(mocker, capsys, mocked_args_dbupd_is_true, auth):
     iids = ['id1', 'id2']
     resp1 = {'status': 'success'}
     resp2 = {'status': 'error', 'description': "access denied"}
-    with mocker.patch('scripts.patch_field_for_many_items.get_args',
-                      return_value=mocked_args_dbupd_is_true):
-        with mocker.patch('scripts.patch_field_for_many_items.get_authentication_with_server',
-                          return_value=auth):
-            with mocker.patch('scripts.patch_field_for_many_items.scu.get_item_ids_from_args',
-                              return_value=iids):
-                with mocker.patch('scripts.patch_field_for_many_items.patch_metadata',
-                                  side_effect=[resp1, resp2]):
-                    pf.main()
-                    out = capsys.readouterr()[0]
-                    s1 = "PATCHING %s to status = deleted" % iids[0]
-                    s2 = "FAILED TO PATCH %s RESPONSE STATUS error access denied" % iids[1]
-                    assert s1 in out
-                    assert s2 in out
-                    assert 'SUCCESS' in out
+    mocker.patch('scripts.patch_field_for_many_items.get_args', return_value=mocked_args_dbupd_is_true)
+    mocker.patch('scripts.patch_field_for_many_items.get_authentication_with_server', return_value=auth)
+    mocker.patch('scripts.patch_field_for_many_items.scu.get_item_ids_from_args', return_value=iids)
+    mocker.patch('scripts.patch_field_for_many_items.patch_metadata', side_effect=[resp1, resp2])
+    pf.main()
+    out = capsys.readouterr()[0]
+    s1 = "PATCHING %s to status = deleted" % iids[0]
+    s2 = "FAILED TO PATCH %s RESPONSE STATUS error access denied" % iids[1]
+    assert s1 in out
+    assert s2 in out
+    assert 'SUCCESS' in out
 
 
 def test_pffmi_main_dbupdate_delete(mocker, capsys, mocked_args_w_delete, auth):
     iids = ['id1', 'id2']
     resp1 = {'status': 'success'}
-    with mocker.patch('scripts.patch_field_for_many_items.get_args',
-                      return_value=mocked_args_w_delete):
-        with mocker.patch('scripts.patch_field_for_many_items.get_authentication_with_server',
-                          return_value=auth):
-            with mocker.patch('scripts.patch_field_for_many_items.scu.get_item_ids_from_args',
-                              return_value=iids):
-                with mocker.patch('scripts.patch_field_for_many_items.delete_field',
-                                  side_effect=[resp1, resp1]):
-                    pf.main()
-                    out = capsys.readouterr()[0]
-                    for i in iids:
-                        s = "PATCHING %s to aliases = *delete*" % i
-                        assert s in out
-                        assert 'SUCCESS' in out
+    mocker.patch('scripts.patch_field_for_many_items.get_args', return_value=mocked_args_w_delete)
+    mocker.patch('scripts.patch_field_for_many_items.get_authentication_with_server', return_value=auth)
+    mocker.patch('scripts.patch_field_for_many_items.scu.get_item_ids_from_args', return_value=iids)
+    mocker.patch('scripts.patch_field_for_many_items.delete_field', side_effect=[resp1, resp1])
+    pf.main()
+    out = capsys.readouterr()[0]
+    for i in iids:
+        s = "PATCHING %s to aliases = *delete*" % i
+        assert s in out
+        assert 'SUCCESS' in out
