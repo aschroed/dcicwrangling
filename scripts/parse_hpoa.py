@@ -9,8 +9,7 @@ from dcicutils.ff_utils import (
     get_authentication_with_server,
     search_metadata,
 )
-# disabled because there is a re-definition
-# from dcicwrangling.functions.script_utils import convert_key_arg_to_dict
+from dcicwrangling.functions.script_utils import convert_key_arg_to_dict
 
 ''' Dictionary for field mapping between hpoa file and cgap disorder schema
 '''
