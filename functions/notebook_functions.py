@@ -4,6 +4,49 @@ import os
 import json
 import xlrd
 import xlwt
+import datetime
+
+
+def reader(filename, sheetname=None):
+    """Read named sheet or first and only sheet from xlsx file."""
+    book = xlrd.open_workbook(filename)
+    if sheetname is None:
+        sheet, = book.sheets()
+    else:
+        try:
+            sheet = book.sheet_by_name(sheetname)
+        except xlrd.XLRDError:
+            print(sheetname)
+            print("ERROR: Can not find the collection sheet in excel file (xlrd error)")
+            return
+    datemode = sheet.book.datemode
+    for index in range(sheet.nrows):
+        yield [cell_value(cell, datemode) for cell in sheet.row(index)]
+
+
+def cell_value(cell, datemode):
+    """Get cell value from excel."""
+    # This should be always returning text format if the excel is generated
+    # by the get_field_info command
+    ctype = cell.ctype
+    value = cell.value
+    if ctype == xlrd.XL_CELL_ERROR:  # pragma: no cover
+        raise ValueError(repr(cell), 'cell error')
+    elif ctype == xlrd.XL_CELL_BOOLEAN:
+        return str(value).upper().strip()
+    elif ctype == xlrd.XL_CELL_NUMBER:
+        if value.is_integer():
+            value = int(value)
+        return str(value).strip()
+    elif ctype == xlrd.XL_CELL_DATE:
+        value = xlrd.xldate_as_tuple(value, datemode)
+        if value[3:] == (0, 0, 0):
+            return datetime.date(*value[:3]).isoformat()
+        else:  # pragma: no cover
+            return datetime.datetime(*value).isoformat()
+    elif ctype in (xlrd.XL_CELL_TEXT, xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
+        return value.strip()
+    raise ValueError(repr(cell), 'unknown cell type')  # pragma: no cover
 
 
 def get_key(keyname=None, keyfile='keypairs.json'):

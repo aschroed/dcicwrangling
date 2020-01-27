@@ -173,7 +173,7 @@ def has_field_value(item_dict, field, value=None, val_is_item=False):
 def get_types_that_can_have_field(auth, field):
     """find items that have the passed in fieldname in their properties
         even if there is currently no value for that field"""
-    profiles = get_metadata('/profiles/', auth, frame='raw')
+    profiles = get_metadata('/profiles/', auth, add_on='frame=raw')
     types_w_field = []
     for t, j in profiles.items():
         if j['properties'].get(field):

@@ -178,10 +178,10 @@ def test_has_field_value_value_not_found_as_string(eset_json):
 
 def test_get_types_that_can_have_field(mocker, profiles):
     field = 'tags'
-    with mocker.patch('functions.script_utils.get_metadata', return_value=profiles):
-        types_w_field = scu.get_types_that_can_have_field('conn', field)
-        assert 'ExperimentSetReplicate' in types_w_field
-        assert 'TreatmentChemical' not in types_w_field
+    mocker.patch('functions.script_utils.get_metadata', return_value=profiles)
+    types_w_field = scu.get_types_that_can_have_field('conn', field)
+    assert 'ExperimentSetReplicate' in types_w_field
+    assert 'TreatmentChemical' not in types_w_field
 
 
 def test_get_item_type_from_dict(eset_json):
@@ -191,17 +191,17 @@ def test_get_item_type_from_dict(eset_json):
 
 
 def test_get_item_type_from_id(mocker, auth):
-    with mocker.patch('functions.script_utils.get_metadata', return_value={'@type': ['ExperimentSetReplicate']}):
-        result = scu.get_item_type(auth, 'blah')
-        assert result == 'ExperimentSetReplicate'
+    mocker.patch('functions.script_utils.get_metadata', return_value={'@type': ['ExperimentSetReplicate']})
+    result = scu.get_item_type(auth, 'blah')
+    assert result == 'ExperimentSetReplicate'
 
 
 def test_get_item_type_no_type(mocker, auth, capsys):
-    with mocker.patch('functions.script_utils.get_metadata', return_value={'description': 'blah'}):
-        result = scu.get_item_type(auth, 'blah')
-        out = capsys.readouterr()[0]
-        assert out == "Can't find a type for item blah\n"
-        assert result is None
+    mocker.patch('functions.script_utils.get_metadata', return_value={'description': 'blah'})
+    result = scu.get_item_type(auth, 'blah')
+    out = capsys.readouterr()[0]
+    assert out == "Can't find a type for item blah\n"
+    assert result is None
 
 
 @pytest.fixture
@@ -222,11 +222,11 @@ def test_get_item_ids_from_list(auth):
 
 def test_get_item_ids_from_search(mocker, auth, items_w_uuids):
     ids = ['a', 'b', 'c']
-    with mocker.patch('functions.script_utils.search_metadata', return_value=[]):
-        with mocker.patch('functions.script_utils.get_metadata', return_value=items_w_uuids):
-            result = scu.get_item_ids_from_args('search', auth, True)
-            for a in [i in ids for i in result]:
-                assert a
+    mocker.patch('functions.script_utils.search_metadata', return_value=[])
+    mocker.patch('functions.script_utils.get_metadata', return_value=items_w_uuids)
+    result = scu.get_item_ids_from_args('search', auth, True)
+    for a in [i in ids for i in result]:
+        assert a
 
 
 def test_get_item_uuid_w_uuid(auth):
@@ -237,20 +237,18 @@ def test_get_item_uuid_w_uuid(auth):
 
 def test_get_item_uuid_w_atid(mocker, auth):
     atid = '/labs/test-lab'
-    with mocker.patch('functions.script_utils.get_metadata',
-                      return_value={'uuid': 'test_uuid'}) as mt:
-        result = scu.get_item_uuid(atid, auth)
-        assert mt.called_with(atid, auth)
-        assert result == 'test_uuid'
+    mt = mocker.patch('functions.script_utils.get_metadata', return_value={'uuid': 'test_uuid'})
+    result = scu.get_item_uuid(atid, auth)
+    assert mt.called_with(atid, auth)
+    assert result == 'test_uuid'
 
 
 def test_get_item_uuid_not_found(mocker, auth):
     atid = '/labs/non-lab'
-    with mocker.patch('functions.script_utils.get_metadata',
-                      return_value={'status': 'error'}) as mt:
-        result = scu.get_item_uuid(atid, auth)
-        assert mt.called_with(atid, auth)
-        assert result is None
+    mt = mocker.patch('functions.script_utils.get_metadata', return_value={'status': 'error'})
+    result = scu.get_item_uuid(atid, auth)
+    assert mt.called_with(atid, auth)
+    assert result is None
 
 
 def test_create_ff_arg_parser(capsys):
@@ -295,25 +293,23 @@ def test_get_linked_items_w_item_in_found(auth):
 
 
 def test_get_linked_items_w_error_status(auth, mocker):
-    with mocker.patch('functions.script_utils.get_metadata', return_value={'status': 'error'}):
-        iids = scu.get_linked_items(auth, 'test_id')
-        assert not iids
+    mocker.patch('functions.script_utils.get_metadata', return_value={'status': 'error'})
+    iids = scu.get_linked_items(auth, 'test_id')
+    assert not iids
 
 
 def test_get_linked_items_w_no_type(auth, mocker):
-    with mocker.patch('functions.script_utils.get_metadata',
-                      side_effect=[{'status': 'released'},
-                                   {'field': 'value'}]):
-        iids = scu.get_linked_items(auth, 'test_id')
-        assert not iids
+    mocker.patch('functions.script_utils.get_metadata',
+                 side_effect=[{'status': 'released'}, {'field': 'value'}])
+    iids = scu.get_linked_items(auth, 'test_id')
+    assert not iids
 
 
 def test_get_linked_items_w_type_in_no_children(auth, mocker):
-    with mocker.patch('functions.script_utils.get_metadata',
-                      side_effect=[{'status': 'current'},
-                                   {'@type': ['Publication']}]):
-        iids = scu.get_linked_items(auth, 'test_id')
-        assert iids['test_id'] == 'Publication'
+    mocker.patch('functions.script_utils.get_metadata',
+                 side_effect=[{'status': 'current'}, {'@type': ['Publication']}])
+    iids = scu.get_linked_items(auth, 'test_id')
+    assert iids['test_id'] == 'Publication'
 
 
 def test_get_linked_items_w_linked_items(auth, mocker):
@@ -326,15 +322,12 @@ def test_get_linked_items_w_linked_items(auth, mocker):
         'attachment': '6256801c-9c6e-4563-a97a-a295fccf5f07'
     }
     found = {'7256801c-9c6e-4563-a97a-a295fccf5f07': 'Biosource'}
-    with mocker.patch('functions.script_utils.get_metadata',
-                      side_effect=[resp1,
-                                   {'@type': ['Biosample']}]):
-        with mocker.patch('functions.script_utils.find_uuids',
-                          return_value=['7256801c-9c6e-4563-a97a-a295fccf5f07']):
-            iids = scu.get_linked_items(auth, 'test_id', found)
-            for i in iids:
-                assert i in goodids
-                assert i not in badids
+    mocker.patch('functions.script_utils.get_metadata', side_effect=[resp1, {'@type': ['Biosample']}])
+    mocker.patch('functions.script_utils.find_uuids', return_value=['7256801c-9c6e-4563-a97a-a295fccf5f07'])
+    iids = scu.get_linked_items(auth, 'test_id', found)
+    for i in iids:
+        assert i in goodids
+        assert i not in badids
 
 
 def test_get_linked_items_w_no_linked_foundids(auth, mocker):
@@ -347,15 +340,12 @@ def test_get_linked_items_w_no_linked_foundids(auth, mocker):
         'attachment': '6256801c-9c6e-4563-a97a-a295fccf5f07'
     }
     found = {}
-    with mocker.patch('functions.script_utils.get_metadata',
-                      side_effect=[resp1,
-                                   {'@type': ['Biosample']}]):
-        with mocker.patch('functions.script_utils.find_uuids',
-                          return_value=None):
-            iids = scu.get_linked_items(auth, 'test_id', found)
-            for i in iids:
-                assert i in goodids
-                assert i not in badids
+    mocker.patch('functions.script_utils.get_metadata', side_effect=[resp1, {'@type': ['Biosample']}])
+    mocker.patch('functions.script_utils.find_uuids', return_value=None)
+    iids = scu.get_linked_items(auth, 'test_id', found)
+    for i in iids:
+        assert i in goodids
+        assert i not in badids
 
 
 def test_get_linked_item_ids_w_recursive(auth, mocker):
@@ -377,25 +367,24 @@ def test_get_linked_item_ids_w_recursive(auth, mocker):
     resp3 = {
         'status': 'released',
     }
-    with mocker.patch('functions.script_utils.get_metadata',
-                      side_effect=[resp1,
-                                   {'@type': ['Biosample']},
-                                   resp2,
-                                   {'@type': ['Biosource']},
-                                   resp3,
-                                   {'@type': ['Vendor']}]):
-        with mocker.patch('functions.script_utils.find_uuids',
-                          side_effect=[None,
-                                       ['7256801c-9c6e-4563-a97a-a295fccf5f07'],
-                                       None,
-                                       None,
-                                       ['5256801c-9c6e-4563-a97a-a295fccf5f07'],
-                                       None,
-                                       None]):
-            iids = scu.get_linked_items(auth, 'test_id')
-            for i in iids:
-                assert i in goodids
-                assert i not in badids
+    mocker.patch('functions.script_utils.get_metadata', side_effect=[
+        resp1, {'@type': ['Biosample']},
+        resp2, {'@type': ['Biosource']},
+        resp3, {'@type': ['Vendor']}
+    ])
+    mocker.patch('functions.script_utils.find_uuids', side_effect=[
+        None,
+        ['7256801c-9c6e-4563-a97a-a295fccf5f07'],
+        None,
+        None,
+        ['5256801c-9c6e-4563-a97a-a295fccf5f07'],
+        None,
+        None
+    ])
+    iids = scu.get_linked_items(auth, 'test_id')
+    for i in iids:
+        assert i in goodids
+        assert i not in badids
 
 
 @pytest.fixture
@@ -416,27 +405,24 @@ def test_get_item_if_you_can_json_w_uuid(auth, eset_json):
 
 
 def test_get_item_if_you_can_w_uuid(mocker, auth, eset_json):
-    with mocker.patch('functions.script_utils.get_metadata', return_value=eset_json):
-        result = scu.get_item_if_you_can(auth, eset_json['uuid'])
-        assert result == eset_json
+    mocker.patch('functions.script_utils.get_metadata', return_value=eset_json)
+    result = scu.get_item_if_you_can(auth, eset_json['uuid'])
+    assert result == eset_json
 
 
 def test_get_item_if_you_can_w_termname_and_itype(mocker, auth, cell_line_json):
-    with mocker.patch('functions.script_utils.get_metadata',
-                      side_effect=[None, cell_line_json]):
-        result = scu.get_item_if_you_can(auth, cell_line_json['term_name'], 'OntologyTerm')
-        assert result == cell_line_json
+    mocker.patch('functions.script_utils.get_metadata', side_effect=[None, cell_line_json])
+    result = scu.get_item_if_you_can(auth, cell_line_json['term_name'], 'OntologyTerm')
+    assert result == cell_line_json
 
 
 def test_get_item_if_you_can_w_termname_and_no_itype_no_item(mocker, auth, cell_line_json):
-    with mocker.patch('functions.script_utils.get_metadata',
-                      side_effect=[None, None]):
-        result = scu.get_item_if_you_can(auth, cell_line_json['term_name'])
-        assert result is None
+    mocker.patch('functions.script_utils.get_metadata', side_effect=[None, None])
+    result = scu.get_item_if_you_can(auth, cell_line_json['term_name'])
+    assert result is None
 
 
 def test_get_item_if_you_can_w_fakename_and_itype_no_item(mocker, auth):
-    with mocker.patch('functions.script_utils.get_metadata',
-                      side_effect=[None, None]):
-        result = scu.get_item_if_you_can(auth, 'fake name', 'OntologyTerm')
-        assert result is None
+    mocker.patch('functions.script_utils.get_metadata', side_effect=[None, None])
+    result = scu.get_item_if_you_can(auth, 'fake name', 'OntologyTerm')
+    assert result is None

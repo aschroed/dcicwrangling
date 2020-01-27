@@ -20,7 +20,8 @@ workflow_details = [['md5', ['0.0.4', '0.2.6'], 12],
                     ['encode-chipseq-postaln', ['1.1.1'], 200],
                     ['encode-atacseq-aln', ['1.1.1'], 200],
                     ['encode-atacseq-postaln', ['1.1.1'], 200],
-                    ['mergebed', ['v1'], 200]
+                    ['mergebed', ['v1'], 200],
+                    ['bamqc', ['v2', 'v3'], 200]
                     ]
 
 workflow_names = [i[0] for i in workflow_details]
