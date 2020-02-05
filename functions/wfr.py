@@ -411,7 +411,11 @@ def add_preliminary_processed_files(item_id, list_pc, auth, run_type="hic"):
               "repliseq": "Repli-Seq Pipeline - Preliminary Files",
               'chip': "ENCODE ChIP-Seq Pipeline - Preliminary Files",
               'atac': "ENCODE ATAC-Seq Pipeline - Preliminary Files"}
-    pc_set_title = titles[run_type]
+    if run_type in titles:
+        pc_set_title = titles[run_type]
+    else:
+        print('setting title as', run_type)
+        pc_set_title = run_type
     resp = ff_utils.get_metadata(item_id, key=auth)
 
     # check if this items are in processed files field
