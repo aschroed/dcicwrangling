@@ -90,55 +90,18 @@ def step_settings(step_name, my_organism, attribution, params={}):
             "wf_name": "bedGraphToBigWig",
             "wf_uuid": "667b14a7-a47e-4857-adf1-12a6393c4b8e",
             "parameters": {},
-            "config": {
-                "instance_type": "t2.micro",
-                "EBS_optimized": False,
-                "ebs_size": 10,
-                "ebs_type": "gp2",
-                "json_bucket": "4dn-aws-pipeline-run-json",
-                "ebs_iops": "",
-                "shutdown_min": "now",
-                "password": "",
-                "log_bucket": "tibanna-output",
-                "key_name": "4dn-encode"
-            },
             "overwrite_input_extra": False
         },
         {
             "wf_name": "bedtobeddb",
             "wf_uuid": "9d575e99-5ffe-4ea4-b74f-ad40f621cd39",
             "parameters": {},
-            "config": {
-                "instance_type": "m3.2xlarge",
-                "EBS_optimized": False,
-                "ebs_size": 10,
-                "ebs_type": "gp2",
-                "json_bucket": "4dn-aws-pipeline-run-json",
-                "ebs_iops": "",
-                "shutdown_min": "now",
-                "password": "",
-                "log_bucket": "tibanna-output",
-                "key_name": "4dn-encode"
-            },
             "overwrite_input_extra": False
         },
         {
             "wf_name": "encode-chipseq-aln-chip",
             "wf_uuid": "4dn-dcic-lab:wf-encode-chipseq-aln-chip",
             "parameters": {},
-            "config": {
-                       "ebs_size": 0,
-                       "ebs_type": "gp2",
-                       "json_bucket": "4dn-aws-pipeline-run-json",
-                       "EBS_optimized": "",
-                       "ebs_iops": "",
-                       "shutdown_min": "now",
-                       "instance_type": "",
-                       "password": "",
-                       "log_bucket": "tibanna-output",
-                       "key_name": "",
-                       "cloudwatch_dashboard": True
-            },
             'custom_pf_fields': {
                 'chip.first_ta': {
                     'genome_assembly': genome,
@@ -154,19 +117,6 @@ def step_settings(step_name, my_organism, attribution, params={}):
             "wf_name": "encode-chipseq-aln-ctl",
             "wf_uuid": "4dn-dcic-lab:wf-encode-chipseq-aln-ctl",
             "parameters": {},
-            "config": {
-                "ebs_size": 0,
-                "ebs_type": "gp2",
-                "json_bucket": "4dn-aws-pipeline-run-json",
-                "EBS_optimized": "",
-                "ebs_iops": "",
-                "shutdown_min": 'now',
-                "instance_type": "",
-                "password": "",
-                "log_bucket": "tibanna-output",
-                "key_name": "",
-                "cloudwatch_dashboard": True
-            },
             'custom_pf_fields': {
                 'chip.first_ta_ctl': {
                     'genome_assembly': genome,
@@ -178,19 +128,6 @@ def step_settings(step_name, my_organism, attribution, params={}):
             "wf_name": "encode-chipseq-postaln",
             "wf_uuid": "4dn-dcic-lab:wf-encode-chipseq-postaln",
             "parameters": {},
-            "config": {
-                "ebs_size": 0,
-                "ebs_type": "gp2",
-                "json_bucket": "4dn-aws-pipeline-run-json",
-                "EBS_optimized": "",
-                "ebs_iops": "",
-                "shutdown_min": "now",
-                "instance_type": "",
-                "password": "",
-                "log_bucket": "tibanna-output",
-                "key_name": "",
-                "cloudwatch_dashboard": True
-            },
             'custom_pf_fields': {
                 'chip.optimal_peak': {
                     'genome_assembly': genome,
@@ -210,19 +147,6 @@ def step_settings(step_name, my_organism, attribution, params={}):
             "wf_name": "encode-atacseq-aln",
             "wf_uuid": "4dn-dcic-lab:wf-encode-atacseq-aln",
             "parameters": {},
-            "config": {
-                "ebs_size": 0,
-                "ebs_type": "gp2",
-                "json_bucket": "4dn-aws-pipeline-run-json",
-                "EBS_optimized": "",
-                "ebs_iops": "",
-                "shutdown_min": 'now',
-                "instance_type": "",
-                "password": "",
-                "log_bucket": "tibanna-output",
-                "key_name": "",
-                "cloudwatch_dashboard": True
-            },
             'custom_pf_fields': {
                 'atac.first_ta': {
                     'genome_assembly': genome,
@@ -234,19 +158,6 @@ def step_settings(step_name, my_organism, attribution, params={}):
             "wf_name": "encode-atacseq-postaln",
             "wf_uuid": "4dn-dcic-lab:wf-encode-atacseq-postaln",
             "parameters": {},
-            "config": {
-                "ebs_size": 0,
-                "ebs_type": "gp2",
-                "json_bucket": "4dn-aws-pipeline-run-json",
-                "EBS_optimized": "",
-                "ebs_iops": "",
-                "shutdown_min": "now",
-                "instance_type": "",
-                "password": "",
-                "log_bucket": "tibanna-output",
-                "key_name": "",
-                "cloudwatch_dashboard": True
-            },
             'custom_pf_fields': {
                 'atac.optimal_peak': {
                     'genome_assembly': genome,
@@ -266,29 +177,47 @@ def step_settings(step_name, my_organism, attribution, params={}):
             "wf_name": "mergebed",
             "wf_uuid": "2b10e472-065e-43ed-992c-fccad6417b65",
             "parameters": {"sortv": "0"},
-            "config": {
-                "ebs_size": 0,
-                "ebs_type": "gp2",
-                "json_bucket": "4dn-aws-pipeline-run-json",
-                "EBS_optimized": "",
-                "ebs_iops": "",
-                "shutdown_min": "now",
-                "instance_type": "",
-                "password": "",
-                "log_bucket": "tibanna-output",
-                "key_name": "",
-                "cloudwatch_dashboard": True
-            },
             'custom_pf_fields': {
                 'merged_bed': {
                     'genome_assembly': genome,
                     'file_type': 'read positions',
                     'description': 'Merged file, positions of aligned reads in bed format, one line per read mate'}
             }
+        },
+        {
+            "wf_name": "merge-fastq",
+            "wf_uuid": "e20ef13d-64d8-4d10-94b1-ed45e7d6a7c2",
+            "parameters": {},
+            'custom_pf_fields': {
+                'fastq': {
+                    'genome_assembly': genome,
+                    'file_type': 'reads',
+                    'description': 'Merged fastq file'}
+            }
         }
     ]
     # if params, overwrite parameters
+
     template = [i for i in wf_dict if i['wf_name'] == step_name][0]
+
+    update_config = {
+        "ebs_type": "gp2",
+        "spot_instance": False,
+        "ebs_iops": "",
+        "log_bucket": "tibanna-output",
+        "key_name": "4dn-encode",
+        "public_postrun_json": True,
+        "behavior_on_capacity_limit": "retry_without_spot"
+    }
+    if template.get('config'):
+        temp_conf = template['config']
+        for a_key in update_config:
+            if a_key not in temp_conf:
+                temp_conf[a_key] = update_config[a_key]
+    else:
+        template['config'] = update_config
+
+
     if params:
         template['parameters'] = params
 
