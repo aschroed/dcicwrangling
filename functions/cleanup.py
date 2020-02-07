@@ -25,7 +25,7 @@ workflow_details = [['md5', ['0.0.4', '0.2.6'], 12],
                     ['encode-rnaseq-stranded', ['1.1'], 200],
                     ['encode-rnaseq-unstranded', ['1.1'], 200],
                     ['rna-strandedness', ['v2'], 200],
-                    ['fastq-first-line', ['v2'], ]
+                    ['fastq-first-line', ['v2'], 200]
                     ]
 
 workflow_names = [i[0] for i in workflow_details]
