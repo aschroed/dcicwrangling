@@ -4,7 +4,7 @@ from datetime import datetime
 # accepted workflows
 # workflow name, accepted revision numbers (0 if none), accetable run time (hours)
 workflow_details = [
-    ## TODO: take this info from foursight
+    # TODO: take this info from foursight
     # common ones
     ['md5', ['0.0.4', '0.2.6'], 12],
     ['fastqc-0-11-4-1', ['0.2.0'], 50],
