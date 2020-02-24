@@ -76,6 +76,11 @@ def get_wfr_report(wfrs):
         output_files = wfr_data.get('output_files', None)
         output_uuids = []
         qc_uuids = []
+
+        # add wfr qc to the qc list
+        if wfr_data.get('quality_metric'):
+            qc_uuids.append(wfr_data['quality_metric']['uuid'])
+
         if output_files:
             for i in output_files:
                 if i.get('value', None):
