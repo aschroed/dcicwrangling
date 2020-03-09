@@ -3,30 +3,49 @@ from datetime import datetime
 
 # accepted workflows
 # workflow name, accepted revision numbers (0 if none), accetable run time (hours)
-workflow_details = [['md5', ['0.0.4', '0.2.6'], 12],
-                    ['fastqc-0-11-4-1', ['0.2.0'], 50],
-                    ['bwa-mem', ['0.2.6'], 50],
-                    ['pairsqc-single', ['0.2.5', '0.2.6'], 100],
-                    ['hi-c-processing-bam', ['0.2.6'], 50],
-                    ['hi-c-processing-pairs', ['0.2.6', '0.2.7'], 200],
-                    ['hi-c-processing-pairs-nore', ['0.2.6'], 200],
-                    ['hi-c-processing-pairs-nonorm', ['0.2.6'], 200],
-                    ['hi-c-processing-pairs-nore-nonorm', ['0.2.6'], 200],
-                    ['repliseq-parta', ['v13.1', 'v14', 'v16'], 200],
-                    ['bedGraphToBigWig', ['v4'], 24],
-                    ['bedtobeddb', ['v2'], 24],
-                    ['encode-chipseq-aln-chip', ['1.1.1'], 200],
-                    ['encode-chipseq-aln-ctl', ['1.1.1'], 200],
-                    ['encode-chipseq-postaln', ['1.1.1'], 200],
-                    ['encode-atacseq-aln', ['1.1.1'], 200],
-                    ['encode-atacseq-postaln', ['1.1.1'], 200],
-                    ['mergebed', ['v1'], 200],
-                    ['bamqc', ['v2', 'v3'], 200],
-                    ['encode-rnaseq-stranded', ['1.1'], 200],
-                    ['encode-rnaseq-unstranded', ['1.1'], 200],
-                    ['rna-strandedness', ['v2'], 200],
-                    ['fastq-first-line', ['v2'], 200]
-                    ]
+workflow_details = [
+    # TODO: take this info from foursight
+    # common ones
+    ['md5', ['0.0.4', '0.2.6'], 12],
+    ['fastqc-0-11-4-1', ['0.2.0'], 50],
+    # 4dn ones
+    ['bwa-mem', ['0.2.6'], 50],
+    ['pairsqc-single', ['0.2.5', '0.2.6'], 100],
+    ['hi-c-processing-bam', ['0.2.6'], 50],
+    ['hi-c-processing-pairs', ['0.2.6', '0.2.7'], 200],
+    ['hi-c-processing-pairs-nore', ['0.2.6'], 200],
+    ['hi-c-processing-pairs-nonorm', ['0.2.6'], 200],
+    ['hi-c-processing-pairs-nore-nonorm', ['0.2.6'], 200],
+    ['repliseq-parta', ['v13.1', 'v14', 'v16'], 200],
+    ['bedGraphToBigWig', ['v4'], 24],
+    ['bedtobeddb', ['v2'], 24],
+    ['encode-chipseq-aln-chip', ['1.1.1'], 200],
+    ['encode-chipseq-aln-ctl', ['1.1.1'], 200],
+    ['encode-chipseq-postaln', ['1.1.1'], 200],
+    ['encode-atacseq-aln', ['1.1.1'], 200],
+    ['encode-atacseq-postaln', ['1.1.1'], 200],
+    ['mergebed', ['v1'], 200],
+    ['bamqc', ['v2', 'v3'], 200],
+    ['encode-rnaseq-stranded', ['1.1'], 200],
+    ['encode-rnaseq-unstranded', ['1.1'], 200],
+    ['rna-strandedness', ['v2'], 200],
+    ['fastq-first-line', ['v2'], 200],
+    # cgap ones
+    ['workflow_bwa-mem_no_unzip-check', ['v9', 'v10', 'v11', 'v12'], 12],
+    ['workflow_add-readgroups-check', ['v9', 'v10', 'v11', 'v12'], 12],
+    ['workflow_merge-bam-check', ['v9', 'v10', 'v11', 'v12'], 12],
+    ['workflow_picard-MarkDuplicates-check', ['v9', 'v10', 'v11', 'v12'], 12],
+    ['workflow_sort-bam-check', ['v9', 'v10', 'v11', 'v12'], 12],
+    ['workflow_gatk-BaseRecalibrator', ['v9', 'v10', 'v11', 'v12'], 12],
+    ['workflow_gatk-ApplyBQSR-check', ['v9', 'v10', 'v11', 'v12'], 12],
+    ['workflow_index-sorted-bam', ['v9'], 12],
+    ['workflow_gatk-HaplotypeCaller', ['v10', 'v11', 'v12'], 12],
+    ['workflow_gatk-CombineGVCFs', ['v10', 'v11', 'v12'], 12],
+    ['workflow_gatk-GenotypeGVCFs-check', ['v10', 'v11', 'v12'], 12],
+    ['workflow_gatk-VQSR-check', ['v10', 'v11', 'v12'], 12],
+    ['workflow_qcboard-bam', ['v9'], 12],
+    ['workflow_cram2fastq', ['v12', 'v13'], 12],
+]
 
 workflow_names = [i[0] for i in workflow_details]
 
@@ -57,6 +76,11 @@ def get_wfr_report(wfrs):
         output_files = wfr_data.get('output_files', None)
         output_uuids = []
         qc_uuids = []
+
+        # add wfr qc to the qc list
+        if wfr_data.get('quality_metric'):
+            qc_uuids.append(wfr_data['quality_metric']['uuid'])
+
         if output_files:
             for i in output_files:
                 if i.get('value', None):
