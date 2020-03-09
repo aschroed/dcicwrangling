@@ -530,8 +530,10 @@ def get_chip_info(f_exp_resp, my_key):
     control_set = ""  # None (if no control exp is set), or the control experiment for the one in scope
     target_type = ""  # Histone or TF (or None for control)
     # get target
-    target = f_exp_resp.get('targeted_factor')
-    if target:
+    targets = f_exp_resp.get('targeted_factor')
+    if targets:
+        assert len(targets) == 1, 'MULTIPLE TARGETS - SKIPPING'
+        target = targets[0]
         target_type = 'tf'  # set to tf default and switch to histone (this part might need some work later)
         target_dt = target['display_title']
         if target_dt.startswith('Protein:H2') or target_dt.startswith('Protein:H3'):
