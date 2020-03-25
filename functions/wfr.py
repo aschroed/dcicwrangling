@@ -711,7 +711,7 @@ def run_missing_chip1(control, wf_info, organism, target_type, paired, files, ob
         fraglist = frag_temp * len(files)
         parameters['chip.fraglen'] = fraglist
 
-    tag = '1.1.1'
+    tag = ''
     """Creates the trigger json that is used by foufront endpoint.
     """
     input_json = {'input_files': input_files,
@@ -735,7 +735,11 @@ def run_missing_chip1(control, wf_info, organism, target_type, paired, files, ob
 
 
 def run_missing_chip2(control_set, wf_info, organism, target_type, paired,
-                      ta, ta_xcor, ta_cnt, my_env, my_key, run_ids):
+                      ta, ta_xcor, ta_cnt, my_env, my_key, run_ids,
+                      removed_controls=False):
+    """
+    removed_controls = did we remove the control due to low peaks, set caller to macs2
+    """
     my_s3_util = s3Utils(env=my_env)
     raw_bucket = my_s3_util.raw_file_bucket
     out_bucket = my_s3_util.outfile_bucket
@@ -798,12 +802,14 @@ def run_missing_chip2(control_set, wf_info, organism, target_type, paired,
         "chip.spp_cpu": 4
     }
 
+    if removed_controls:
+        parameters['chip.peak_caller'] = 'macs2'
+
     if paired == 'single':
         frag_temp = [300]
         fraglist = frag_temp * len(ta)
         parameters['chip.fraglen'] = fraglist
 
-    tag = '1.1.1'
     """Creates the trigger json that is used by foufront endpoint.
     """
     input_json = {'input_files': input_files,
@@ -816,9 +822,14 @@ def run_missing_chip2(control_set, wf_info, organism, target_type, paired,
                   "custom_pf_fields": wf_info['custom_pf_fields'],
                   "_tibanna": {"env": my_env,
                                "run_type": wf_info['wf_name'],
-                               "run_id": run_ids['run_name']},
-                  "tag": tag
+                               "run_id": run_ids['run_name']}
                   }
+    if removed_controls:
+        note = 'Peak calling was performed with no control files, because standard peak calling failed. This may be indicative of lower data quality'
+        or_file_data = input_json['custom_pf_fields']
+        for a_case in or_file_data:
+            or_file_data[a_case]['notes'] = note
+
     # r = json.dumps(input_json)
     # print(r)
     e = ff_utils.post_metadata(input_json, 'WorkflowRun/run', key=my_key)
