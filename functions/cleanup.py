@@ -30,6 +30,7 @@ workflow_details = [
     ['encode-rnaseq-unstranded', ['1.1'], 200],
     ['rna-strandedness', ['v2'], 200],
     ['fastq-first-line', ['v2'], 200],
+    ['re_checker_workflow', ['v1.1', 'v1.2'], 200],
     # cgap ones
     ['workflow_bwa-mem_no_unzip-check', ['v9', 'v10', 'v11', 'v12', 'v13'], 48],
     ['workflow_add-readgroups-check', ['v9', 'v10', 'v11', 'v12', 'v13'], 12],
