@@ -50,6 +50,52 @@ workflow_details = [
 workflow_names = [i[0] for i in workflow_details]
 
 
+def fetch_pf_associated(pf_id_or_dict, my_key):
+    """Given a file accession, find all related items
+    1) QCs
+    2) wfr producing the file, and other outputs from the same wfr
+    3) wfrs this file went as input, and all files/wfrs/qcs around it
+    The returned list might contain duplicates, uuids and display titles for qcs"""
+    file_as_list = []
+    if isinstance(pf_id_or_dict, dict):
+        pf_info = pf_id_or_dict
+    else:
+        pf_info = ff_utils.get_metadata(pf_id_or_dict, my_key)
+    file_as_list.append(pf_info['uuid'])
+    if pf_info.get('quality_metric'):
+        file_as_list.append(pf_info['quality_metric']['uuid'])
+    inp_wfrs = pf_info.get('workflow_run_inputs')
+    for inp_wfr in inp_wfrs:
+        file_as_list.extend(fetch_wfr_associated(inp_wfr['uuid'], my_key))
+    out_wfrs = pf_info.get('workflow_run_outputs')
+    for out_wfr in out_wfrs:
+        file_as_list.extend(fetch_wfr_associated(out_wfr['uuid'], my_key))
+    return list(set(file_as_list))
+
+
+def fetch_wfr_associated(wfr_id_or_resp, my_key):
+    """Given wfr_uuid, find associated output files and qcs"""
+    wfr_as_list = []
+    if isinstance(wfr_id_or_resp, dict):
+        wfr_info = wfr_id_or_resp
+    else:
+        wfr_info = ff_utils.get_metadata(wfr_id_or_resp, my_key)
+    wfr_as_list.append(wfr_info['uuid'])
+    if wfr_info.get('output_files'):
+        for o in wfr_info['output_files']:
+                if o.get('value'):
+                    wfr_as_list.append(o['value']['uuid'])
+                elif o.get('value_qc'):
+                    wfr_as_list.append(o['value_qc']['uuid']) # this is a @id
+    if wfr_info.get('output_quality_metrics'):
+        for qc in wfr_info['output_quality_metrics']:
+            if qc.get('value'):
+                wfr_as_list.append(qc['value']['uuid'])
+    if wfr_info.get('quality_metric'):
+        wfr_as_list.append(wfr_info['quality_metric']['uuid'])
+    return wfr_as_list
+
+
 def get_wfr_report(wfrs):
     # for a given list of wfrs, produce a simpler report
     wfr_report = []
