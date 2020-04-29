@@ -83,10 +83,10 @@ def fetch_wfr_associated(wfr_id_or_resp, my_key):
     wfr_as_list.append(wfr_info['uuid'])
     if wfr_info.get('output_files'):
         for o in wfr_info['output_files']:
-                if o.get('value'):
-                    wfr_as_list.append(o['value']['uuid'])
-                elif o.get('value_qc'):
-                    wfr_as_list.append(o['value_qc']['uuid']) # this is a @id
+            if o.get('value'):
+                wfr_as_list.append(o['value']['uuid'])
+            elif o.get('value_qc'):
+                wfr_as_list.append(o['value_qc']['uuid'])
     if wfr_info.get('output_quality_metrics'):
         for qc in wfr_info['output_quality_metrics']:
             if qc.get('value'):
