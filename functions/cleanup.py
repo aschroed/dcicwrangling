@@ -31,18 +31,18 @@ workflow_details = [
     ['rna-strandedness', ['v2'], 200],
     ['fastq-first-line', ['v2'], 200],
     # cgap ones
-    ['workflow_bwa-mem_no_unzip-check', ['v9', 'v10', 'v11', 'v12'], 12],
-    ['workflow_add-readgroups-check', ['v9', 'v10', 'v11', 'v12'], 12],
-    ['workflow_merge-bam-check', ['v9', 'v10', 'v11', 'v12'], 12],
-    ['workflow_picard-MarkDuplicates-check', ['v9', 'v10', 'v11', 'v12'], 12],
-    ['workflow_sort-bam-check', ['v9', 'v10', 'v11', 'v12'], 12],
-    ['workflow_gatk-BaseRecalibrator', ['v9', 'v10', 'v11', 'v12'], 12],
-    ['workflow_gatk-ApplyBQSR-check', ['v9', 'v10', 'v11', 'v12'], 12],
+    ['workflow_bwa-mem_no_unzip-check', ['v9', 'v10', 'v11', 'v12', 'v13'], 48],
+    ['workflow_add-readgroups-check', ['v9', 'v10', 'v11', 'v12', 'v13'], 12],
+    ['workflow_merge-bam-check', ['v9', 'v10', 'v11', 'v12', 'v13'], 12],
+    ['workflow_picard-MarkDuplicates-check', ['v9', 'v10', 'v11', 'v12', 'v13'], 12],
+    ['workflow_sort-bam-check', ['v9', 'v10', 'v11', 'v12', 'v13'], 12],
+    ['workflow_gatk-BaseRecalibrator', ['v9', 'v10', 'v11', 'v12', 'v13'], 12],
+    ['workflow_gatk-ApplyBQSR-check', ['v9', 'v10', 'v11', 'v12', 'v13'], 12],
     ['workflow_index-sorted-bam', ['v9'], 12],
-    ['workflow_gatk-HaplotypeCaller', ['v10', 'v11', 'v12'], 12],
-    ['workflow_gatk-CombineGVCFs', ['v10', 'v11', 'v12'], 12],
-    ['workflow_gatk-GenotypeGVCFs-check', ['v10', 'v11', 'v12'], 12],
-    ['workflow_gatk-VQSR-check', ['v10', 'v11', 'v12'], 12],
+    ['workflow_gatk-HaplotypeCaller', ['v10', 'v11', 'v12', 'v13'], 12],
+    ['workflow_gatk-CombineGVCFs', ['v10', 'v11', 'v12', 'v13'], 12],
+    ['workflow_gatk-GenotypeGVCFs-check', ['v10', 'v11', 'v12', 'v13'], 12],
+    ['workflow_gatk-VQSR-check', ['v10', 'v11', 'v12', 'v13'], 12],
     ['workflow_qcboard-bam', ['v9'], 12],
     ['workflow_cram2fastq', ['v12', 'v13'], 12],
 ]
@@ -218,7 +218,8 @@ def delete_wfrs(file_resp, my_key, delete=False, stash=None):
                         for wfr_to_del in old_wfrs:
                             if wfr_to_del['status'] != 'deleted':
                                 if wfr_to_del['status'] in ['archived', 'replaced']:
-                                    print(wfr_to_del['wfr_name'], wfr_to_del['status'], ' wfr found, skipping ', wfr_to_del['wfr_uuid'], file_resp['accession'])
+                                    print(wfr_to_del['wfr_name'], wfr_to_del['status'], ' wfr found, skipping ',
+                                          wfr_to_del['wfr_uuid'], file_resp['accession'])
                                     continue
                                 ####################################################
                                 # TEMPORARY PIECE
