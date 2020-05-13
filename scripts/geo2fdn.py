@@ -315,7 +315,10 @@ def write_experiments(sheet_name, experiments, alias_prefix, file_dict, inbook, 
             sheet.write(row, sheet_dict['*biosample'], alias_prefix + ':' + entry.bs)
         if 'FileFastq' in inbook.sheet_names():
             sheet.write(row, sheet_dict['files'], ','.join(file_dict[entry.geo]))
-        sheet.write(row, sheet_dict['dbxrefs'], 'GEO:' + entry.geo)
+        refs = 'GEO:' + entry.geo
+        if entry.link:
+            refs += ', SRA:' + entry.link
+        sheet.write(row, sheet_dict['dbxrefs'], refs)
         if entry.exptype in type_dict.keys():
             sheet.write(row, sheet_dict['*experiment_type'], types[entry.exptype])
         row += 1
