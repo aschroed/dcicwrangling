@@ -16,6 +16,9 @@ workflow_details = [
     ['hi-c-processing-pairs-nore', ['0.2.6'], 200],
     ['hi-c-processing-pairs-nonorm', ['0.2.6'], 200],
     ['hi-c-processing-pairs-nore-nonorm', ['0.2.6'], 200],
+    ['imargi-processing-fastq', ["1.1.1_dcic_4"], 200],
+    ['imargi-processing-bam', ["1.1.1_dcic_4"], 200],
+    ['imargi-processing-pairs', ["1.1.1_dcic_4"], 200],
     ['repliseq-parta', ['v13.1', 'v14', 'v16'], 200],
     ['bedGraphToBigWig', ['v4'], 24],
     ['bedtobeddb', ['v2'], 24],
@@ -25,6 +28,7 @@ workflow_details = [
     ['encode-atacseq-aln', ['1.1.1'], 200],
     ['encode-atacseq-postaln', ['1.1.1'], 200],
     ['mergebed', ['v1'], 200],
+    ['merge-fastq', ['v1'], 200],
     ['bamqc', ['v2', 'v3'], 200],
     ['encode-rnaseq-stranded', ['1.1'], 200],
     ['encode-rnaseq-unstranded', ['1.1'], 200],
@@ -65,10 +69,10 @@ def fetch_pf_associated(pf_id_or_dict, my_key):
     file_as_list.append(pf_info['uuid'])
     if pf_info.get('quality_metric'):
         file_as_list.append(pf_info['quality_metric']['uuid'])
-    inp_wfrs = pf_info.get('workflow_run_inputs')
+    inp_wfrs = pf_info.get('workflow_run_inputs', [])
     for inp_wfr in inp_wfrs:
         file_as_list.extend(fetch_wfr_associated(inp_wfr['uuid'], my_key))
-    out_wfrs = pf_info.get('workflow_run_outputs')
+    out_wfrs = pf_info.get('workflow_run_outputs', [])
     for out_wfr in out_wfrs:
         file_as_list.extend(fetch_wfr_associated(out_wfr['uuid'], my_key))
     return list(set(file_as_list))
