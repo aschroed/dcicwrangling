@@ -54,7 +54,7 @@ def get_item_ids_from_args(id_input, auth, is_search=False):
         return [r.get('uuid') for r in result]
     try:
         with open(id_input[0]) as inf:
-            return [l.strip() for l in inf]  # pragma: no cover
+            return [x.strip() for x in inf]  # pragma: no cover
     except FileNotFoundError:
         return id_input
 
