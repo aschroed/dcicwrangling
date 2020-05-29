@@ -14,8 +14,8 @@ Parsing damid processed file worksheet to generate the various bins
 of other processed files
 
 This variation uses the information from the linked_dataset column
-
-NOTE: currently the bin to use for processed files
+that only contains replicate set aliases - will need to tweak if expt
+aliases are provided - currently the bin to use for processed files
 is specified in 2 places - is_processed_bin and create_patch functions
 should be made a constant or param to supply
 '''
@@ -153,18 +153,18 @@ def main():  # pragma: no cover
         query = args.input[1]
 
     metadata = extract_rows(infile)
-    patch_items = {}
+    esets = {}
     # going row by row to add file to correct spot
     for meta in metadata:
         # checking if we have linked dataset info in sheet - should be either an
         # experiment set in this case or experiment (perhaps in the future)
-        linked_dataset_id = meta.get('#linked datasets')
+        linked_set_id = meta.get('#linked datasets')
         file_alias = meta.get('aliases')
 
         # build basic ds for the set
-        if linked_dataset_id not in patch_items:
-            item = get_metadata(linked_dataset_id, auth)  # either experiment or eset
-            euuid = item.get('uuid')
+        if linked_set_id not in esets:
+            eset = get_metadata(linked_set_id, auth)
+            euuid = eset.get('uuid')
             if not euuid:
                 print("Can't get uuid for {} - skipping".format(linked_set_id))
                 continue
