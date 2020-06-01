@@ -26,9 +26,9 @@ def get_args(args):
     return args
 
 
-def _filter_none(l):
-    nl = [li for li in l if li is not None]
-    if len(nl) != len(l):
+def _filter_none(my_list):
+    nl = [li for li in my_list if li is not None]
+    if len(nl) != len(my_list):
         print('WARNING: None values found in your list')
     return nl
 

@@ -53,9 +53,9 @@ def main():  # pragma: no cover
     inf = open(infile)
     hl = inf.readline()
     fields = [h.strip() for h in hl.split('\t')]
-    for l in inf:
+    for x in inf:
         info = {}
-        vals = [v.strip() for v in l.split('\t')]
+        vals = [v.strip() for v in x.split('\t')]
         data = dict(zip(fields, vals))
         for f, v in data.items():
             if v == 'None':
