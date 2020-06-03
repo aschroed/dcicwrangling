@@ -2,5 +2,5 @@ dcicutils>=0.1.85
 xlrd
 xlwt
 xlutils
-Biopython>=1.73
+Biopython=1.76
 GEOparse
