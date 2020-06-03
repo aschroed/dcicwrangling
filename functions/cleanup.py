@@ -8,6 +8,7 @@ workflow_details = [
     # common ones
     ['md5', ['0.0.4', '0.2.6'], 12],
     ['fastqc-0-11-4-1', ['0.2.0'], 50],
+    ['fastqc', ['0.2.0', '0.2.7'], 50],
     # 4dn ones
     ['bwa-mem', ['0.2.6'], 50],
     ['pairsqc-single', ['0.2.5', '0.2.6'], 100],
