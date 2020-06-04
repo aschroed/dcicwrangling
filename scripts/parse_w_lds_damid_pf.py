@@ -20,6 +20,8 @@ is specified in 2 places - is_processed_bin and create_patch functions
 should be made a constant or param to supply
 '''
 
+PF_BIN = '20kb bin'  # the bin for which a subset of files should be considered processed_files rather than opfs
+
 
 def reader(filename, sheetname=None):
     """Read named sheet or first and only sheet from xlsx file.
@@ -83,12 +85,12 @@ def cell_value(cell, datemode):
 
 
 def is_processed_bin(desc, meta):
-    ''' Putting bam files and select 20kb files into the processed file bin
-        this is a specific check for those attributes
+    ''' Putting bam files and select files in bin specified by PF_BIN into the
+        processed file bin this is a specific check for those attributes
     '''
     if 'mapped reads' in desc:
         return True
-    if desc.startswith('20kb bin'):
+    if desc.startswith(PF_BIN):
         if (meta.get('file_type') == 'normalized counts' and meta.get('file_format') == 'bw') or (
                 meta.get('file_type') == 'LADs' and meta.get('file_format') == 'bed'):
             return True
@@ -111,7 +113,7 @@ def create_patch(item, label, rep=None):
             if bin == 'Other':
                 opftitle = 'Other files - non-binned'
                 opfdesc = 'Non-bin specific files for {}'.format(label)
-            elif bin == '20kb bin':
+            elif bin == PF_BIN:
                 opftitle = 'Additional {}ned files'.format(bin)
                 opfdesc = 'Additional files associated with the {} size processing of data for {}'.format(bin, label)
             else:
@@ -154,10 +156,12 @@ def main():  # pragma: no cover
 
     metadata = extract_rows(infile)
     patch_items = {}
+    seen_esets = {}  # if you are dealing with an experiment want to use the dataset_label and condition
+    # of the replicate set to create the label
     # going row by row to add file to correct spot
     for meta in metadata:
         # checking if we have linked dataset info in sheet - should be either an
-        # experiment set in this case or experiment (perhaps in the future)
+        # experiment set or experiment
         linked_dataset_id = meta.get('#linked datasets')
         file_alias = meta.get('aliases')
 
@@ -168,75 +172,52 @@ def main():  # pragma: no cover
             if not euuid:
                 print("Can't get uuid for {} - skipping".format(linked_set_id))
                 continue
-            label = eset.get('dataset_label') + ' ' + eset.get('condition')
-            esets[linked_set_id] = {'uuid': euuid, 'label': label, 'processed_files': [], 'other_processed_files': {}, 'experiments': {}}
-            expts = eset.get('experiments_in_set')
-            for expt in expts:
-                exuid = expt.get('uuid')
-                exmeta = get_metadata(exuid, auth)
-                exdesc = exmeta.get('description')
-                erepm = erepnore.search(exdesc)
-                erep = 'replicate'
-                if erepm:
-                    erep = erepm.group()
-                exalias = exmeta.get('aliases')[0] + '_'
-                esets[linked_set_id]['experiments'][exalias] = {'uuid': exuid, 'erep': erep, 'processed_files': [], 'other_processed_files': {}}
+            if 'experiments_in_set' in item:  # we've got an experiment set
+                label = item.get('dataset_label') + ' ' + item.get('condition')
+            else:  # we've got an experiment
+                esets = item.get('experiment_sets')
+                if len(esets) != 1:  # some sort of unusual situation
+                    raise(Exception, 'experiment linked to multiple experiment sets -- abort!')
+                esetid = esets[0].get('uuid')
+                if esetid not in seen_esets:
+                    eset = get_metadata(esetid, auth)
+                    label = eset.get('dataset_label') + ' ' + eset.get('condition')
+                    seen_esets[esetid] = label
+                else:
+                    label = seen_esets[esetid]
 
+            patch_items[linked_dataset_id] = {'uuid': euuid, 'label': label, 'processed_files': [], 'other_processed_files': {}, 'experiments': {}}
         # use description to get replicate number if any and bin size if any
         desc = meta.get('description')
 
         bin = binre.match(desc)
-        repno = repre.search(desc)
-        if not repno:
-            # file should get linked to the set
-            if 'mapped reads' in desc:
-                # it's a bam file so should be linked to an experiment
-                print("Can't find replicate info for {}\t{}".format(file_alias, desc))
-                continue
-            # check if should be in pf bin
-            if is_processed_bin(desc, meta):
-                esets[linked_set_id]['processed_files'].append(file_alias)
-            else:
-                if bin:
-                    bin = bin.group()
-                else:
-                    bin = 'Other'
-                esets[linked_set_id]['other_processed_files'].setdefault(bin, []).append(file_alias)
-            continue
-        # if we're here means we have a replicate number so get it and find the right expt
-        repno = repno.group()
-        expts = esets[linked_set_id]['experiments'].keys()
-        repexpt = None
-        for exp in expts:
-            if exp.endswith(repno):
-                repexpt = esets[linked_set_id]['experiments'][exp]
-                break
-        if not repexpt:
-            print("Can't find a replicate experiment for {} with {}".format(linked_set_id, repno))
-            continue
+
         if is_processed_bin(desc, meta):
-            repexpt['processed_files'].append(file_alias)
+            patch_items[linked_dataset_id]['processed_files'].append(file_alias)
         else:
             if bin:
                 bin = bin.group()
             else:
                 bin = 'Other'
-            repexpt['other_processed_files'].setdefault(bin, []).append(file_alias)
+            patch_items[linked_dataset_id]['other_processed_files'].setdefault(bin, []).append(file_alias)
 
-    # import pdb; pdb.set_trace()
-    # create the patches assuming no existing files present
     patch_data = {}
-    for eset in esets.values():
-        label = eset.get('label')
-        patch = create_patch(eset, label)
+    for e in patch_items.values():
+        label = e.get('label')
+        patch = create_patch(e, label)
         if patch:
-            patch_data[eset.get('uuid')] = patch
+            euid = e.get('uuid')
+            existing_item = get_metadata(euid, auth)
+            ipf = existing_item.get('processed_files')
+            if ipf:
+                if 'processed_files' in patch:
+                    patch['processed_files'].extend(ipf)
+            opf = existing_item.get('other_processed_files')
+            if opf:
+                if 'other_processed_files' in patch:
+                    patch['other_processed_files'].extend(opf)
 
-        expts = eset.get('experiments')
-        for expt in expts.values():
-            epatch = create_patch(expt, label, expt.get('erep'))
-            if epatch:
-                patch_data[expt.get('uuid')] = epatch
+            patch_data[e.get('uuid')] = patch
 
     if patch_data:
         for puuid, pdata in patch_data.items():
