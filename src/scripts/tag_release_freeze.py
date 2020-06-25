@@ -2,7 +2,7 @@ import sys
 import argparse
 from collections import Counter
 from dcicutils.ff_utils import get_authentication_with_server, get_metadata, patch_metadata
-from dcicwrangling.functions import script_utils as scu
+from src.functions import script_utils as scu
 
 
 def get_args():

@@ -2,7 +2,7 @@ import sys
 import argparse
 from datetime import datetime
 from dcicutils.ff_utils import get_authentication_with_server, get_metadata, post_metadata
-from dcicwrangling.functions import script_utils as scu
+from src.functions import script_utils as scu
 '''Generate provenance workflow_runs for processed files using the
     information in the 'produced_from' field.
     input is a list of file ids or a search for the files.
