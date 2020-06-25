@@ -1,4 +1,4 @@
-from pwrangling import __version__
+from dcicwrangling import __version__
 
 
 def test_version():
