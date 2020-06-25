@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "pwrangling"
+name = "dcicwrangling"
 version = "0.1.0"
 description = "Scripts and Jupyter notebooks for 4DN wrangling"
-authors = ["aschroed <andrew_schroeder@hms.harvard.edu>"]
+authors = ["4DN-DCIC Team <support@4dnucleome.org>"]
 license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/4dn-dcic/dcicwrangling"
