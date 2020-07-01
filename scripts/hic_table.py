@@ -200,6 +200,74 @@ def html_table_maker(rows, keys, styles):
     return(part1 + part2 + part3 + part4)
 
 
+def md_cell_maker(item):
+    '''Builds a markdown cell
+    '''
+    outstr = ""
+    if isinstance(item, str):
+        outstr = item
+
+    if isinstance(item, set):
+        outstr = "<br>".join(item)
+
+    if isinstance(item, list):
+        for i in item:
+            outstr += md_cell_maker(i) + "<br>"
+        if len(item) > 0:
+            outstr = outstr[:-4]
+
+    if isinstance(item, dict):
+        if item.get("link") is None:
+            print("dictionaries in the table should have link fields!!")
+        outstr = "[{}]({})".format(item.get("text"), item.get("link"))
+
+    if not isinstance(outstr, str):
+        print("type(outstr) = " + str(type(outstr)))
+
+    return outstr
+
+
+def md_table_maker(rows, keys):
+    '''Builds a markdown table'''
+
+    header = "|"
+    separator = "|"
+    for key in keys:
+        header += key + "|"
+        separator += "---|"
+    header += "\n"
+    separator += "\n"
+
+    content = ""
+    for row in rows.values():
+        row_str = "|"
+        for key in keys:
+            row_str += md_cell_maker(row.get(key)) + "|"
+        row_str += "\n"
+        content += row_str
+
+    return(header + separator + content)
+
+
+def jsx_table(rows, keys, styles):
+    '''Makes md table and converts it to jsx'''
+    table_md = md_table_maker(rows, keys)
+    column_width = ""
+    for key in keys:
+        style = styles.get(key, "120")
+        column_width += style + ","
+
+    table_jsx = ("<MdSortableTable\n" +
+                 " key='md-sortable-table-2'\n" +
+                 " defaultColWidths={[" + column_width.rstrip(",") + "]}\n" +
+                 ">{' \\\n")
+    table_jsx += table_md.replace("'", "\'").replace("\n", " \\\n")
+    table_jsx += table_md
+    table_jsx += "'}</MdSortableTable>"
+
+    return table_jsx
+
+
 def main():
 
     # getting authentication keys
@@ -301,11 +369,14 @@ def main():
         if studygroup == "Single Time Point and Condition":
             keys.remove('Study')
         styles = {
-            'Data Set': ";width:20%;min-width:120px",
-            'Replicate Sets': ";width:150px",
-            'Publication': ";width:200px"
+            'Data Set': '250',
+            'Project': '90',
+            'Replicate Sets': '150',
+            'Species': '90',
+            'Biosources': '150',
+            'Publication': '180'
         }
-        html = html_table_maker(table_dsg, keys, styles)
+        jsx = jsx_table(table_dsg, keys, styles)
 
         name = "data-highlights.hic." + studygroup
         name = name.lower().replace(" ", "-")
@@ -333,18 +404,18 @@ def main():
             post_body = {
                 "name": name,
                 "aliases": [alias],
-                "body": html,
+                "body": jsx,
                 "section_type": "Page Section",
                 "title": studygroup,
                 "options": {
                     "collapsible": True,
                     "default_open": True,
-                    "filetype": "html"
+                    "filetype": "jsx"
                 }
             }
             res = ff_utils.post_metadata(post_body, "StaticSection", key=auth)
         else:
-            patch_body = {"body": html, "title": studygroup}
+            patch_body = {"body": jsx, "title": studygroup}
             res = ff_utils.patch_metadata(patch_body, alias, key=auth)
         print("{}: {}".format(studygroup, res['status']))
 
