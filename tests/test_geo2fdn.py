@@ -1,4 +1,4 @@
-from src.scripts import geo2fdn as geo
+from scripts import geo2fdn as geo
 import GEOparse
 import xlrd
 import pytest
@@ -79,7 +79,7 @@ def test_experiment_bad_sra(mocker, capfd):
 
 
 def gsm_soft_to_exp_obj(mocker, gsm_file, exp_type=None):
-    mocker.patch('src.scripts.geo2fdn.Experiment.get_sra')
+    mocker.patch('scripts.geo2fdn.Experiment.get_sra')
     gsm = GEOparse.get_GEO(filepath=gsm_file)
     return geo.parse_gsm(gsm, experiment_type=exp_type)
 
@@ -101,8 +101,8 @@ def test_parse_bs_record(mocker):
 
 
 def test_get_geo_metadata_seq(mocker):
-    mocker.patch('src.scripts.geo2fdn.Experiment.get_sra')
-    mocker.patch('src.scripts.geo2fdn.parse_bs_record', return_value='SAMNXXXXXXXX')
+    mocker.patch('scripts.geo2fdn.Experiment.get_sra')
+    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value='SAMNXXXXXXXX')
     gse = geo.get_geo_metadata('./tests/data_files/GSE93431_family.soft.gz')
     assert len([exp for exp in gse.experiments if exp.exptype == 'hic']) == 6
     assert len([exp for exp in gse.experiments if exp.exptype == 'chipseq']) == 14
@@ -126,8 +126,8 @@ def test_get_geo_metadata_bad_accession(capfd):
 
 def test_get_geo_metadata_sra_hidden(capfd, mocker, hidden_sra):
     gse_all = GEOparse.get_GEO(filepath='./tests/data_files/GSE93431_family.soft.gz')
-    mocker.patch('src.scripts.geo2fdn.parse_bs_record', return_value='SAMNXXXXXXXX')
-    mocker.patch('src.scripts.geo2fdn.parse_gsm', return_value=hidden_sra)
+    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value='SAMNXXXXXXXX')
+    mocker.patch('scripts.geo2fdn.parse_gsm', return_value=hidden_sra)
     gse = geo.get_geo_metadata('./tests/data_files/GSE93431_family.soft.gz')
     out, err = capfd.readouterr()
     assert not gse
@@ -149,8 +149,8 @@ def create_xls_dict(inbook):
 
 
 def test_get_geo_tables(mocker, bs_obj, exp_with_sra):
-    mocker.patch('src.scripts.geo2fdn.parse_gsm', return_value=exp_with_sra)
-    mocker.patch('src.scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
+    mocker.patch('scripts.geo2fdn.parse_gsm', return_value=exp_with_sra)
+    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
     geo.get_geo_tables('GSM2715320', './tests/data_files/test_table', email='test@email.com')
     with open('./tests/data_files/test_table_fqs.tsv', 'r') as fq_file:
         fq_out = fq_file.readlines()
@@ -160,8 +160,8 @@ def test_get_geo_tables(mocker, bs_obj, exp_with_sra):
 
 
 def test_get_geo_tables_pe(mocker, bs_obj, exp_with_sra_pe):
-    mocker.patch('src.scripts.geo2fdn.parse_gsm', return_value=exp_with_sra_pe)
-    mocker.patch('src.scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
+    mocker.patch('scripts.geo2fdn.parse_gsm', return_value=exp_with_sra_pe)
+    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
     geo.get_geo_tables('GSM2198225', './tests/data_files/test_table', email='test@email.com')
     with open('./tests/data_files/test_table_fqs.tsv', 'r') as fq_file:
         fq_out = fq_file.readlines()
@@ -171,8 +171,8 @@ def test_get_geo_tables_pe(mocker, bs_obj, exp_with_sra_pe):
 
 
 def test_modify_xls(mocker, bs_obj, exp_with_sra):
-    mocker.patch('src.scripts.geo2fdn.parse_gsm', return_value=exp_with_sra)
-    mocker.patch('src.scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
+    mocker.patch('scripts.geo2fdn.parse_gsm', return_value=exp_with_sra)
+    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
     # gds = geo.get_geo_metadata('GSM2715320', filepath='./tests/data_files/GSM2715320.txt')
     geo.modify_xls('./tests/data_files/GSM2715320.txt', './tests/data_files/repliseq_template.xls', 'out.xls', 'abc')
     book = xlrd.open_workbook('out.xls')
@@ -202,8 +202,8 @@ def test_modify_xls(mocker, bs_obj, exp_with_sra):
 
 
 def test_modify_xls_pe(mocker, bs_obj, exp_with_sra_pe):
-    mocker.patch('src.scripts.geo2fdn.parse_gsm', return_value=exp_with_sra_pe)
-    mocker.patch('src.scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
+    mocker.patch('scripts.geo2fdn.parse_gsm', return_value=exp_with_sra_pe)
+    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
     geo.modify_xls('./tests/data_files/GSM2198225.txt',
                    './tests/data_files/capturec_seq_template.xls',
                    'out_pe.xls', 'abc')
@@ -221,8 +221,8 @@ def test_modify_xls_pe(mocker, bs_obj, exp_with_sra_pe):
 
 
 def test_modify_xls_some_unparsable_types(mocker, capfd, bs_obj):
-    mocker.patch('src.scripts.geo2fdn.Experiment.get_sra')
-    mocker.patch('src.scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
+    mocker.patch('scripts.geo2fdn.Experiment.get_sra')
+    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
     geo.modify_xls('./tests/data_files/GSE87585_family.soft.gz',
                    './tests/data_files/capturec_seq_template.xls', 'out2.xls', 'abc')
     out, err = capfd.readouterr()
@@ -239,8 +239,8 @@ def test_modify_xls_some_unparsable_types(mocker, capfd, bs_obj):
 
 
 def test_modify_xls_set_experiment_type(mocker, capfd, bs_obj):
-    mocker.patch('src.scripts.geo2fdn.Experiment.get_sra')
-    mocker.patch('src.scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
+    mocker.patch('scripts.geo2fdn.Experiment.get_sra')
+    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
     geo.modify_xls('./tests/data_files/GSE87585_family.soft.gz',
                    './tests/data_files/capturec_seq_template.xls', 'out3.xls', 'abc',
                    experiment_type='CaptureC')
@@ -254,8 +254,8 @@ def test_modify_xls_set_experiment_type(mocker, capfd, bs_obj):
 
 
 def test_modify_xls_no_sheets(mocker, bs_obj):
-    mocker.patch('src.scripts.geo2fdn.Experiment.get_sra')
-    mocker.patch('src.scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
+    mocker.patch('scripts.geo2fdn.Experiment.get_sra')
+    mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
     geo.modify_xls('./tests/data_files/GSE87585_family.soft.gz',
                    './tests/data_files/no_template.xls', 'out4.xls', 'abc',
                    experiment_type='CaptureC')

@@ -1,5 +1,5 @@
 import pytest
-from src.scripts import get_linked_item_ids as gli
+from scripts import get_linked_item_ids as gli
 
 
 def test_get_excluded_w_nothing():
@@ -35,21 +35,21 @@ def test_get_excluded_w_both():
 
 
 def test_is_released_released(mocker, auth):
-    with mocker.patch('src.scripts.get_linked_item_ids.get_metadata',
+    with mocker.patch('scripts.get_linked_item_ids.get_metadata',
                       return_value={'status': 'released'}):
         ans = gli.is_released('iid', auth)
         assert ans is True
 
 
 def test_is_released_not_released(mocker, auth):
-    with mocker.patch('src.scripts.get_linked_item_ids.get_metadata',
+    with mocker.patch('scripts.get_linked_item_ids.get_metadata',
                       return_value={'status': 'deleted'}):
         ans = gli.is_released('iid', auth)
         assert not ans
 
 
 def test_is_released_no_status(mocker, auth):
-    with mocker.patch('src.scripts.get_linked_item_ids.get_metadata',
+    with mocker.patch('scripts.get_linked_item_ids.get_metadata',
                       return_value={'description': 'blah'}):
         ans = gli.is_released('iid', auth)
         assert not ans
@@ -148,7 +148,7 @@ def got_item_ids():
 
 def test_gl_main_no_auth(mocker, capsys, mocked_args_no_args):
     with pytest.raises(SystemExit):
-        with mocker.patch('src.scripts.get_linked_item_ids.get_args',
+        with mocker.patch('scripts.get_linked_item_ids.get_args',
                           return_value=mocked_args_no_args):
             gli.main()
             out = capsys.readouterr()[0]
@@ -157,20 +157,20 @@ def test_gl_main_no_auth(mocker, capsys, mocked_args_no_args):
 
 def test_gl_main_standard(mocker, capsys, mocked_args_standard, auth, got_item_ids):
     se = [False] * 6
-    with mocker.patch('src.scripts.get_linked_item_ids.get_args',
+    with mocker.patch('scripts.get_linked_item_ids.get_args',
                       return_value=mocked_args_standard):
-        with mocker.patch('src.scripts.get_linked_item_ids.get_authentication_with_server',
+        with mocker.patch('scripts.get_linked_item_ids.get_authentication_with_server',
                           return_value=auth):
-            with mocker.patch('src.scripts.generate_wfr_from_pf.scu.get_item_ids_from_args',
+            with mocker.patch('scripts.generate_wfr_from_pf.scu.get_item_ids_from_args',
                               return_value=['test_eset_uuid']):
-                with mocker.patch('src.scripts.get_linked_item_ids.get_excluded',
+                with mocker.patch('scripts.get_linked_item_ids.get_excluded',
                                   return_value=['User', 'Lab', 'Award', 'OntologyTerm', 'Ontology',
                                                 'Organism', 'Publication', 'IndividualHuman']):
-                    with mocker.patch('src.scripts.get_linked_item_ids.scu.get_linked_items',
+                    with mocker.patch('scripts.get_linked_item_ids.scu.get_linked_items',
                                       return_value=got_item_ids):
-                        with mocker.patch('src.scripts.get_linked_item_ids.scu.filter_dict_by_value',
+                        with mocker.patch('scripts.get_linked_item_ids.scu.filter_dict_by_value',
                                           return_value=got_item_ids):
-                            with mocker.patch('src.scripts.get_linked_item_ids.is_released',
+                            with mocker.patch('scripts.get_linked_item_ids.is_released',
                                               side_effect=se):
                                 gli.main()
                                 out = capsys.readouterr()[0]
@@ -181,17 +181,17 @@ def test_gl_main_standard(mocker, capsys, mocked_args_standard, auth, got_item_i
 
 def test_gl_main_plus(mocker, capsys, mocked_args_plus, auth, got_item_ids):
     se = [False] * 5 + [True]
-    with mocker.patch('src.scripts.get_linked_item_ids.get_args',
+    with mocker.patch('scripts.get_linked_item_ids.get_args',
                       return_value=mocked_args_plus):
-        with mocker.patch('src.scripts.get_linked_item_ids.get_authentication_with_server',
+        with mocker.patch('scripts.get_linked_item_ids.get_authentication_with_server',
                           return_value=auth):
-            with mocker.patch('src.scripts.generate_wfr_from_pf.scu.get_item_ids_from_args',
+            with mocker.patch('scripts.generate_wfr_from_pf.scu.get_item_ids_from_args',
                               return_value=['test_eset_uuid']):
-                with mocker.patch('src.scripts.get_linked_item_ids.get_excluded',
+                with mocker.patch('scripts.get_linked_item_ids.get_excluded',
                                   return_value=None):
-                    with mocker.patch('src.scripts.get_linked_item_ids.scu.get_linked_items',
+                    with mocker.patch('scripts.get_linked_item_ids.scu.get_linked_items',
                                       return_value=got_item_ids):
-                        with mocker.patch('src.scripts.get_linked_item_ids.is_released',
+                        with mocker.patch('scripts.get_linked_item_ids.is_released',
                                           side_effect=se):
                             gli.main()
                             out = capsys.readouterr()[0]
@@ -202,17 +202,17 @@ def test_gl_main_plus(mocker, capsys, mocked_args_plus, auth, got_item_ids):
 
 def test_gl_main_plus_more(mocker, capsys, mocked_args_plus_more, auth, got_item_ids):
     se = [False] * 5 + [True] + [False]
-    with mocker.patch('src.scripts.get_linked_item_ids.get_args',
+    with mocker.patch('scripts.get_linked_item_ids.get_args',
                       return_value=mocked_args_plus_more):
-        with mocker.patch('src.scripts.get_linked_item_ids.get_authentication_with_server',
+        with mocker.patch('scripts.get_linked_item_ids.get_authentication_with_server',
                           return_value=auth):
-            with mocker.patch('src.scripts.generate_wfr_from_pf.scu.get_item_ids_from_args',
+            with mocker.patch('scripts.generate_wfr_from_pf.scu.get_item_ids_from_args',
                               return_value=['test_eset_uuid', 'test_eset_uuid2']):
-                with mocker.patch('src.scripts.get_linked_item_ids.get_excluded',
+                with mocker.patch('scripts.get_linked_item_ids.get_excluded',
                                   return_value=None):
-                    with mocker.patch('src.scripts.get_linked_item_ids.scu.get_linked_items',
+                    with mocker.patch('scripts.get_linked_item_ids.scu.get_linked_items',
                                       side_effect=[got_item_ids, {'ret_uuid1': got_item_ids['ret_uuid1']}]):
-                        with mocker.patch('src.scripts.get_linked_item_ids.is_released',
+                        with mocker.patch('scripts.get_linked_item_ids.is_released',
                                           side_effect=se):
                             gli.main()
                             out = capsys.readouterr()[0]

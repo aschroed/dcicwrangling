@@ -1,5 +1,5 @@
 import pytest
-from src.scripts import rxiv2ja as rj
+from scripts import rxiv2ja as rj
 
 
 def test_remove_skipped_vals_no_val():
@@ -55,7 +55,7 @@ def test_remove_skipped_vals_w_good_atids(mocker):
     side_effect = ['uuid1', 'uuid2', 'uuid1', 'uuid2', 'uuid3']
     val = ['id1', 'id2']
     vals2skip = ['id1', 'id2', 'id3']
-    mocker.patch('src.functions.script_utils.get_item_uuid', side_effect=side_effect)
+    mocker.patch('functions.script_utils.get_item_uuid', side_effect=side_effect)
     result = rj.remove_skipped_vals(val, vals2skip)
     assert not result
 
@@ -64,7 +64,7 @@ def test_remove_skipped_vals_w_item_lookup(mocker):
     side_effect = ['uuid1', 'uuid2', 'uuid1']
     val = ['id1', 'id2']
     vals2skip = ['id1']
-    mocker.patch('src.functions.script_utils.get_item_uuid', side_effect=side_effect)
+    mocker.patch('functions.script_utils.get_item_uuid', side_effect=side_effect)
     result = rj.remove_skipped_vals(val, vals2skip)
     assert result[0] == val[1]
 
@@ -73,7 +73,7 @@ def test_remove_skipped_vals_w_item_lookup_and_not_found(mocker):
     side_effect = ['uuid1', None, 'uuid3', 'uuid1', None]
     val = ['id1', 'id2', 'id3']
     vals2skip = ['id3', 'id4']
-    mocker.patch('src.functions.script_utils.get_item_uuid', side_effect=side_effect)
+    mocker.patch('functions.script_utils.get_item_uuid', side_effect=side_effect)
     result = rj.remove_skipped_vals(val, vals2skip)
     assert result[0] == val[0]
 
@@ -218,7 +218,7 @@ def test_patch_and_report_w_skipped_no_patch(capsys, auth):
 
 
 def test_patch_and_report_w_patch(capsys, mocker, auth, pdict):
-    mocker.patch('src.scripts.rxiv2ja.patch_metadata', return_value={'status': 'success'})
+    mocker.patch('scripts.rxiv2ja.patch_metadata', return_value={'status': 'success'})
     result = rj.patch_and_report(auth, pdict, None, 'test_uuid', False)
     out = capsys.readouterr()[0]
     assert 'PATCHING - test_uuid' in out
@@ -230,7 +230,7 @@ def test_patch_and_report_w_patch(capsys, mocker, auth, pdict):
 
 
 def test_patch_and_report_w_fail(capsys, mocker, auth, pdict):
-    mocker.patch('src.scripts.rxiv2ja.patch_metadata', return_value={'status': 'error', 'description': 'woopsie'})
+    mocker.patch('scripts.rxiv2ja.patch_metadata', return_value={'status': 'error', 'description': 'woopsie'})
     result = rj.patch_and_report(auth, pdict, None, 'test_uuid', False)
     out = capsys.readouterr()[0]
     assert 'PATCHING - test_uuid' in out
@@ -246,7 +246,7 @@ def test_find_and_patch_item_references_no_refs(capsys, mocker, auth):
     old_uuid = 'old_uuid'
     new_uuid = 'new_uuid'
     output = "No references to %s found." % old_uuid
-    mocker.patch('src.scripts.rxiv2ja.scu.get_item_ids_from_args', return_value=[])
+    mocker.patch('scripts.rxiv2ja.scu.get_item_ids_from_args', return_value=[])
     result = rj.find_and_patch_item_references(auth, old_uuid, new_uuid, False)
     out = capsys.readouterr()[0]
     assert output in out
@@ -256,8 +256,8 @@ def test_find_and_patch_item_references_no_refs(capsys, mocker, auth):
 def test_find_and_patch_item_references_w_refs(mocker, auth):
     old_uuid = 'old_uuid'
     new_uuid = 'new_uuid'
-    mocker.patch('src.scripts.rxiv2ja.scu.get_item_ids_from_args', return_value=['bs_uuid', 'ex_uuid'])
-    mocker.patch('src.scripts.rxiv2ja.patch_and_report', side_effect=[True, True])
+    mocker.patch('scripts.rxiv2ja.scu.get_item_ids_from_args', return_value=['bs_uuid', 'ex_uuid'])
+    mocker.patch('scripts.rxiv2ja.patch_and_report', side_effect=[True, True])
     result = rj.find_and_patch_item_references(auth, old_uuid, new_uuid, False)
     assert result is True
 
@@ -265,7 +265,7 @@ def test_find_and_patch_item_references_w_refs(mocker, auth):
 def test_find_and_patch_item_references_w_refs_one_fail(mocker, auth):
     old_uuid = 'old_uuid'
     new_uuid = 'new_uuid'
-    mocker.patch('src.scripts.rxiv2ja.scu.get_item_ids_from_args', return_value=['bs_uuid', 'ex_uuid1', 'ex_uuid2'])
-    mocker.patch('src.scripts.rxiv2ja.patch_and_report', side_effect=[True, False, True])
+    mocker.patch('scripts.rxiv2ja.scu.get_item_ids_from_args', return_value=['bs_uuid', 'ex_uuid1', 'ex_uuid2'])
+    mocker.patch('scripts.rxiv2ja.patch_and_report', side_effect=[True, False, True])
     result = rj.find_and_patch_item_references(auth, old_uuid, new_uuid, False)
     assert not result

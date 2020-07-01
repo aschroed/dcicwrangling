@@ -1,4 +1,4 @@
-from src.scripts import tagger as t
+from scripts import tagger as t
 
 
 def test_make_tag_patch_no_existing_tags():

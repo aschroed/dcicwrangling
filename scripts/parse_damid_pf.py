@@ -6,7 +6,7 @@ import datetime
 from dcicutils.ff_utils import (
     get_authentication_with_server,
     patch_metadata, search_metadata)
-from src.functions import script_utils as scu
+from functions import script_utils as scu
 '''
 Parsing damid processed file worksheet to generate the various bins
 of other processed files

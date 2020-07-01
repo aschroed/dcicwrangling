@@ -1,4 +1,4 @@
-from src.scripts import ontology_term_loader as otl
+from scripts import ontology_term_loader as otl
 
 
 def test_get_id_no_id():
