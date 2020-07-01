@@ -26,6 +26,9 @@ Datasets: can be omitted if just one in the dsg. In this case, write dataset nam
 Study: can be the same for multiple dsgs, e.g. "Neural Differentiation".
 Study group: a static section ["Single Time Point and Condition", "Time Course", "Disrupted or Atypical Cells"].
 
+Usage: from the wrangling repo folder:
+python scripts/hic_table.py --key="{'key': 'KEYNN', 'secret': 'secretlettershere', 'server': 'https://data.4dnucleome.org/'}"
+
 '''
 
 
@@ -251,12 +254,13 @@ def main():
             continue
 
         dsg = dataset
-        dsg_link = "/browse/?dataset_label=" + dataset.replace("+", "%2B").replace("/", "%2F").replace(" ", "+")
+        dsg_link = "/browse/?dataset_label=" + dataset
         for group, elements in datasets_of_dsg.items():
             if dataset in elements:
                 dsg_link = ("/browse/?dataset_label=" + "&dataset_label=".join(elements))
                 dsg = group
                 break
+        dsg_link = dsg_link.replace("+", "%2B").replace("/", "%2F").replace(" ", "+")
 
         study_groups.add(dsgs[dsg].get("study_group"))
 
