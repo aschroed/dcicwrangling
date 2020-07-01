@@ -11,7 +11,7 @@ from dcicwrangling.functions import script_utils as scu
 description = '''
 Script for generating the static sections displayed in the hic-data-overview page.
 
-It fetches Hi-C experiment sets from the portal and prepares the html tables.
+It fetches Hi-C experiment sets from the portal and prepares the markdown tables.
 The information for grouping datasets is written in dsg.json and needs to be updated manually.
 
 Structure of the json file:
