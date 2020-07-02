@@ -26,8 +26,6 @@ Datasets: can be omitted if just one in the dsg. In this case, write dataset nam
 Study: can be the same for multiple dsgs, e.g. "Neural Differentiation".
 Study group: a static section ["Single Time Point and Condition", "Time Course", "Disrupted or Atypical Cells"].
 
-# python scripts/hic_table.py --key="{'key': 'KEYNN', 'secret': 'secretlettershere', 'server': 'https://data.4dnucleome.org/'}"
-
 '''
 
 
