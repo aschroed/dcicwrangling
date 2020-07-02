@@ -43,7 +43,7 @@ def find_keyname_in_keyfile(keyname, keyfile):
     if isinstance(keyfile, dict):
         keys = keyfile
     # is the keyfile a file (the expected case)
-    elif Path(str(keyfile)).isfile():
+    elif Path(str(keyfile)).is_file():
         with open(keyfile, 'r') as kf:
             keys_json_string = kf.read()
             keys = json.loads(keys_json_string)
@@ -51,7 +51,6 @@ def find_keyname_in_keyfile(keyname, keyfile):
     else:
         print("\nThe keyfile does not exist, check the --keyfile path or add 'keypairs.json' to your home folder\n")
         sys.exit(1)
-
     if keys:
         key = keys.get(keyname)
     if not key:

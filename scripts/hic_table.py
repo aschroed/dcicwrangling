@@ -31,20 +31,6 @@ Study group: a static section ["Single Time Point and Condition", "Time Course",
 '''
 
 
-def get_args_old():
-    parser = argparse.ArgumentParser(
-        description=description,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--key',
-                        default=None,
-                        help="An access key dictionary including key, secret and server.\
-                        {'key': 'ABCDEF', 'secret': 'supersecret', 'server': 'https://data.4dnucleome.org'}")
-    args = parser.parse_args()
-    if args.key:
-        args.key = scu.convert_key_arg_to_dict(args.key)
-    return args
-
-
 def get_args():
     parser = argparse.ArgumentParser(
         description=description,
@@ -59,29 +45,9 @@ def get_args():
                         help="The keypair file. Default is --keyfile={}".format(
                             Path("~/keypairs.json").expanduser()))
     args = parser.parse_args()
+    if args.key and args.keyfile:
+        args.key = scu.find_keyname_in_keyfile(args.key, args.keyfile)
     return args
-#
-#
-# class FDN_Key:
-#     def __init__(self, keyfile, keyname):
-#         self.error = False
-#         # is the keyfile a dictionary
-#         if isinstance(keyfile, dict):
-#             keys = keyfile
-#         # is the keyfile a file (the expected case)
-#         elif Path(str(keyfile)).isfile():
-#             keys_f = open(keyfile, 'r')
-#             keys_json_string = keys_f.read()
-#             keys_f.close()
-#             keys = json.loads(keys_json_string)
-#         # if both fail, the file does not exist
-#         else:
-#             print("\nThe keyfile does not exist, check the --keyfile path or add 'keypairs.json' to your home folder\n")
-#             self.error = True
-#             return
-#         self.con_key = keys[keyname]
-#         if not self.con_key['server'].endswith("/"):
-#             self.con_key['server'] += "/"
 
 
 def make_publication_table(publications):
@@ -242,14 +208,11 @@ def main():
 
     # getting authentication keys
     args = get_args()
-    if args.key and args.keyfile:
-        key = scu.find_keyname_in_keyfile(args.key, args.keyfile)
-        auth = scu.convert_key_arg_to_dict(key)
-    # try:
-    #     auth = ff_utils.get_authentication_with_server(args.key)
-    # except Exception as e:
-    #     print("Authentication failed", e)
-    #     sys.exit(1)
+    try:
+        auth = ff_utils.get_authentication_with_server(args.key)
+    except Exception as e:
+        print("Authentication failed", e)
+        sys.exit(1)
 
     # collecting publication and expset search results
     hic_types = ['in+situ+Hi-C', 'Dilution+Hi-C', 'DNase+Hi-C', 'Micro-C', 'TCC']
