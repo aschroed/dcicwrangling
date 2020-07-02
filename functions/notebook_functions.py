@@ -268,6 +268,29 @@ def clean_for_reupload(file_acc, key, clean_release_dates=False, delete_runs=Tru
     ff_utils.patch_metadata({'status': 'uploading'}, obj_id=resp['uuid'], key=key, add_on=del_add_on)
 
 
+def file_in_exp(a_file, experiments):
+    """Takes a file (as provided by get_es_metadata) and checks whether its
+    experiment (or source_experiment) is found in a list of experiment uuids.
+    If multiple experiments are associated with a file, returns a value only
+    when all of them are present or absent in the experiment list.
+    """
+    found = False
+    if a_file.get('experiments'):
+        file_exps = [e['uuid'] for e in a_file['experiments']]
+    elif a_file.get('source_experiments'):
+        file_exps = a_file['source_experiments']  # this is already a list of uuids
+    else:  # a file is not linked to any experiment
+        found = None
+        return found
+
+    times_found = len([exp for exp in file_exps if exp in experiments])
+    if times_found == len(file_exps):  # all experiments of a_file are in the exp list provided
+        found = True
+    elif times_found > 0:  # some, but not all of the exps of a_file are in the exp list provided
+        found = None
+    return found
+
+
 # get order from loadxl.py in fourfront
 ORDER = [
     'user',
