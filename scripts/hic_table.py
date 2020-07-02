@@ -11,8 +11,8 @@ from dcicwrangling.functions import script_utils as scu
 description = '''
 Script for generating the static sections displayed in the hic-data-overview page.
 
-It fetches Hi-C experiment sets from the portal and prepares the markdown tables.
-The information for grouping datasets is written in dsg.json and needs to be updated manually.
+It fetches Hi-C experiment sets from the portal and prepares the html tables.
+The information for grouping datasets is written in files/dsg.json and needs to be updated manually.
 
 Structure of the json file:
 "<dataset group name>": {
@@ -26,23 +26,27 @@ Datasets: can be omitted if just one in the dsg. In this case, write dataset nam
 Study: can be the same for multiple dsgs, e.g. "Neural Differentiation".
 Study group: a static section ["Single Time Point and Condition", "Time Course", "Disrupted or Atypical Cells"].
 
-Usage: from the wrangling repo folder:
-python scripts/hic_table.py --key="{'key': 'KEYNN', 'secret': 'secretlettershere', 'server': 'https://data.4dnucleome.org/'}"
+# python scripts/hic_table.py --key="{'key': 'KEYNN', 'secret': 'secretlettershere', 'server': 'https://data.4dnucleome.org/'}"
 
 '''
 
 
-def get_args(args):
+def get_args():
     parser = argparse.ArgumentParser(
         description=description,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument('--key',
-                        default=None,
-                        help="An access key dictionary including key, secret and server.\
-                        {'key': 'ABCDEF', 'secret': 'supersecret', 'server': 'https://data.4dnucleome.org'}")
+                        default='default',
+                        help="The keypair identifier from the keyfile.  \
+                        Default is --key=default")
+    parser.add_argument('--keyfile',
+                        default=Path("~/keypairs.json").expanduser(),
+                        help="The keypair file. Default is --keyfile={}".format(
+                            Path("~/keypairs.json").expanduser()))
     args = parser.parse_args()
-    if args.key:
-        args.key = scu.convert_key_arg_to_dict(args.key)
+    if args.key and args.keyfile:
+        args.key = scu.find_keyname_in_keyfile(args.key, args.keyfile)
     return args
 
 
@@ -271,7 +275,7 @@ def jsx_table(rows, keys, styles):
 def main():
 
     # getting authentication keys
-    args = get_args(sys.argv[1:])
+    args = get_args()
     try:
         auth = ff_utils.get_authentication_with_server(args.key)
     except Exception as e:
@@ -292,7 +296,8 @@ def main():
     table_pub = make_publication_table(pubs_search)
 
     # loading dataset groups from json file
-    dsgs_fn = Path("dsg.json")
+    repo_path = Path(__file__).resolve().parents[1]
+    dsgs_fn = repo_path.joinpath('files', 'dsg.json')
     if dsgs_fn.exists():
         with open(dsgs_fn) as dsgs_f:
             dsgs = json.load(dsgs_f)
