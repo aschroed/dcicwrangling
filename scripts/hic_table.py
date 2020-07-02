@@ -26,8 +26,6 @@ Datasets: can be omitted if just one in the dsg. In this case, write dataset nam
 Study: can be the same for multiple dsgs, e.g. "Neural Differentiation".
 Study group: a static section ["Single Time Point and Condition", "Time Course", "Disrupted or Atypical Cells"].
 
-# python scripts/hic_table.py --key="{'key': 'KEYNN', 'secret': 'secretlettershere', 'server': 'https://data.4dnucleome.org/'}"
-
 '''
 
 
@@ -134,76 +132,6 @@ def make_table_row(row, expset, dsg, dsg_link, table_pub, dsg_map):
     return row
 
 
-def html_cell_maker(item):
-    '''Builds an html cell
-    '''
-    outstr = ""
-    if isinstance(item, str):
-        outstr = item
-
-    if isinstance(item, set):
-        outstr = "<br>".join(item)
-
-    if isinstance(item, list):
-        for i in item:
-            outstr += html_cell_maker(i) + "<br>"
-        if len(item) > 0:
-            outstr = outstr[:-4]
-
-    if isinstance(item, dict):
-        if item.get("link") is None:
-            print("dictionaries in the table should have link fields!!")
-        outstr = '<a href="' + item.get("link") + '">' + item.get("text") + '</a>'
-
-    if not isinstance(outstr, str):
-        print("type(outstr) = " + str(type(outstr)))
-
-    return outstr
-
-
-def html_table_maker(rows, keys, styles):
-    '''Builds html table
-    '''
-    part1 = """
-    <style>
-      table.exp-type-static-table, table.exp-type-static-table th, table.exp-type-static-table td {
-        border: 1px solid #ddd;
-        font-size: 10.5pt;
-      }
-      table.exp-type-static-table th, table.exp-type-static-table td {
-        text-align: center;   padding: 10px;
-      }
-      table.exp-type-static-table th {
-        color: white;
-      }
-    </style>
-    <table style="width:100%" class="exp-type-static-table">
-      <thead>
-        <tr>"""
-
-    part2 = ""
-    for key in keys:
-        style = styles.get(key, "")
-        part2 += '\n       <th style="background-color:#00616D' + style + '">' + key + ' </th>'
-    part2 += """
-        </tr>
-      </thead>
-
-    """
-
-    part3 = ""
-    for row in rows.values():
-        row_str = "  <tr>\n"
-        for key in keys:
-            row_str += "    <td>" + html_cell_maker(row.get(key)) + "</td>\n"
-        row_str += "  </tr>\n"
-        part3 += row_str
-
-    part4 = "</table>"
-
-    return(part1 + part2 + part3 + part4)
-
-
 def md_cell_maker(item):
     '''Builds a markdown cell
     '''
@@ -253,7 +181,7 @@ def md_table_maker(rows, keys):
     return(header + separator + content)
 
 
-def jsx_table(rows, keys, styles):
+def jsx_table(rows, keys, styles, name):
     '''Makes md table and converts it to jsx'''
     table_md = md_table_maker(rows, keys)
     column_width = ""
@@ -262,7 +190,7 @@ def jsx_table(rows, keys, styles):
         column_width += style + ","
 
     table_jsx = ("<MdSortableTable\n" +
-                 " key='md-sortable-table-2'\n" +
+                 " key=" + name.lower().replace(" ", "-") + "\n" +
                  " defaultColWidths={[" + column_width.rstrip(",") + "]}\n" +
                  ">{' \\\n")
     table_jsx += table_md.replace("'", "\'").replace("\n", " \\\n")
@@ -381,7 +309,7 @@ def main():
             'Biosources': '150',
             'Publication': '180'
         }
-        jsx = jsx_table(table_dsg, keys, styles)
+        jsx = jsx_table(table_dsg, keys, styles, studygroup)
 
         name = "data-highlights.hic." + studygroup
         name = name.lower().replace(" ", "-")
