@@ -3,8 +3,6 @@ import copy
 import argparse
 import sys
 import ast
-import json
-from pathlib import Path
 from dcicutils.ff_utils import search_metadata, get_metadata
 
 
@@ -37,26 +35,6 @@ def create_input_arg_parser():
                                   help='Include if you are passing in a search string \
                                   eg. type=Biosource&biosource_type=primary cell')
     return input_arg_parser
-
-
-def find_keyname_in_keyfile(keyname, keyfile):
-    if isinstance(keyfile, dict):
-        keys = keyfile
-    # is the keyfile a file (the expected case)
-    elif Path(str(keyfile)).isfile():
-        with open(keyfile, 'r') as kf:
-            keys_json_string = kf.read()
-            keys = json.loads(keys_json_string)
-    # if both fail, the file does not exist
-    else:
-        print("\nThe keyfile does not exist, check the --keyfile path or add 'keypairs.json' to your home folder\n")
-        sys.exit(1)
-
-    if keys:
-        key = keys.get(keyname)
-    if not key:
-        sys.exit("Key not found in the keyfile")
-    return key
 
 
 def convert_key_arg_to_dict(key):
