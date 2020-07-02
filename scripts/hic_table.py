@@ -26,13 +26,12 @@ Datasets: can be omitted if just one in the dsg. In this case, write dataset nam
 Study: can be the same for multiple dsgs, e.g. "Neural Differentiation".
 Study group: a static section ["Single Time Point and Condition", "Time Course", "Disrupted or Atypical Cells"].
 
-Usage: from the wrangling repo folder:
-python scripts/hic_table.py --key="{'key': 'KEYNN', 'secret': 'secretlettershere', 'server': 'https://data.4dnucleome.org/'}"
+# python scripts/hic_table.py --key="{'key': 'KEYNN', 'secret': 'secretlettershere', 'server': 'https://data.4dnucleome.org/'}"
 
 '''
 
 
-def get_args(args):
+def get_args_old():
     parser = argparse.ArgumentParser(
         description=description,
         formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -44,6 +43,45 @@ def get_args(args):
     if args.key:
         args.key = scu.convert_key_arg_to_dict(args.key)
     return args
+
+
+def get_args():
+    parser = argparse.ArgumentParser(
+        description=description,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument('--key',
+                        default='default',
+                        help="The keypair identifier from the keyfile.  \
+                        Default is --key=default")
+    parser.add_argument('--keyfile',
+                        default=Path("~/keypairs.json").expanduser(),
+                        help="The keypair file. Default is --keyfile={}".format(
+                            Path("~/keypairs.json").expanduser()))
+    args = parser.parse_args()
+    return args
+#
+#
+# class FDN_Key:
+#     def __init__(self, keyfile, keyname):
+#         self.error = False
+#         # is the keyfile a dictionary
+#         if isinstance(keyfile, dict):
+#             keys = keyfile
+#         # is the keyfile a file (the expected case)
+#         elif Path(str(keyfile)).isfile():
+#             keys_f = open(keyfile, 'r')
+#             keys_json_string = keys_f.read()
+#             keys_f.close()
+#             keys = json.loads(keys_json_string)
+#         # if both fail, the file does not exist
+#         else:
+#             print("\nThe keyfile does not exist, check the --keyfile path or add 'keypairs.json' to your home folder\n")
+#             self.error = True
+#             return
+#         self.con_key = keys[keyname]
+#         if not self.con_key['server'].endswith("/"):
+#             self.con_key['server'] += "/"
 
 
 def make_publication_table(publications):
@@ -203,12 +241,15 @@ def html_table_maker(rows, keys, styles):
 def main():
 
     # getting authentication keys
-    args = get_args(sys.argv[1:])
-    try:
-        auth = ff_utils.get_authentication_with_server(args.key)
-    except Exception as e:
-        print("Authentication failed", e)
-        sys.exit(1)
+    args = get_args()
+    if args.key and args.keyfile:
+        key = scu.find_keyname_in_keyfile(args.key, args.keyfile)
+        auth = scu.convert_key_arg_to_dict(key)
+    # try:
+    #     auth = ff_utils.get_authentication_with_server(args.key)
+    # except Exception as e:
+    #     print("Authentication failed", e)
+    #     sys.exit(1)
 
     # collecting publication and expset search results
     hic_types = ['in+situ+Hi-C', 'Dilution+Hi-C', 'DNase+Hi-C', 'Micro-C', 'TCC']
