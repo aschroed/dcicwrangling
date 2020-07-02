@@ -12,7 +12,7 @@ description = '''
 Script for generating the static sections displayed in the hic-data-overview page.
 
 It fetches Hi-C experiment sets from the portal and prepares the html tables.
-The information for grouping datasets is written in dsg.json and needs to be updated manually.
+The information for grouping datasets is written in files/dsg.json and needs to be updated manually.
 
 Structure of the json file:
 "<dataset group name>": {
@@ -224,7 +224,8 @@ def main():
     table_pub = make_publication_table(pubs_search)
 
     # loading dataset groups from json file
-    dsgs_fn = Path("dsg.json")
+    repo_path = Path(__file__).resolve().parents[1]
+    dsgs_fn = repo_path.joinpath('files', 'dsg.json')
     if dsgs_fn.exists():
         with open(dsgs_fn) as dsgs_f:
             dsgs = json.load(dsgs_f)
