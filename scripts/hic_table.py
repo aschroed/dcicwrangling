@@ -12,7 +12,8 @@ description = '''
 Script for generating the static sections displayed in the hic-data-overview page.
 
 It fetches Hi-C experiment sets from the portal and prepares the html tables.
-The information for grouping datasets is written in files/dsg.json and needs to be updated manually.
+The information for grouping datasets is written in files/dsg.json and needs to
+be updated manually.
 
 Structure of the json file:
 "<dataset group name>": {
@@ -22,9 +23,11 @@ Structure of the json file:
 }
 
 Dataset group (dsg): a row in the html table. Can be one or more datasets.
-Datasets: can be omitted if just one in the dsg. In this case, write dataset name in place of dsg name.
+Datasets: can be omitted if just one in the dsg. In this case, write dataset
+name in place of dsg name.
 Study: can be the same for multiple dsgs, e.g. "Neural Differentiation".
-Study group: a static section ["Single Time Point and Condition", "Time Course", "Disrupted or Atypical Cells"].
+Study group: a static section ["Single Time Point and Condition", "Time Course",
+"Disrupted or Atypical Cells"].
 
 '''
 
@@ -349,7 +352,7 @@ def main():
         else:
             patch_body = {"body": html, "title": studygroup}
             res = ff_utils.patch_metadata(patch_body, alias, key=auth)
-        print("{}: {}".format(studygroup, res['status']))
+        print("{}: {}".format(alias, res['status']))
 
 
 if __name__ == '__main__':  # pragma: no cover
