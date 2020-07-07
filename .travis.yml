@@ -4,6 +4,7 @@ cache:
   pip: true
 python:
 - '3.6'
+- '3.7'
 before_install:
 - pip install poetry
 - pip install coveralls
