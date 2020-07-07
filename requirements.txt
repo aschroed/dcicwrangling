@@ -1,6 +1,0 @@
-dcicutils>=0.1.85
-xlrd
-xlwt
-xlutils
-Biopython==1.76
-GEOparse
