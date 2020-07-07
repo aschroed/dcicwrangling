@@ -110,6 +110,9 @@ ENV/
 .mypy_cache/
 
 .pytest_cache
+notebooks/*_scripts
 notebooks/*_scripts/*
+notebooks/CGAP
 notebooks/CGAP/*
+notebooks/PipelineRuns
 notebooks/PipelineRuns/*

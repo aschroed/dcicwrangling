@@ -11,7 +11,7 @@ from dcicutils.ff_utils import (
     get_metadata,
     patch_metadata,
 )
-from dcicwrangling.functions.script_utils import create_ff_arg_parser, convert_key_arg_to_dict
+from functions.script_utils import create_ff_arg_parser, convert_key_arg_to_dict
 ''' Will attempt to load data from a file into the database using the load_data endpoint if it can
     or post/patch_metadata if not
     The file can be a simple list of json items in which case you need to specify an item type
