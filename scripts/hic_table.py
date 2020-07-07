@@ -5,7 +5,7 @@ import argparse
 import json
 from dcicutils import ff_utils
 from pathlib import Path
-from dcicwrangling.functions import script_utils as scu
+from functions import script_utils as scu
 
 
 description = '''
