@@ -151,7 +151,7 @@ def create_xls_dict(inbook):
 def test_get_geo_tables(mocker, bs_obj, exp_with_sra):
     mocker.patch('scripts.geo2fdn.parse_gsm', return_value=exp_with_sra)
     mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
-    geo.get_geo_tables('GSM2715320', './test/data_files/test_table', email='test@email.com')
+    geo.get_geo_tables('./test/data_files/GSM2715320.txt', './test/data_files/test_table', email='test@email.com')
     with open('./test/data_files/test_table_fqs.tsv', 'r') as fq_file:
         fq_out = fq_file.readlines()
     assert not any('paired with' in line for line in fq_out)
@@ -162,7 +162,7 @@ def test_get_geo_tables(mocker, bs_obj, exp_with_sra):
 def test_get_geo_tables_pe(mocker, bs_obj, exp_with_sra_pe):
     mocker.patch('scripts.geo2fdn.parse_gsm', return_value=exp_with_sra_pe)
     mocker.patch('scripts.geo2fdn.parse_bs_record', return_value=bs_obj)
-    geo.get_geo_tables('GSM2198225', './test/data_files/test_table', email='test@email.com')
+    geo.get_geo_tables('./test/data_files/GSM2198225.txt', './test/data_files/test_table', email='test@email.com')
     with open('./test/data_files/test_table_fqs.tsv', 'r') as fq_file:
         fq_out = fq_file.readlines()
     assert all('paired with' in line for line in fq_out)
