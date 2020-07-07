@@ -1,7 +1,7 @@
 import sys
 import argparse
 from dcicutils.ff_utils import get_authentication_with_server, patch_metadata, delete_field
-from dcicwrangling.functions import script_utils as scu
+from functions import script_utils as scu
 
 
 def get_args(args):
