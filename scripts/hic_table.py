@@ -260,13 +260,13 @@ def main():
             continue
 
         dsg = dataset
-        dsg_link = "/browse/?dataset_label=" + dataset
+        dsg_link = "dataset_label=" + dataset
         for group, elements in datasets_of_dsg.items():
             if dataset in elements:
-                dsg_link = ("/browse/?dataset_label=" + "&dataset_label=".join(elements))
+                dsg_link = ("dataset_label=" + "&dataset_label=".join(elements))
                 dsg = group
                 break
-        dsg_link = dsg_link.replace("+", "%2B").replace("/", "%2F").replace(" ", "+")
+        dsg_link = "/browse/?" + dsg_link.replace("+", "%2B").replace("/", "%2F").replace(" ", "+")
 
         study_groups.add(dsgs[dsg].get("study_group"))
 
