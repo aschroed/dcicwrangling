@@ -295,6 +295,7 @@ def main():
             sys.exit("Add new dataset to dsg.json before generating table")
 
     # patch the static section for each study group
+    new_static_sections = []
     for studygroup in list(study_groups):
 
         # prepare static section
@@ -334,8 +335,7 @@ def main():
                 continue
             else:
                 post = True
-                print('Remember to add the static section {} to the hic-data-overview page'.format(alias))
-                input('Press any key to continue')
+                new_static_sections.append(alias)
 
         # post or patch static section
         if post:
@@ -353,9 +353,14 @@ def main():
             }
             res = ff_utils.post_metadata(post_body, "StaticSection", key=auth)
         else:
-            patch_body = {"body": html, "title": studygroup}
+            patch_body = {"body": html}
             res = ff_utils.patch_metadata(patch_body, alias, key=auth)
         print("{}: {}".format(alias, res['status']))
+
+    if new_static_sections:
+        print('Remember to add the new static section(s) to the hic-data-overview page')
+        for new_section in new_static_sections:
+            print(new_section)
 
 
 if __name__ == '__main__':  # pragma: no cover
