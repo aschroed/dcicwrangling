@@ -1,0 +1,193 @@
+{
+    "Hi-C on sync. HeLa cells": {
+        "datasets": [
+            "Hi-C on sync. HeLa cells",
+            "Hi-C on sync. HeLa cells - Rep1",
+            "Hi-C on sync. HeLa cells - Rep2",
+            "Hi-C on sync. HeLa cells - Rep3"
+        ],
+        "study": "Cell Cycle",
+        "study_group": "Time Course"
+    },
+    "Hi-C on other common cell lines": {
+        "datasets": [
+            "Hi-C on IMR-90",
+            "Hi-C on HAP-1",
+            "Hi-C on CH12.LX",
+            "Hi-C on HUVEC cell",
+            "Hi-C on KBM-7",
+            "Hi-C on K562",
+            "Hi-C on 192627",
+            "Hi-C on CC-2551"
+        ],
+        "study_group": "Single Time Point and Condition"
+    },
+    "sisHi-C during early embryonic development": {
+        "datasets": [
+            "sisHi-C of early embryos in vitro",
+            "sisHi-C during early embryonic development"
+        ],
+        "study": "Embryo Development",
+        "study_group": "Time Course"
+    },
+    "HiC on sync. chicken cells": {
+        "datasets": [
+            "HiC on sorted sync. chicken cells",
+            "HiC on sync. chicken cells (no 1NM-PP1 washout)",
+            "HiC on sync. chicken cells"
+        ],
+        "study": "Cell Cycle",
+        "study_group": "Time Course"
+    },
+    "HiC on sync. CAPH2-AID chicken cells CAPH-AID, CAPH2-AID, or SMC2-AID": {
+        "datasets": [
+            "HiC on sync. CAPH2-AID chicken cells",
+            "HiC on sync. CAPH-AID chicken cells",
+            "HiC on unsorted sync. SMC2-AID chicken cells",
+            "HiC on sorted sync. SMC2-AID chicken cells"
+        ],
+        "study": "Condensin-I and Condensin-II Protein Function",
+        "study_group": "Disrupted or Atypical Cells"
+    },
+    "Hi-C on H1 cells - protocol variations": {
+        "study": "Experimental Protocol Variations",
+        "study_group": "Single Time Point and Condition"
+    },
+    "Hi-C on HFF cells - protocol variations": {
+        "study": "Experimental Protocol Variations",
+        "study_group": "Single Time Point and Condition"
+    },
+    "Hi-C on GM12878 cells - protocol variations": {
+        "study": "Experimental Protocol Variations",
+        "study_group": "Single Time Point and Condition"
+    },
+    "Hi-C on ENCODE3 cell lines": {
+        "study": "",
+        "study_group": "Single Time Point and Condition"
+    },
+    "DNase Hi-C on tissues": {
+        "study": "",
+        "study_group": "Single Time Point and Condition"
+    },
+    "Hi-C on WTC-11 differentiation to cardiomyocytes": {
+        "study": "Cardiomyocyte Differentiation",
+        "study_group": "Time Course"
+    },
+    "Hi-C on H9 cells during cardiomyocyte differentiation": {
+        "study": "Cardiomyocyte Differentiation",
+        "study_group": "Time Course"
+    },
+    "DNAse Hi-C on RUES cell differentiation to cardiomyocytes": {
+        "study": "Cardiomyocyte Differentiation",
+        "study_group": "Time Course"
+    },
+    "Hi-C on mESC during neural differentiation": {
+        "study": "Neural Differentiation",
+        "study_group": "Time Course"
+    },
+    "Hi-C on mouse cardiomyocytes - 3 developmental stages": {
+        "study": "Cardiomyocyte Differentiation",
+        "study_group": "Time Course"
+    },
+    "Hi-C on inverted or conventional neurons": {
+        "study": "Compartments and Nuclear Lamina",
+        "study_group": "Disrupted or Atypical Cells"
+    },
+    "Hi-C on thymocytes +/- Lbr": {
+        "study": "Compartments and Nuclear Lamina",
+        "study_group": "Disrupted or Atypical Cells"
+    },
+    "Hi-C on Mouse Olfactory System cells": {
+        "study": "Olfactory Sensory Neurons",
+        "study_group": "Disrupted or Atypical Cells"
+    },
+    "Hi-C on RAD21-AID tagged HCT-116": {
+        "study": "Cohesin Protein Function",
+        "study_group": "Disrupted or Atypical Cells"
+    },
+    "Hi-C on activated B cells": {
+        "study": "Transcription, ATP, and Replication inhibition",
+        "study_group": "Disrupted or Atypical Cells"
+    },
+    "Hi-C on HAP-1 +/- WAPL or SCC4 KO": {
+        "study": "Cohesin Protein Function",
+        "study_group": "Disrupted or Atypical Cells"
+    },
+    "Hi-C on CTCF-AID tagged mESCs": {
+        "study": "CTCF Protein Function",
+        "study_group": "Disrupted or Atypical Cells"
+    },
+    "Hi-C on CTCF-AID tagged F123-CASTx129": {
+        "study": "CTCF Protein Function",
+        "study_group": "Disrupted or Atypical Cells"
+    },
+    "Hi-C on sync. SCC1-AID or CTCF-AID tagged Hela": {
+        "study": "CTCF Protein Function",
+        "study_group": "Disrupted or Atypical Cells"
+    },
+    "Hi-C on CH12 +/- CTCF ZF domain": {
+        "study": "CTCF Protein Function",
+        "study_group": "Disrupted or Atypical Cells"
+    },
+    "Hi-C on lamin A/C haploinsufficient hiPSC-derived cardiomyocytes": {
+        "study": "Compartments and Nuclear Lamina",
+        "study_group": "Disrupted or Atypical Cells"
+    },
+    "Hi-C on E14Tg2 cell line": {
+        "study": "Gene activation (zfp608 or sox4)",
+        "study_group": "Disrupted or Atypical Cells"
+    },
+    "DNase Hi-C on Patski +/- Ds-TR and Dxz4 region modfications": {
+        "study": "X Inactivation",
+        "study_group": "Disrupted or Atypical Cells"
+    },
+    "HiC on S2 cells +/- Heat Shock": {
+        "study": "Heat Shock",
+        "study_group": "Disrupted or Atypical Cells"
+    },
+    "HiC on K562 cells +/- Heat Shock": {
+        "study": "Heat Shock",
+        "study_group": "Disrupted or Atypical Cells"
+    },
+    "Micro-C on JM8.N4 Cells +/- transcription": {
+        "study": "Transcription",
+        "study_group": "Disrupted or Atypical Cells"
+    },
+    "DNase Hi-C in Hela-S3 cells +/- SF3B1 siRNA": {
+        "study": "Splicing",
+        "study_group": "Disrupted or Atypical Cells"
+    },
+    "Hi-C on ES-E14 +/- Mll3-Mll4": {
+        "study": "Enhancers (H3K4me1-writers)",
+        "study_group": "Disrupted or Atypical Cells"
+    },
+    "Liquified Chromatin Hi-C on K652 cells": {
+        "study": "Compartments",
+        "study_group": "Disrupted or Atypical Cells"
+    },
+    "TCC on hepatocytes +/- NIPBL": {
+        "study": "Cohesin Protein Function",
+        "study_group": "Disrupted or Atypical Cells"
+    },
+    "TCC on IMR90 +/- Adenovirus": {
+        "study": "Viral Genome Integration",
+        "study_group": "Disrupted or Atypical Cells"
+    },
+    "Hi-C on sync.G1E-ER4": {
+        "study": "Cell Cycle",
+        "study_group": "Time Course"
+    },
+    "Hi-C on hESC differentiated to pancreatic endoderm": {
+        "study": "Endoderm Differentiation",
+        "study_group": "Time Course"
+    },
+    "Micro-C on H1 and HFF cells": {
+        "study_group": "Single Time Point and Condition"
+    },
+    "Hi-C and Micro-C on WTC-11 derived iPS cells": {
+        "study_group": "Single Time Point and Condition"
+    },
+    "Hi-C on lympoblastoid cell lines from 1000G individuals": {
+        "study_group": "Single Time Point and Condition"
+    }
+}
