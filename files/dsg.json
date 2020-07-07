@@ -1,10 +1,10 @@
 {
-    "Hi-C on synch. HeLa cells": {
+    "Hi-C on sync. HeLa cells": {
         "datasets": [
-            "Hi-C on synch. HeLa cells",
-            "Hi-C on synch. HeLa cells - Rep1",
-            "Hi-C on synch. HeLa cells - Rep2",
-            "Hi-C on synch. HeLa cells - Rep3"
+            "Hi-C on sync. HeLa cells",
+            "Hi-C on sync. HeLa cells - Rep1",
+            "Hi-C on sync. HeLa cells - Rep2",
+            "Hi-C on sync. HeLa cells - Rep3"
         ],
         "study": "Cell Cycle",
         "study_group": "Time Course"
