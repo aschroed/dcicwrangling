@@ -51,8 +51,11 @@ def get_args():
     return args
 
 
-def make_publication_table(publications):
-    '''Make a table of publications from publication search
+def convert_pubs_list_to_lookup(pubs_search):
+    '''
+    Converts a list of publications (from a search), to a dictionary with
+    publication @ids as keys. The resulting lookup table has short journal
+    names and other selected fields (author, title, url).
     '''
     journal_mapping = {
         "Science (New York, N.Y.)": "Science",
@@ -72,7 +75,7 @@ def make_publication_table(publications):
     }
 
     publications_table = {}
-    for pub in publications:
+    for pub in pubs_search:
         row_pub = {}
         try:
             row_pub["pub_journal"] = journal_mapping[pub["journal"]]
@@ -87,7 +90,7 @@ def make_publication_table(publications):
     return publications_table
 
 
-def make_table_row(row, expset, dsg, dsg_link, table_pub, dsg_map):
+def assemble_data_for_the_row(row, expset, dsg, dsg_link, pubs_dict, dsg_map):
     '''Translate metadata from expset to a row in the table.
     Row is provided as input and is updated with the given expset information.
     '''
@@ -114,10 +117,10 @@ def make_table_row(row, expset, dsg, dsg_link, table_pub, dsg_map):
     pub = expset.get("produced_in_pub")
     if pub is not None:
         pub_id = pub["@id"]
-        pub = [{"text": table_pub[pub_id]["pub_auth"],
+        pub = [{"text": pubs_dict[pub_id]["pub_auth"],
                 "link": pub_id},
-               {"text": "(" + table_pub[pub_id]["pub_journal"] + ")",
-                "link": table_pub[pub_id]["pub_url"]}]
+               {"text": "(" + pubs_dict[pub_id]["pub_journal"] + ")",
+                "link": pubs_dict[pub_id]["pub_url"]}]
         if row.get("Publication") is None:
             row["Publication"] = pub
         else:
@@ -136,8 +139,8 @@ def make_table_row(row, expset, dsg, dsg_link, table_pub, dsg_map):
 
 
 def html_cell_maker(item):
-    '''Builds an html cell
-    '''
+    '''Builds an html cell'''
+
     outstr = ""
     if isinstance(item, str):
         outstr = item
@@ -153,7 +156,7 @@ def html_cell_maker(item):
 
     if isinstance(item, dict):
         if item.get("link") is None:
-            print("dictionaries in the table should have link fields!!")
+            print("Dictionaries in the table should have link fields!\n{}".format(item))
         outstr = '<a href="' + item.get("link") + '">' + item.get("text") + '</a>'
 
     if not isinstance(outstr, str):
@@ -163,8 +166,8 @@ def html_cell_maker(item):
 
 
 def html_table_maker(rows, keys, styles):
-    '''Builds html table
-    '''
+    '''Builds html table'''
+
     part1 = """
     <style>
       table.exp-type-static-table, table.exp-type-static-table th, table.exp-type-static-table td {
@@ -225,15 +228,15 @@ def main():
     pubs_search = ff_utils.search_metadata(query_pub, key=auth)
     expsets_search = ff_utils.search_metadata(query_exp, key=auth)
 
-    # building table of publications
-    table_pub = make_publication_table(pubs_search)
+    # building publications dictionary
+    pubs_dict = convert_pubs_list_to_lookup(pubs_search)
 
     # loading dataset groups from json file
     repo_path = Path(__file__).resolve().parents[1]
-    dsgs_fn = repo_path.joinpath('files', 'dsg.json')
-    if dsgs_fn.exists():
-        with open(dsgs_fn) as dsgs_f:
-            dsgs = json.load(dsgs_f)
+    dsg_filename = repo_path.joinpath('files', 'dsg.json')
+    if dsg_filename.exists():
+        with open(dsg_filename) as dsg_fn:
+            dsgs = json.load(dsg_fn)
     else:
         sys.exit("ERROR: Dataset grouping file not found")
 
@@ -271,7 +274,7 @@ def main():
         study_groups.add(dsgs[dsg].get("study_group"))
 
         row = table.get(dsg, {})
-        table[dsg] = make_table_row(row, expset, dsg, dsg_link, table_pub, dsgs[dsg])
+        table[dsg] = assemble_data_for_the_row(row, expset, dsg, dsg_link, pubs_dict, dsgs[dsg])
 
     # summarize number of experiment sets of each experiment type in a string
     for dsg, row in table.items():
@@ -281,7 +284,7 @@ def main():
                 exp_type_summary += str(count) + " " + exp_type + "<br>"
         row['Replicate Sets'] = exp_type_summary
 
-    # new datasets found
+    # if new datasets are not in the json, ask what to do
     if new_datasets:
         print("New datasets found (not present in the json file):\n{}".format(new_datasets))
         print("(i)gnore datasets or (e)xit to manually add them? [i/e]")
