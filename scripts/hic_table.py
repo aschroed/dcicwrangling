@@ -216,12 +216,15 @@ def main():
 
     # getting authentication keys
     args = get_args()
-    dryrun = args.dryrun
     try:
         auth = ff_utils.get_authentication_with_server(args.key)
     except Exception as e:
         print("Authentication failed", e)
         sys.exit(1)
+
+    dryrun = args.dryrun
+    if dryrun:
+        print("\nThis is a dry run\n")
 
     # collecting publication and expset search results
     hic_types = ['in+situ+Hi-C', 'Dilution+Hi-C', 'DNase+Hi-C', 'Micro-C', 'TCC']
