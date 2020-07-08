@@ -45,6 +45,10 @@ def get_args():
                         default=Path("~/keypairs.json").expanduser(),
                         help="The keypair file. Default is --keyfile={}".format(
                             Path("~/keypairs.json").expanduser()))
+    parser.add_argument('--dryrun',
+                        default=False,
+                        help="Run script without posting or patching. \
+                        Default is False")
     args = parser.parse_args()
     if args.key and args.keyfile:
         args.key = scu.find_keyname_in_keyfile(args.key, args.keyfile)
@@ -212,6 +216,7 @@ def main():
 
     # getting authentication keys
     args = get_args()
+    dryrun = args.dryrun
     try:
         auth = ff_utils.get_authentication_with_server(args.key)
     except Exception as e:
@@ -295,7 +300,9 @@ def main():
             sys.exit("Add new dataset to dsg.json before generating table")
 
     # patch the static section for each study group
-    new_static_sections = []
+    skipped = []
+    posted = []
+    patched = []
     for studygroup in list(study_groups):
 
         # prepare static section
@@ -332,10 +339,10 @@ def main():
             while response not in ['p', 's']:
                 response = input()
             if response == 's':
+                skipped.append(alias)
                 continue
             else:
                 post = True
-                new_static_sections.append(alias)
 
         # post or patch static section
         if post:
@@ -351,16 +358,28 @@ def main():
                     "filetype": "html"
                 }
             }
-            res = ff_utils.post_metadata(post_body, "StaticSection", key=auth)
+            if not dryrun:
+                res = ff_utils.post_metadata(post_body, "StaticSection", key=auth)
+            posted.append(alias)
         else:
             patch_body = {"body": html}
-            res = ff_utils.patch_metadata(patch_body, alias, key=auth)
-        print("{}: {}".format(alias, res['status']))
+            if not dryrun:
+                res = ff_utils.patch_metadata(patch_body, alias, key=auth)
+            patched.append(alias)
+        if not dryrun:
+            print("{}: {}".format(alias, res['status']))
 
-    if new_static_sections:
-        print('Remember to add the new static section(s) to the hic-data-overview page')
-        for new_section in new_static_sections:
-            print(new_section)
+    # summarize results
+    print("Static sections summary: {} patched, {} posted, {} skipped".format(
+        len(patched), len(posted), len(skipped)))
+    if posted:
+        print("Remember to add the new static section(s) to the hic-data-overview page:")
+        for item in posted:
+            print(item)
+    if skipped:
+        print("Skipped sections:")
+        for item in skipped:
+            print(item)
 
 
 if __name__ == '__main__':  # pragma: no cover
