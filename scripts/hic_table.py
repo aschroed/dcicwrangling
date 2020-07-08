@@ -47,6 +47,7 @@ def get_args():
                             Path("~/keypairs.json").expanduser()))
     parser.add_argument('--dryrun',
                         default=False,
+                        action='store_true',
                         help="Run script without posting or patching. \
                         Default is False")
     args = parser.parse_args()
