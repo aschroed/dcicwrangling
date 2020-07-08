@@ -74,8 +74,9 @@ class Experiment:
             else:
                 print('Could not get SRA record {}'.format(self.link))
             return
-        self.length = int(mean([int(float(item.get('average'))) for item in record.iter('Read') if
-                                item.get('count') != '0']))
+        lengths = [int(float(item.get('average'))) for item in record.iter('Read') if item.get('count') != '0']
+        if lengths:
+            self.length = int(mean(lengths))
         self.st = record.find('STUDY').find('DESCRIPTOR').find('STUDY_TITLE').text
         for item in record.find('EXPERIMENT').find('DESIGN').find('LIBRARY_DESCRIPTOR').find('LIBRARY_LAYOUT'):
             self.layout = item.tag.lower()
@@ -103,7 +104,7 @@ class Dataset:
 
 valid_types = ['hic', 'hicseq', 'dnase hic', 'rnaseq', 'tsaseq', 'chipseq',
                'dna sprite', 'dnarna sprite', 'rnadna sprite', 'capturec',
-               'repliseq', 'atacseq', 'damid', 'damidseq', 'chiapet']
+               'repliseq', 'atacseq', 'damid', 'damidseq', 'chiapet', 'placseq']
 
 
 type_dict = {'chipseq': 'ChIP-seq', 'tsaseq': 'TSA-seq', 'rnaseq': 'RNA-seq',
@@ -229,6 +230,8 @@ def parse_bs_record(bs_acc):
     descr = ''
     acc = bs_xml.find('./BioSample').attrib['accession']
     org = [item.text for item in bs_xml.iter("OrganismName")]
+    # turn org items such as "Mus musculus x Mus spretus" to Mus musculus
+    org = ['Mus musculus' if 'mus musculus' in item.lower() else item for item in org]
     if not org:
         org = [item.attrib['taxonomy_name'] for item in bs_xml.iter("Organism")]
     # except IndexError:
@@ -521,13 +524,14 @@ def main(types=valid_types, descr=description, epilog=epilog):  # pragma: no cov
     parser.add_argument('-t', '--type', help="Optional: type of experiment in series. \
                         By default experiment type is parsed from SRA records, but \
                         this option is useful when parsing isn't straightforward. \
-                        Accepted types: HiC, ChIP-seq, RNA-seq, TSA-seq, ATAC-seq, DamID, Repliseq. \
+                        Accepted types: HiC, ChIP-seq, RNA-seq, TSA-seq, ATAC-seq, DamID, Repliseq, \
+                        DNase HiC, Capture HiC, PLAC-seq, DNA SPRITE, RNADNA SPRITE. \
                         Note that only one type may be specified, so make sure GEO Series \
                         doesn't include multiple experiment types.",
                         action="store", default=None)
     args = parser.parse_args()
     out_file = args.outfile if args.outfile else args.geo_accession + '.xls'
-    if args.type and args.type.lower() not in types:
+    if args.type and args.type.lower().replace('-', '') not in types:
         print("\nError: %s not a recognized type\n" % args.type)
         parser.print_help()
         sys.exit()
