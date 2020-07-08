@@ -5,7 +5,7 @@ import argparse
 import json
 from dcicutils import ff_utils
 from pathlib import Path
-from dcicwrangling.functions import script_utils as scu
+from functions import script_utils as scu
 
 
 description = '''
@@ -45,6 +45,11 @@ def get_args():
                         default=Path("~/keypairs.json").expanduser(),
                         help="The keypair file. Default is --keyfile={}".format(
                             Path("~/keypairs.json").expanduser()))
+    parser.add_argument('--dryrun',
+                        default=False,
+                        action='store_true',
+                        help="Run script without posting or patching. \
+                        Default is False")
     args = parser.parse_args()
     if args.key and args.keyfile:
         args.key = scu.find_keyname_in_keyfile(args.key, args.keyfile)
@@ -218,6 +223,10 @@ def main():
         print("Authentication failed", e)
         sys.exit(1)
 
+    dryrun = args.dryrun
+    if dryrun:
+        print("\nThis is a dry run\n")
+
     # collecting publication and expset search results
     hic_types = ['in+situ+Hi-C', 'Dilution+Hi-C', 'DNase+Hi-C', 'Micro-C', 'TCC']
     query_pub = '/search/?type=Publication'
@@ -286,7 +295,9 @@ def main():
 
     # if new datasets are not in the json, ask what to do
     if new_datasets:
-        print("New datasets found (not present in the json file):\n{}".format(new_datasets))
+        print("New datasets found (not present in the json file):")
+        for ds in new_datasets:
+            print(ds)
         print("(i)gnore datasets or (e)xit to manually add them? [i/e]")
         response = None
         while response not in ['i', 'e']:
@@ -295,7 +306,9 @@ def main():
             sys.exit("Add new dataset to dsg.json before generating table")
 
     # patch the static section for each study group
-    new_static_sections = []
+    skipped = []
+    posted = []
+    patched = []
     for studygroup in list(study_groups):
 
         # prepare static section
@@ -332,10 +345,10 @@ def main():
             while response not in ['p', 's']:
                 response = input()
             if response == 's':
+                skipped.append(alias)
                 continue
             else:
                 post = True
-                new_static_sections.append(alias)
 
         # post or patch static section
         if post:
@@ -351,16 +364,28 @@ def main():
                     "filetype": "html"
                 }
             }
-            res = ff_utils.post_metadata(post_body, "StaticSection", key=auth)
+            if not dryrun:
+                res = ff_utils.post_metadata(post_body, "StaticSection", key=auth)
+            posted.append(alias)
         else:
             patch_body = {"body": html}
-            res = ff_utils.patch_metadata(patch_body, alias, key=auth)
-        print("{}: {}".format(alias, res['status']))
+            if not dryrun:
+                res = ff_utils.patch_metadata(patch_body, alias, key=auth)
+            patched.append(alias)
+        if not dryrun:
+            print("{}: {}".format(alias, res['status']))
 
-    if new_static_sections:
-        print('Remember to add the new static section(s) to the hic-data-overview page')
-        for new_section in new_static_sections:
-            print(new_section)
+    # summarize results
+    print("Static sections summary: {} patched, {} posted, {} skipped".format(
+        len(patched), len(posted), len(skipped)))
+    if posted:
+        print("Remember to add the new static section(s) to the hic-data-overview page:")
+        for item in posted:
+            print(item)
+    if skipped:
+        print("Skipped sections:")
+        for item in skipped:
+            print(item)
 
 
 if __name__ == '__main__':  # pragma: no cover
