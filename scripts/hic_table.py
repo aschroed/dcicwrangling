@@ -295,8 +295,8 @@ def main():
     # if new datasets are not in the json, ask what to do
     if new_datasets:
         print("New datasets found (not present in the json file):")
-        for set in new_datasets:
-            print(set)
+        for ds in new_datasets:
+            print(ds)
         print("(i)gnore datasets or (e)xit to manually add them? [i/e]")
         response = None
         while response not in ['i', 'e']:
