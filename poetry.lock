@@ -701,7 +701,7 @@ wcwidth = "*"
 [[package]]
 category = "main"
 description = "Run a subprocess in a pseudo terminal"
-marker = "sys_platform != \"win32\" or os_name != \"nt\" or python_version >= \"3.3\" and sys_platform != \"win32\""
+marker = "python_version >= \"3.3\" and sys_platform != \"win32\" or sys_platform != \"win32\" or os_name != \"nt\" or python_version >= \"3.3\" and sys_platform != \"win32\" and (python_version >= \"3.3\" and sys_platform != \"win32\" or sys_platform != \"win32\")"
 name = "ptyprocess"
 optional = false
 python-versions = "*"
@@ -1093,8 +1093,8 @@ category = "main"
 description = "Library for developers to extract data from Microsoft Excel (tm) spreadsheet files"
 name = "xlrd"
 optional = false
-python-versions = "*"
-version = "1.0.0"
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+version = "1.2.0"
 
 [[package]]
 category = "main"
@@ -1134,7 +1134,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
-content-hash = "e3b6d5dac4039e21fae811ffa934cb73db80b5c720046c9505fd9fbaf2c73154"
+content-hash = "331080f13f40b0aa14a540fd6d37b82ca4afa83ef26329322f847e128670fd64"
 python-versions = ">=3.6, <3.8"
 
 [metadata.files]
@@ -1671,8 +1671,8 @@ widgetsnbextension = [
     {file = "widgetsnbextension-3.5.1.tar.gz", hash = "sha256:079f87d87270bce047512400efd70238820751a11d2d8cb137a5a5bdbaf255c7"},
 ]
 xlrd = [
-    {file = "xlrd-1.0.0-py3-none-any.whl", hash = "sha256:05f55eb39a68f1c3d336de186aeb90c98ea5add722813738d8ae8b97819c5924"},
-    {file = "xlrd-1.0.0.tar.gz", hash = "sha256:0ff87dd5d50425084f7219cb6f86bb3eb5aa29063f53d50bf270ed007e941069"},
+    {file = "xlrd-1.2.0-py2.py3-none-any.whl", hash = "sha256:e551fb498759fa3a5384a94ccd4c3c02eb7c00ea424426e212ac0c57be9dfbde"},
+    {file = "xlrd-1.2.0.tar.gz", hash = "sha256:546eb36cee8db40c3eaa46c351e67ffee6eeb5fa2650b71bc4c758a29a1b29b2"},
 ]
 xlutils = [
     {file = "xlutils-2.0.0-py2.py3-none-any.whl", hash = "sha256:b56640862c030e9d53104e7f1d750135fdfabf6bf55e425e5ac40fdee9dbaeb9"},
