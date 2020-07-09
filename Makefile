@@ -17,7 +17,7 @@ update:  # updates dependencies
 	poetry update
 
 publish:
-	scripts/publish
+	commands/publish
 
 help:
 	@make info
