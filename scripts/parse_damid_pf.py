@@ -3,14 +3,28 @@ import sys
 import argparse
 import xlrd
 import datetime
+import re
 from dcicutils.ff_utils import (
     get_authentication_with_server,
-    patch_metadata, search_metadata)
-from functions import script_utils as scu
+    patch_metadata, search_metadata,
+    get_metadata)
+from dcicwrangling.functions import script_utils as scu
 '''
 Parsing damid processed file worksheet to generate the various bins
-of other processed files
+of other processed files using information from the linked_dataset column
+with the expectation that the linked_dataset will be an identifier for the
+experiment or replicate set to which the file should be linked.
+
+As the bin used for 'official' processed files - as opposed to supplementary
+files can change depending on the target or experiment type (damid vs. pA-damid)
+the PF_BIN specifies which bin to use
+
+NOTE: there are variations that can deal with incomplete information - i.e. not
+specifying the experiments but just using replicate set ids and then info in aliases
+to match up replicates - see Andy if needed
 '''
+
+PF_BIN = '5kb bin'  # the bin for which a subset of files should be considered processed_files rather than opfs
 
 
 def reader(filename, sheetname=None):
@@ -29,6 +43,23 @@ def reader(filename, sheetname=None):
     datemode = sheet.book.datemode
     for index in range(sheet.nrows):
         yield [cell_value(cell, datemode) for cell in sheet.row(index)]
+
+
+def extract_rows(infile):
+    data = []
+    row = reader(infile, sheetname='FileProcessed')
+    fields = next(row)
+    fields = [f.replace('*', '') for f in fields]
+    types = next(row)
+    fields.pop(0)
+    types.pop(0)
+    for values in row:
+        if values[0].startswith('#'):
+            continue
+        values.pop(0)
+        meta = dict(zip(fields, values))
+        data.append(meta)
+    return data
 
 
 def cell_value(cell, datemode):
@@ -57,6 +88,46 @@ def cell_value(cell, datemode):
     raise ValueError(repr(cell), 'unknown cell type')  # pragma: no cover
 
 
+def is_processed_bin(desc, meta):
+    ''' Putting bam files and select files in bin specified by PF_BIN into the
+        processed file bin this is a specific check for those attributes
+    '''
+    if 'mapped reads' in desc:
+        return True
+    if desc.startswith(PF_BIN):
+        if (meta.get('file_type') == 'normalized counts' and meta.get('file_format') == 'bw') or (
+                meta.get('file_type') == 'LADs' and meta.get('file_format') == 'bed'):
+            return True
+    return False
+
+
+def create_patch(item, label, rep=None):
+    patch = {}
+    if rep:
+        label = label + ' ' + rep
+    item_pfs = item.get('processed_files')
+    item_opfs = item.get('other_processed_files')
+    if not (item_pfs or item_opfs):
+        print("NO FILES FOR {}".format(item.get('uuid')))
+        return
+    if item_pfs:
+        patch['processed_files'] = item_pfs
+    if item_opfs:
+        for bin, opfs in item_opfs.items():
+            if bin == 'Other':
+                opftitle = 'Other files - non-binned'
+                opfdesc = 'Non-bin specific files for {}'.format(label)
+            elif bin == PF_BIN:
+                opftitle = 'Additional {}ned files'.format(bin)
+                opfdesc = 'Additional files associated with the {} size processing of data for {}'.format(bin, label)
+            else:
+                opftitle = '{}ned files'.format(bin)
+                opfdesc = 'The files associated with the {} size processing of data for {}'.format(bin, label)
+            patch.setdefault('other_processed_files', []).append(
+                {'title': opftitle, 'description': opfdesc, 'type': 'supplementary', 'files': opfs})
+    return patch
+
+
 def get_args(args):
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -77,198 +148,93 @@ def main():  # pragma: no cover
         print("Authentication failed")
         sys.exit(1)
 
-    clines = ['K562', 'Hap1', 'HCT116', 'RPE']
-    cline2name = {'Hap1': 'HAP-1', 'RPE': 'RPE-hTERT'}
-    expts = ['LMNB1', 'Dam']
-    reps = ['_r1_', '_r2_', 'combined']
-    bins = ['gatc', '1kb', '2kb', '5kb', '10kb', '20kb', '25kb', '50kb', '80kb', '100kb', '250kb', 'not_binned']
-    bins.reverse()
+    repre = re.compile(r'_r\d+_')
+    binre = re.compile(r'^\S+ bin')
+    erepnore = re.compile(r'replicate\s\d+')
 
-    supplementary = {cl: {e: {r: {b: [] for b in bins} for r in reps} for e in expts} for cl in clines}
-    processed = {cl: {e: {r: [] for r in reps} for e in expts} for cl in clines}
-    other_files = []
     # this if for parsing excel but could use fourfront query
     infile = args.input[0]
     query = None
     if len(args.input) > 1:
         query = args.input[1]
 
-    row = reader(infile, sheetname='FileProcessed')
-    fields = next(row)
-    fields = [f.replace('*', '') for f in fields]
-    types = next(row)
-    fields.pop(0)
-    types.pop(0)
-    for values in row:
-        pf_found = False
-        if values[0].startswith('#'):
+    metadata = extract_rows(infile)
+    patch_items = {}
+    seen_esets = {}  # if you are dealing with an experiment want to use the dataset_label and condition
+    # of the replicate set to create the label
+    # going row by row to add file to correct spot
+    for meta in metadata:
+        # checking if we have linked dataset info in sheet - should be either an
+        # experiment set or experiment
+        linked_dataset_id = meta.get('#linked datasets')
+        if not linked_dataset_id:
+            print("Can not get dataset_id for {}".format(meta))
             continue
-        values.pop(0)
+        file_alias = meta.get('aliases')
 
-        c = None
-        e = None
-        r = None
-        b = None
-        meta = dict(zip(fields, values))
+        # build basic ds for the set
+        if linked_dataset_id not in patch_items:
+            item = get_metadata(linked_dataset_id, auth)  # either experiment or eset
+            euuid = item.get('uuid')
+            if not euuid:
+                print("Can't get uuid for {} - skipping".format(linked_dataset_id))
+                continue
+            if 'experiments_in_set' in item:  # we've got an experiment set
+                label = item.get('dataset_label') + ' ' + item.get('condition')
+            else:  # we've got an experiment
+                esets = item.get('experiment_sets')
+                if len(esets) != 1:  # some sort of unusual situation
+                    raise(Exception, 'experiment linked to multiple experiment sets -- abort!')
+                esetid = esets[0].get('uuid')
+                if esetid not in seen_esets:
+                    eset = get_metadata(esetid, auth)
+                    label = eset.get('dataset_label') + ' ' + eset.get('condition')
+                    seen_esets[esetid] = label
+                else:
+                    label = seen_esets[esetid]
+
+            patch_items[linked_dataset_id] = {'uuid': euuid, 'label': label, 'processed_files': [], 'other_processed_files': {}, 'experiments': {}}
+        # use description to get replicate number if any and bin size if any
         desc = meta.get('description')
-        info = (meta.get('aliases'), desc)
-        for cl in clines:
-            if cl in desc:
-                c = cl
-                break
-        for ex in expts:
-            if ex in desc:
-                e = ex
-                break
-        for rep in reps:
-            if rep in desc:
-                r = rep
-                break
-        if r is None:
-            r = 'combined'
-        if 'mapped reads' in desc:
-            if not c or not e or not r:
-                other_files.append(info)
-            else:
-                processed[c][e][r].append(info)
-            continue
-        for bin in bins:
-            if bin in desc:
-                b = bin
-                if b == '5kb':
-                    if (meta.get('file_type') == 'normalized counts' and meta.get('file_format') == 'bw') or (
-                            meta.get('file_type') == 'LADs' and meta.get('file_format') == 'bed'):
-                        processed[c][e][r].append(info)
-                        pf_found = True
-                break
-        if pf_found:
-            pf_found = False
-            continue
-        elif c and e and r and b:
-            supplementary[c][e][r][b].append(info)
-        elif c and e and r:
-            if 'mapped reads' in desc:
-                processed[c][e][r].append(info)
-            else:
-                supplementary[c][e][r]['not_binned'].append(info)
+
+        bin = binre.match(desc)
+
+        if is_processed_bin(desc, meta):
+            patch_items[linked_dataset_id]['processed_files'].append(file_alias)
         else:
-            other_files.append(info)
-
-    # get ff esets and add correct bins to it
-    if query is not None:
-        esets = search_metadata(query, auth)
-        for eset in esets:
-            repset_uuid = eset.get('uuid')
-            refexp = eset.get('experiments_in_set')[0]
-            # import pdb; pdb.set_trace()
-            cell_line = None
-            expt = 'Dam'
-            ename = 'Dam-only'
-            bsum = refexp.get('biosample').get('biosource_summary')
-            for c in clines:
-                c2chk = cline2name.get(c)
-                if c2chk is None:
-                    c2chk = c
-                if c2chk in bsum:
-                    cell_line = c
-                    break
-            ecat = refexp.get('experiment_categorizer').get('value')
-            if 'Lamin-B1' in ecat:
-                expt = 'LMNB1'
-                ename = 'Lamin-B1'
-
-            # now we have enough to add repset specifics
-            repset_pfs = processed.get(cell_line).get(expt).get('combined')
-            patch = {
-                'processed_files': [pf[0] for pf in repset_pfs],
-                'other_processed_files': []
-            }
-            repset_others = supplementary.get(cell_line).get(expt).get('combined')
-            datasetstr = 'DAM ID seq {bio} {expt} Dataset.'.format(bio=c2chk, expt=ename)
-            for bin, files in repset_others.items():
-                if not files:
-                    continue
-                if bin == 'not_binned':
-                    title = 'Other files - non-binned'
-                    desc = 'Non-bin specific files for the {}'.format(datasetstr)
-                elif bin == '5kb':
-                    title = 'Additional 5 kb binned files'
-                    desc = 'Additional files associated with the 5 kb bin size processing of data for the {}'.format(datasetstr)
-                else:
-                    if bin == 'gatc':
-                        bname = bin.upper()
-                    else:
-                        bname = bin.replace('kb', ' kb')
-                    title = bname + ' binned files'
-                    desc = 'The files associated with the {bin} bin size processing of data for the {ds}'.format(bin=bname, ds=datasetstr)
-                patch['other_processed_files'].append(
-                    {'title': title, 'description': desc, 'type': 'supplementary', 'files': [f[0] for f in files]}
-                )
-            if not patch.get('processed_files'):
-                del patch['processed_files']
-            if not patch.get('other_processed_files'):
-                del patch['other_processed_files']
-            if not patch:
-                pass
+            if bin:
+                bin = bin.group()
             else:
-                print(repset_uuid, '\n', patch, '\n\n')
-                if args.dbupdate:
-                    try:
-                        res = patch_metadata(patch, repset_uuid, auth)
-                        print(res.status)
-                    except Exception:
-                        print("Can't patch {iid} with\n\t{p}".format(iid=repset_uuid, p=patch))
+                bin = 'Other'
+            patch_items[linked_dataset_id]['other_processed_files'].setdefault(bin, []).append(file_alias)
 
-            reps = eset.get('replicate_exps')
-            for rep in reps:
-                # experiment specific files
-                repno = str(rep.get('bio_rep_no'))
-                repuuid = rep.get('replicate_exp').get('uuid')
-                reptag = '_r' + repno + '_'
-                exprep_pfs = processed.get(cell_line).get(expt).get(reptag)
-                reppatch = {
-                    'processed_files': [epf[0] for epf in exprep_pfs],
-                    'other_processed_files': []
-                }
-                repexp_others = supplementary.get(cell_line).get(expt).get(reptag)
-                expstr = 'DAM ID seq {bio} {expt} Replicate {no}.'.format(bio=c2chk, expt=ename, no=repno)
-                for bin, files in repexp_others.items():
-                    if bin == 'not_binned':
-                        title = 'Other files - non-binned'
-                        desc = 'Non-bin specific files for the {}'.format(expstr)
-                    elif bin == '5kb':
-                        title = 'Additional 5 kb binned files'
-                        desc = 'Additional files associated with the 5 kb bin size processing of data for the {}'.format(expstr)
-                    else:
-                        if bin == 'gatc':
-                            bname = bin.upper()
-                        else:
-                            bname = bin.replace('kb', ' kb')
-                        title = bname + ' binned files'
-                        desc = 'The files associated with the {bin} bin size processing of data for the {ds}'.format(bin=bname, ds=expstr)
-                    reppatch['other_processed_files'].append(
-                        {'title': title, 'description': desc, 'type': 'supplementary', 'files': [f[0] for f in files]}
-                    )
-                if not reppatch.get('processed_files'):
-                    del reppatch['processed_files']
-                if not reppatch.get('other_processed_files'):
-                    del reppatch['other_processed_files']
-                if not reppatch:
-                    continue
-                else:
-                    newpatch = [opf for opf in reppatch.get('other_processed_files') if opf.get('files')]
-                    reppatch['other_processed_files'] = newpatch
+    patch_data = {}
+    for e in patch_items.values():
+        label = e.get('label')
+        patch = create_patch(e, label)
+        if patch:
+            euid = e.get('uuid')
+            existing_item = get_metadata(euid, auth)
+            ipf = existing_item.get('processed_files')
+            if ipf:
+                if 'processed_files' in patch:
+                    patch['processed_files'].extend(ipf)
+            opf = existing_item.get('other_processed_files')
+            if opf:
+                if 'other_processed_files' in patch:
+                    patch['other_processed_files'].extend(opf)
 
-                    print(repuuid, '\n', reppatch, '\n\n')
-                    if args.dbupdate:
-                        try:
-                            res = patch_metadata(reppatch, repuuid, auth)
-                            if res.get('status') == 'success':
-                                print('SUCCESS')
-                            else:
-                                print('unexpected response\n', res)
-                        except Exception:
-                            print("Can't patch {iid} with\n\t{p}".format(iid=repuuid, p=reppatch))
+            patch_data[e.get('uuid')] = patch
+
+    if patch_data:
+        for puuid, pdata in patch_data.items():
+            print(puuid, '\n', pdata, '\n\n')
+            if args.dbupdate:
+                try:
+                    res = patch_metadata(pdata, puuid, auth)
+                    print(res.get('status'))
+                except Exception:
+                    print("Can't patch {iid} with\n\t{p}".format(iid=puuid, p=pdata))
 
 
 if __name__ == '__main__':
