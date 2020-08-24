@@ -19,7 +19,10 @@ chr_size = {"human": "4DNFI823LSII",
 re_nz = {"human": {'MboI': '/files-reference/4DNFI823L812/',
                    'DpnII': '/files-reference/4DNFIBNAPW3O/',
                    'HindIII': '/files-reference/4DNFI823MBKE/',
-                   'NcoI': '/files-reference/4DNFI3HVU2OD/'
+                   'NcoI': '/files-reference/4DNFI3HVU2OD/',
+                   'MspI': '/files-reference/4DNFI2JHR3OI/',
+                   'NcoI_MspI_BspHI': '/files-reference/4DNFI6HA6EH9/',
+                   'AluI': '/files-reference/4DNFIN4DB5O8/'
                    },
          "mouse": {'MboI': '/files-reference/4DNFIONK4G14/',
                    'DpnII': '/files-reference/4DNFI3HVC1SE/',
@@ -408,7 +411,10 @@ def add_preliminary_processed_files(item_id, list_pc, auth, run_type="hic"):
               "repliseq": "Repli-Seq Pipeline - Preliminary Files",
               'chip': "ENCODE ChIP-Seq Pipeline - Preliminary Files",
               'atac': "ENCODE ATAC-Seq Pipeline - Preliminary Files"}
-    pc_set_title = titles[run_type]
+    if run_type in titles:
+        pc_set_title = titles[run_type]
+    else:
+        pc_set_title = run_type
     resp = ff_utils.get_metadata(item_id, key=auth)
 
     # check if this items are in processed files field
