@@ -189,5 +189,9 @@
     },
     "Hi-C on lympoblastoid cell lines from 1000G individuals": {
         "study_group": "Single Time Point and Condition"
+    },
+    "Hi-C on Sox2 tagged F123 cells": {
+        "study": "CTCF-mediated insulation",
+        "study_group": "Disrupted or Atypical Cells"
     }
 }
