@@ -45,6 +45,10 @@ def get_args():
                         default=Path("~/keypairs.json").expanduser(),
                         help="The keypair file. Default is --keyfile={}".format(
                             Path("~/keypairs.json").expanduser()))
+    parser.add_argument('--format',
+                        default='html',
+                        help="Generated output format: html|markdown. \
+                        Default is html")
     parser.add_argument('--dryrun',
                         default=False,
                         action='store_true',
@@ -212,6 +216,59 @@ def html_table_maker(rows, keys, styles):
 
     return(part1 + part2 + part3 + part4)
 
+def md_cell_maker(item):
+    '''Builds a markdown cell'''
+
+    outstr = ""
+    if isinstance(item, str):
+        outstr = item
+
+    if isinstance(item, set):
+        outstr = "<br>".join(item)
+
+    if isinstance(item, list):
+        for i in item:
+            outstr += md_cell_maker(i) + "<br>"
+        if len(item) > 0:
+            outstr = outstr[:-4]
+
+    if isinstance(item, dict):
+        if item.get("link") is None:
+            print("Dictionaries in the table should have link fields!\n{}".format(item))
+        outstr = "[{}]({})".format(item.get("text"), item.get("link").replace(")", "%29"))
+
+    if not isinstance(outstr, str):
+        print("type(outstr) = " + str(type(outstr)))
+
+    return outstr.replace("'", "\\'")
+
+
+def md_table_maker(rows, keys, jsx_key, col_widths = "[]"):
+    '''Builds markdown table'''
+
+    part1 = """
+    <MdSortableTable
+        key='{}'
+        defaultColWidths={{{}}}
+    >{{' \\
+    """.format(jsx_key, col_widths)
+    
+    part2 = ""
+    for key in keys:
+        part2 += "|" + key
+    part2 += "|\\\n" + ("|---" * len(keys)) + "|\\\n"
+
+    part3 = ""
+    for row in rows.values():
+        row_str = ""
+        for key in keys:
+            row_str += "|" + md_cell_maker(row.get(key))
+        row_str += "|\\\n"
+        part3 += row_str
+
+    part4 = "'}</MdSortableTable>"
+    
+    return (part1 + part2 + part3 + part4)
 
 def main():
 
@@ -291,7 +348,10 @@ def main():
         for exp_type, count in row["Replicate Sets"].items():
             if count > 0:
                 exp_type_summary += str(count) + " " + exp_type + "<br>"
-        row['Replicate Sets'] = exp_type_summary
+        if len(exp_type_summary) > 0:
+            row['Replicate Sets'] = exp_type_summary[:-4] #remove <br> at the end
+        else:
+            row['Replicate Sets'] = ""
 
     # if new datasets are not in the json, ask what to do
     if new_datasets:
@@ -323,16 +383,28 @@ def main():
         keys = ['Data Set', 'Project', 'Replicate Sets', 'Species', 'Biosources', 'Publication', 'Study', 'Lab']
         if studygroup == "Single Time Point and Condition":
             keys.remove('Study')
-        styles = {
-            'Data Set': ";width:20%;min-width:120px",
-            'Replicate Sets': ";width:150px",
-            'Publication': ";width:200px"
-        }
-        html = html_table_maker(table_dsg, keys, styles)
-
-        name = "data-highlights.hic." + studygroup
-        name = name.lower().replace(" ", "-")
-        alias = "4dn-dcic-lab:" + name
+         
+        name = alias = output = filetype = None
+        if args.format == 'markdown':
+            name = "data-highlights.hic." + studygroup + ".md"
+            name = name.lower().replace(" ", "-")
+            alias = "4dn-dcic-lab:" + name
+            filetype = 'jsx'
+            default_col_widths = "[-1,100,-1,100,-1,-1,-1,-1]"
+            if "Study" not in keys:
+                default_col_widths = "[-1,100,-1,120,250,-1,170]"
+            output = md_table_maker(table_dsg, keys, name, default_col_widths)
+        else:
+            name = "data-highlights.hic." + studygroup
+            name = name.lower().replace(" ", "-")
+            alias = "4dn-dcic-lab:" + name
+            filetype = 'html'
+            styles = {
+                'Data Set': ";width:20%;min-width:120px",
+                'Replicate Sets': ";width:150px",
+                'Publication': ";width:200px"
+            }
+            output = html_table_maker(table_dsg, keys, styles)
 
         # check if static section exists
         post = False
@@ -355,20 +427,20 @@ def main():
             post_body = {
                 "name": name,
                 "aliases": [alias],
-                "body": html,
+                "body": output,
                 "section_type": "Page Section",
                 "title": studygroup,
                 "options": {
                     "collapsible": True,
                     "default_open": True,
-                    "filetype": "html"
+                    "filetype": filetype
                 }
             }
             if not dryrun:
                 res = ff_utils.post_metadata(post_body, "StaticSection", key=auth)
             posted.append(alias)
         else:
-            patch_body = {"body": html}
+            patch_body = {"body": output}
             if not dryrun:
                 res = ff_utils.patch_metadata(patch_body, alias, key=auth)
             patched.append(alias)
