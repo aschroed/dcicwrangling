@@ -11,7 +11,7 @@ packages = [{ include="scripts", from="." }]
 
 [tool.poetry.dependencies]
 python = ">=3.6, <3.8"
-dcicutils = ">=1.2.1"
+dcicutils = "^1.2.1"
 xlrd = "^1.0.0"
 xlwt = "1.3.0"
 xlutils = "^2.0.0"
