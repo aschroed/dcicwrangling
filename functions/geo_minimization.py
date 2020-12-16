@@ -3,6 +3,16 @@ Common functions for GEO Minimization of the JSON objects
 '''
 
 
+def add_result_to_output_dict(key, result, output_dictionary):
+    '''add to the output_dictionary either a single key:value pair or
+    all the key:values if result is a dictionary'''
+    if isinstance(result, dict):
+        for k, v in result.items():
+            output_dictionary[k] = v
+    else:
+        output_dictionary[key] = result
+
+
 def same(value):
     return value
 
@@ -59,12 +69,11 @@ def boildown_replicate_exps(replicate_exps):
 
 
 def boildown_publication(publication):
-    '''from publication embedded in ExpSet
-    return PMID if available, else return display_title'''
+    '''Only PMID is acceptable'''
+    pub = ''
     if publication['ID'].split(':')[0] == 'PMID':
-        return publication['ID'].split(':')[1]
-    else:
-        return boildown_title(publication)
+        pub = publication['ID'].split(':')[1]
+    return pub
 
 
 # def boildown_data_usage(static_headers):
@@ -76,38 +85,37 @@ def boildown_publication(publication):
 
 
 def boildown_experiments_in_set(experiments_in_set):
-    '''extract minimal info from the first experiment in an ExpSet
-    This includes experiment type and organism'''
+    '''extract experiment_type from the first experiment in an ExpSet'''
     output_dict = {}
     experiment = experiments_in_set[0]
-    output_dict['experiment_type'] = get_experiment_type(experiment)
-    output_dict['organism_id'] = get_organism_from_experiment(experiment)
+    output_dict['experiment_type'] = experiment['experiment_type']['display_title']
+    # output_dict['organism_id'] = get_organism_from_experiment(experiment)
     return output_dict
 
 
-def get_experiment_type(experiment):
-    '''get exp_type from experiment'''
-    exp_type = experiment['experiment_type']
-#     if exp_type.get('assay_subclass_short'):
-#         return exp_type['assay_subclass_short']
+# def get_experiment_type(experiment):
+#     '''get exp_type from experiment'''
+#     exp_type = boildown_title(experiment['experiment_type'])
+# #     if exp_type.get('assay_subclass_short'):
+# #         return exp_type['assay_subclass_short']
+# #     else:
+#     return exp_type
+#
+#
+# def get_organism_from_experiment(experiment):
+#     '''extract organism from experiment'''
+#     if len(experiment['biosample']['biosource']) > 1:
+#         return 'WARNING - multiple biosources'
 #     else:
-    return boildown_title(exp_type)
-
-
-def get_organism_from_experiment(experiment):
-    '''extract organism from experiment'''
-    if len(experiment['biosample']['biosource']) > 1:
-        return 'WARNING - multiple biosources'
-    else:
-        biosource = experiment['biosample']['biosource'][0]
-    # organism = get_organism_id(biosource['individual'])
-    organism = biosource['individual']['organism']['display_title']
-    return organism
-
-
-def get_organism_id(individual):
-    '''NCBI Taxon ID is the second part of an Organism @id'''
-    return individual['organism']['@id'].split('/')[2]
+#         biosource = experiment['biosample']['biosource'][0]
+#     # organism = get_organism_id(biosource['individual'])
+#     organism = biosource['individual']['organism']['display_title']
+#     return organism
+#
+#
+# def get_organism_id(individual):
+#     '''NCBI Taxon ID is the second part of an Organism @id'''
+#     return individual['organism']['@id'].split('/')[2]
 
 
 # for Experiment
