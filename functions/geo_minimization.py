@@ -1,20 +1,24 @@
 '''
 Common functions for GEO Minimization of the JSON objects
 '''
+URL = 'https://data.4dnucleome.org'
 
 
-def add_result_to_output_dict(key, result, output_dictionary):
+def add_value_to_output_dict(key, value, output_dictionary):
     '''add to the output_dictionary either a single key:value pair or
-    all the key:values if result is a dictionary'''
-    if isinstance(result, dict):
-        for k, v in result.items():
-            output_dictionary[k] = v
+    all the key:values if value is a dictionary'''
+    if isinstance(value, dict):
+        for inner_key, inner_value in value.items():
+            if inner_value:  # skip if None
+                output_dictionary[inner_key] = inner_value
     else:
-        output_dictionary[key] = result
+        if value:  # skip if None
+            output_dictionary[key] = value
+    return
 
 
-def same(value):
-    return value
+def boildown_at_id(at_id):
+    return {'url': URL + at_id}
 
 
 def boildown_title(any_object):
@@ -27,8 +31,26 @@ def boildown_list_to_titles(list_of_objects):
     return ', '.join([boildown_title(entry) for entry in list_of_objects])
 
 
+def boildown_protocol(protocol_object):
+    '''used for both protocol and document items'''
+    protocol_dict = {}
+    protocol_simple_interesting_values = ['description', 'url']  # 'protocol_type'
+    for key in protocol_object:
+        if key == 'attachment':
+            protocol_dict['download'] = URL + protocol_object['@id'] + protocol_object['attachment']['href']
+        elif key in protocol_simple_interesting_values:
+            protocol_dict[key] = protocol_object[key]
+    return protocol_dict
+
+
+def boildown_protocols(protocols):
+    '''return list of protocols(dictionaries)'''
+    return [boildown_protocol(p) for p in protocols]
+
+
 def boildown_exp_display_title(display_title):
-    '''shorten experiment display title if longer than 120, keeping accession at the end'''
+    '''shorten experiment display title if longer than 120,
+    keeping accession at the end'''
     if len(display_title) > 120:
         accession = display_title[-15:]
         display_title = display_title[:102] + '...' + accession
@@ -61,7 +83,7 @@ def boildown_replicate_exps(replicate_exps):
     output_list = []
     for replicate in replicate_exps:
         output_list.append({
-            'replicate': replicate['replicate_exp']['accession'],
+            'replicate': replicate['replicate_exp']['@id'],
             'biological_replicate_number': replicate['bio_rep_no'],
             'technical_replicate_number': replicate['tec_rep_no']
         })
@@ -69,19 +91,13 @@ def boildown_replicate_exps(replicate_exps):
 
 
 def boildown_publication(publication):
-    '''Only PMID is acceptable'''
-    pub = ''
+    '''returns a dictionary with one key
+    produced_in_pub: PMID if present, otherwise series_citation: display_title'''
     if publication['ID'].split(':')[0] == 'PMID':
-        pub = publication['ID'].split(':')[1]
+        pub = {'produced_in_pub': publication['ID'].split(':')[1]}
+    else:
+        pub = {'series_citation': publication['display_title']}
     return pub
-
-
-# def boildown_data_usage(static_headers):
-#     text = ''
-#     for header in static_headers:
-#         if header['uuid'] == "621e8359-3885-40ce-965d-91894aa7b758":
-#             text = header['content']
-#     return text
 
 
 def boildown_experiments_in_set(experiments_in_set):
@@ -102,20 +118,15 @@ def boildown_experiments_in_set(experiments_in_set):
 #     return exp_type
 #
 #
-# def get_organism_from_experiment(experiment):
-#     '''extract organism from experiment'''
-#     if len(experiment['biosample']['biosource']) > 1:
-#         return 'WARNING - multiple biosources'
-#     else:
-#         biosource = experiment['biosample']['biosource'][0]
-#     # organism = get_organism_id(biosource['individual'])
-#     organism = biosource['individual']['organism']['display_title']
-#     return organism
-#
-#
 # def get_organism_id(individual):
 #     '''NCBI Taxon ID is the second part of an Organism @id'''
 #     return individual['organism']['@id'].split('/')[2]
+def boildown_organism(organism_object):
+    '''Return interesting organism values from organism_object'''
+    organism_dict = {}
+    organism_dict['organism_name'] = organism_object['scientific_name']
+    organism_dict['organism_id'] = organism_object['taxon_id']
+    return organism_dict
 
 
 # for Experiment
@@ -124,17 +135,14 @@ def boildown_exp_categorizer(exp_categorizer_object):
     return output
 
 
-# def minimize_biosample(biosample_object):
-#     '''embedded in Experiment'''
-#     return biosample_object['biosource_summary'] + ' - ' + biosample_object['accession']
-
-
-def boildown_biosample_quantity(biosample_quantity, biosample_quantity_units):
-    if biosample_quantity_units == 'cells':
-        quantity = str(int(biosample_quantity))
+def boildown_biosample_quantity(experiment_object):
+    unit = experiment_object.get('biosample_quantity_units', '')
+    quantity = experiment_object.get('biosample_quantity', '')
+    if unit == 'cells':
+        quantity = str(int(quantity))
     else:
-        quantity = str(biosample_quantity)
-    return quantity + ' ' + biosample_quantity_units
+        quantity = str(quantity)
+    return quantity + ' ' + unit
 
 
 def boildown_tissue_organ_info(tissue_organ_info):
@@ -142,14 +150,6 @@ def boildown_tissue_organ_info(tissue_organ_info):
     # this calc prop searches tissue in different places and also deals with mixed tissues
     return {'tissue_source': tissue_organ_info.get('tissue_source')}
 
-
-# def boildown_sop_cell_line(biosource_id):
-#     '''This field is not embedded, so need to GET Biosource'''
-#     biosource = ff_utils.get_metadata(biosource_id, key=auth)
-#     protocol_dict = {}
-#     if biosource.get('SOP_cell_line'):
-#         protocol_dict = boildown_protocol(biosource['SOP_cell_line'])
-#     return protocol_dict
 
 def boildown_related_files(related_files):
     # keep only "paired with" relationships
@@ -159,3 +159,53 @@ def boildown_related_files(related_files):
             relations.append(file['file']['accession'])
 #             relations.append(file['relationship_type'] + " " + file['file']['accession'])
     return ', '.join(relations)
+
+
+file_quality_metric_interesting_values = [
+    'Sequence length',
+    'Total Sequences'
+]
+
+file_interesting_values = [
+    'paired_end',
+    'accession',
+    'display_title',
+    'file_type',
+    # 'file_type_detailed',  # has also file_format['display_title']
+    # 'href',
+    # 'file_size',
+    'file_classification',
+    # 'filename',
+    'instrument',
+    # 'public_release',  # is it necessary? not embedded in expset
+    'genome_assembly',
+    'md5sum',
+    # 'content_md5sum',
+]
+
+
+def boildown_file(file_object):
+    file_dictionary = {}
+    for key, value in file_object.items():
+        if key in file_interesting_values:
+            if isinstance(value, list):
+                if len(value) > 0:
+                    file_dictionary[key] = ', '.join(value)
+            else:
+                file_dictionary[key] = str(value)
+        elif key == 'file_format':
+            file_dictionary[key] = boildown_title(value)
+        elif key == 'quality_metric':
+            for k in value.keys():
+                if k in file_quality_metric_interesting_values:
+                    file_dictionary[k] = str(value[k])
+        elif key == 'related_files':
+            file_dictionary[key] = boildown_related_files(value)
+        elif key == 'workflow_run_outputs' and len(value) > 0:
+            wfr = value[0]  # file derives only from the first wfr in the list
+            file_dictionary['workflow_run'] = URL + wfr['@id']
+#             file_dictionary['workflow'] = wfr['workflow']['display_title']
+            file_dictionary['derived_from'] = ", ".join([
+                infile['value']['display_title'] for infile in wfr['input_files']
+            ])
+    return file_dictionary
