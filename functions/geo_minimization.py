@@ -83,7 +83,8 @@ def boildown_replicate_exps(replicate_exps):
     output_list = []
     for replicate in replicate_exps:
         output_list.append({
-            'replicate': replicate['replicate_exp']['@id'],
+            'replicate': replicate['replicate_exp']['accession'],
+            '@id': replicate['replicate_exp']['@id'],
             'biological_replicate_number': replicate['bio_rep_no'],
             'technical_replicate_number': replicate['tec_rep_no']
         })
@@ -162,24 +163,20 @@ def boildown_related_files(related_files):
 
 
 file_quality_metric_interesting_values = [
-    'Sequence length',
+    'Sequence length',  # raw_file
     'Total Sequences'
 ]
 
 file_interesting_values = [
-    'paired_end',
+    'paired_end',  # raw_file
     'accession',
-    'display_title',
+    'display_title',  # raw_file
     'file_type',
     # 'file_type_detailed',  # has also file_format['display_title']
-    # 'href',
-    # 'file_size',
     'file_classification',
-    # 'filename',
-    'instrument',
-    # 'public_release',  # is it necessary? not embedded in expset
+    'instrument',  # raw_file
     'genome_assembly',
-    'md5sum',
+    'md5sum',  # raw_file
     # 'content_md5sum',
 ]
 
@@ -193,7 +190,7 @@ def boildown_file(file_object):
                     file_dictionary[key] = ', '.join(value)
             else:
                 file_dictionary[key] = str(value)
-        elif key == 'file_format':
+        elif key == 'file_format':  # raw_file
             file_dictionary[key] = boildown_title(value)
         elif key == 'quality_metric':
             for k in value.keys():
