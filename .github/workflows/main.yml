@@ -41,4 +41,8 @@ jobs:
         run: |
           poetry install
           poetry run coverage run --source=dcicwrangling -m pytest -vv tests
-          poetry run coveralls
+
+      #- name: Coveralls
+      #  uses: coverallsapp/github-action@master
+      #  with:
+      #    github-token: ${{ secrets.GITHUB_TOKEN }}
